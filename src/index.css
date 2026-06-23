@@ -1,0 +1,190 @@
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 42 22% 97%;
+    --foreground: 222 38% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 38% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 38% 11%;
+
+    --primary: 222 48% 28%;
+    --primary-foreground: 42 22% 97%;
+
+    --secondary: 42 10% 93%;
+    --secondary-foreground: 222 25% 18%;
+
+    --muted: 42 10% 93%;
+    --muted-foreground: 222 12% 44%;
+
+    --accent: 42 10% 93%;
+    --accent-foreground: 222 25% 18%;
+
+    --destructive: 0 68% 50%;
+    --destructive-foreground: 42 22% 97%;
+
+    --border: 222 10% 88%;
+    --input: 222 10% 88%;
+    --ring: 222 48% 28%;
+
+    --radius: 0.375rem;
+
+    /* Sidebar — deep legal navy */
+    --sidebar-background: 222 42% 12%;
+    --sidebar-foreground: 210 18% 73%;
+    --sidebar-primary: 42 58% 52%;
+    --sidebar-primary-foreground: 222 40% 8%;
+    --sidebar-accent: 222 38% 17%;
+    --sidebar-accent-foreground: 210 22% 90%;
+    --sidebar-border: 222 32% 19%;
+    --sidebar-ring: 42 58% 52%;
+
+    --stat-orange: 28 85% 55%;
+    --stat-green: 152 55% 40%;
+    --stat-purple: 255 58% 52%;
+    --stat-violet: 272 50% 52%;
+
+    --chart-blue: 222 55% 50%;
+    --chart-orange: 28 85% 55%;
+    --chart-red: 0 65% 52%;
+    --chart-yellow: 43 82% 52%;
+    --chart-green: 152 55% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.35);
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    letter-spacing: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+  }
+
+  p, span, div, li {
+    font-weight: 400;
+  }
+
+  td, th {
+    font-weight: 400;
+  }
+
+  th {
+    font-weight: 500;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  label {
+    font-weight: 500;
+  }
+
+  input, textarea, select {
+    font-weight: 400;
+  }
+
+  button {
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  small, .text-xs, .text-\[10px\], .text-\[11px\] {
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+}
+
+/* Refined table rows */
+tbody tr {
+  border-bottom-width: 1px;
+  border-color: hsl(var(--border) / 0.6);
+}
+
+/* Card hover lift */
+.hover-lift {
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+.hover-lift:hover {
+  box-shadow: 0 4px 16px 0 rgba(10, 15, 40, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Sidebar scrollbar — matches dark navy */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(222 32% 20%) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(222 32% 22%);
+  border-radius: 2px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(222 28% 30%);
+}
+
+/* ── Voice input animations ── */
+@keyframes voice-bar {
+  0%, 100% { transform: scaleY(0.25); opacity: 0.5; }
+  50%       { transform: scaleY(1);    opacity: 1;   }
+}
+
+@keyframes voice-ripple {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(2.2); opacity: 0;   }
+}
+
+.voice-bar {
+  animation: voice-bar 0.9s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+.voice-bar:nth-child(1) { animation-delay: 0ms;   }
+.voice-bar:nth-child(2) { animation-delay: 120ms; }
+.voice-bar:nth-child(3) { animation-delay: 240ms; }
+.voice-bar:nth-child(4) { animation-delay: 360ms; }
+.voice-bar:nth-child(5) { animation-delay: 180ms; }
+
+.voice-ripple-1 { animation: voice-ripple 1.4s ease-out infinite; }
+.voice-ripple-2 { animation: voice-ripple 1.4s ease-out infinite 0.5s; }
