@@ -304,7 +304,7 @@ export function CaseFileImport() {
             "Content-Type": "application/json",
             "apikey": supabaseKey,
             "Authorization": `Bearer ${authToken}`,
-            "Prefer": "return=minimal",
+            "Prefer": "return=minimal,resolution=ignore-duplicates",
           },
           body: JSON.stringify(batch),
         });
