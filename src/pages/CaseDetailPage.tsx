@@ -18,7 +18,7 @@ import {
   Gavel, ListTodo, Receipt, FileText, DollarSign, Clock, Plus, Trash2,
   CalendarDays, ChevronLeft, AlertCircle, Bell, Scale, StickyNote, Pencil
 } from "lucide-react";
-import { CASE_STATUS_CONFIG, type CaseStatus, CURRENCY } from "@/lib/constants";
+import { CASE_STATUS_CONFIG, CASE_STATUSES, type CaseStatus, CURRENCY } from "@/lib/constants";
 
 const TABS = [
   { id: "history", label: "Case History", icon: Clock },
@@ -79,7 +79,7 @@ export default function CaseDetailPage() {
       <div className="bg-card border border-border shadow-sm rounded-xl p-5">
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <span className="font-mono font-medium bg-muted/80 px-2.5 py-1 rounded-md text-xs border border-border">{caseData.case_number}</span>
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase border ${sConf.bg} ${sConf.text} ${sConf.border}`}>{caseData.status}</span>
+          <StatusChanger caseId={id!} currentStatus={caseData.status} sConf={sConf} queryClient={queryClient} />
           {caseData.court_type && <span className="text-xs bg-muted px-2 py-0.5 rounded border border-border">{caseData.court_type}</span>}
           {caseData.case_side && <span className="text-xs bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300">{caseData.case_side}</span>}
         </div>
@@ -124,6 +124,58 @@ function InfoField({ label, value }: { label: string; value: string | null | und
 }
 function EmptyState({ icon: Icon, text }: { icon: any; text: string }) {
   return <div className="flex flex-col items-center justify-center py-16"><Icon className="w-12 h-12 text-muted-foreground opacity-20 mb-3" /><p className="text-sm font-medium text-muted-foreground">{text}</p></div>;
+}
+
+// ══════════════════════════════════════════════════════════════
+// Status Changer — quick status update dropdown
+// ══════════════════════════════════════════════════════════════
+function StatusChanger({ caseId, currentStatus, sConf, queryClient }: { caseId: string; currentStatus: string; sConf: any; queryClient: any }) {
+  const [changing, setChanging] = useState(false);
+
+  const handleChange = async (newStatus: string) => {
+    if (newStatus === currentStatus) return;
+    setChanging(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const session = (await supabase.auth.getSession()).data.session;
+      const authToken = session?.access_token || supabaseKey;
+      const res = await fetch(`${supabaseUrl}/rest/v1/cases?id=eq.${caseId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+      queryClient.invalidateQueries({ queryKey: ["case-detail", caseId] });
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      toast.success(`Status changed to ${newStatus}`);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to change status");
+    } finally {
+      setChanging(false);
+    }
+  };
+
+  return (
+    <Select value={currentStatus} onValueChange={handleChange} disabled={changing}>
+      <SelectTrigger className={`w-auto h-auto px-2.5 py-1 rounded-md text-xs font-bold uppercase border gap-1.5 ${sConf.bg} ${sConf.text} ${sConf.border}`}>
+        <SelectValue>{changing ? "..." : currentStatus}</SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {CASE_STATUSES.map(s => {
+          const conf = CASE_STATUS_CONFIG[s] ?? CASE_STATUS_CONFIG["open"];
+          return (
+            <SelectItem key={s} value={s} className="capitalize">
+              <span className={`inline-flex items-center gap-2`}>
+                <span className={`w-2 h-2 rounded-full ${conf.bg.replace("/10", "")}`} />
+                {s === "not applicable" ? "Not Applicable" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </span>
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
+  );
 }
 
 // ══════════════════════════════════════════════════════════════
