@@ -32,7 +32,7 @@ const CSV_TO_DB_MAP: Record<string, string> = {
   "client": "description", // stored temporarily in description; client name needs resolution
   "casestatus": "status",
   "case status": "status",
-  "lawyer": "case_type", // will store lawyer name in case_type temporarily if no advocate_id resolution
+  "lawyer": "case_notes_1", // stored in case_notes_1 as reference
   "lasthearingdate": "last_hearing_date",
   "last hearing date": "last_hearing_date",
   "caseimporteddate": "case_imported_date",
@@ -202,7 +202,7 @@ export function CaseFileImport() {
     for (let i = 0; i < rawRows.length; i++) {
       const csvRow = rawRows[i];
       const dbRow: Record<string, any> = {
-        user_id: user.id,
+        created_by: user.id,
         status: "open",
         case_imported_date: new Date().toISOString().slice(0, 10),
       };
@@ -229,20 +229,16 @@ export function CaseFileImport() {
             dbRow[dbCol] = statusLower;
           } else {
             dbRow[dbCol] = "open";
-            // Store original status in case_stage if not already set
             if (!dbRow.case_stage) dbRow.case_stage = csvValue;
           }
         }
-        // Handle "Client" column — store in description with prefix
+        // Handle "Client" column — store in description
         else if (dbCol === "description" && csvHeader.toLowerCase().trim() === "client") {
           dbRow["description"] = `Client: ${csvValue}`;
         }
-        // Handle "Lawyer" column — store in advocate context
-        else if (dbCol === "case_type" && csvHeader.toLowerCase().trim() === "lawyer") {
-          // We'll store it as case_notes_1 if not occupied, for reference
-          if (!dbRow.case_notes_1) {
-            dbRow.case_notes_1 = `Lawyer: ${csvValue}`;
-          }
+        // Handle "Lawyer" column — store in case_notes_1
+        else if (dbCol === "case_notes_1" && csvHeader.toLowerCase().trim() === "lawyer") {
+          dbRow.case_notes_1 = `Lawyer: ${csvValue}`;
         }
         else {
           dbRow[dbCol] = csvValue.trim();
@@ -261,9 +257,29 @@ export function CaseFileImport() {
     }
 
     // ── Normalize all rows to have the same keys (PostgREST requirement) ──
+    // Only allow columns that actually exist in the DB schema
+    const VALID_DB_COLUMNS = new Set([
+      "id", "title", "case_number", "description", "status", "client_id", "advocate_id",
+      "court_name", "filing_date", "next_hearing_date", "tags", "template_id", "created_by",
+      "created_at", "updated_at", "cnr_number", "file_number", "court_type", "case_stage",
+      "stage", "last_hearing_date", "case_imported_date", "case_tags", "case_side",
+      "disposed_date", "document_size", "fir_number", "police_station", "case_notes_1", "case_notes_2",
+    ]);
+
+    // Filter each row to only include valid columns
+    const filteredRows = dbRows.map(row => {
+      const filtered: Record<string, any> = {};
+      for (const [k, v] of Object.entries(row)) {
+        if (VALID_DB_COLUMNS.has(k)) {
+          filtered[k] = v;
+        }
+      }
+      return filtered;
+    });
+
     const allKeys = new Set<string>();
-    dbRows.forEach(row => Object.keys(row).forEach(k => allKeys.add(k)));
-    const normalizedRows = dbRows.map(row => {
+    filteredRows.forEach(row => Object.keys(row).forEach(k => allKeys.add(k)));
+    const normalizedRows = filteredRows.map(row => {
       const normalized: Record<string, any> = {};
       allKeys.forEach(k => {
         normalized[k] = row[k] !== undefined ? row[k] : null;
