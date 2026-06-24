@@ -8,8 +8,10 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid,
 } from "recharts";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { CURRENCY, LOCALE } from "@/lib/constants";
 
 const LEGAL_TIPS = [
@@ -31,82 +33,86 @@ export default function Dashboard() {
 
   const currentQuote = LEGAL_TIPS[Math.floor(Date.now() / (3 * 60 * 60 * 1000)) % LEGAL_TIPS.length];
 
-  // ── Dummy data ──────────────────────────────────────────────────────────────
-  const profile = { full_name: "Adv. Rajesh Sarda" };
+  // ── Real data from Supabase ─────────────────────────────────────────────
+  const { data: allCases = [] } = useQuery({
+    queryKey: ["dashboard-cases"],
+    queryFn: async () => {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const session = (await supabase.auth.getSession()).data.session;
+      const authToken = session?.access_token || supabaseKey;
+      const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=id,status,case_stage,court_type,created_at,next_hearing_date,title&limit=10000`, {
+        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
+      });
+      if (!res.ok) return [];
+      return await res.json();
+    },
+  });
 
-  const recentActivity = [
-    { type: "Case",    label: "State vs. Mehta — FIR Filed",      time: new Date(Date.now() - 1  * 60 * 60 * 1000).toISOString() },
-    { type: "Client",  label: "Priya Sharma onboarded",            time: new Date(Date.now() - 3  * 60 * 60 * 1000).toISOString() },
-    { type: "Hearing", label: "Pre-trial — District Court",        time: new Date(Date.now() - 6  * 60 * 60 * 1000).toISOString() },
-    { type: "Case",    label: "Land Dispute — Khandwa",            time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
-    { type: "Client",  label: "Ramesh Gupta added",                time: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString() },
-  ];
+  const { data: clientsList = [] } = useQuery({
+    queryKey: ["dashboard-clients"],
+    queryFn: async () => { const { data } = await supabase.from("clients").select("id, name, email, phone, city, state"); return data || []; },
+  });
 
-  const upcomingHearings = [
-    { purpose: "Bail Application", hearing_date: new Date(Date.now() + 4  * 60 * 60 * 1000).toISOString(), court_name: "Sessions Court, Indore", cases: [{ title: "State vs. Mehta" }] },
-    { purpose: "Final Arguments",  hearing_date: new Date(Date.now() + 28 * 60 * 60 * 1000).toISOString(), court_name: "High Court, Bhopal",    cases: [{ title: "Sharma Property Dispute" }] },
-  ];
-
-  const overdueInvoices = [
-    { invoice_number: "INV-2026-042", total: 75000, due_date: "2026-04-30", clients: { name: "Ramesh Gupta" } },
-    { invoice_number: "INV-2026-038", total: 32000, due_date: "2026-04-15", clients: { name: "Acme Textiles Ltd." } },
-  ];
-
-  const caseCounts   = { total: 24, open: 9, closed: 11, pending: 4 };
-  const clientCount  = 18;
-  const hearingData  = { total: 47, today: 3 };
-
-  const adviceStats = {
-    thisMonth: 22,
-    chart: [
-      { month: "Jun", value: 8  },
-      { month: "Jul", value: 12 },
-      { month: "Aug", value: 9  },
-      { month: "Sep", value: 15 },
-      { month: "Oct", value: 11 },
-      { month: "Nov", value: 18 },
-      { month: "Dec", value: 14 },
-      { month: "Jan", value: 19 },
-      { month: "Feb", value: 17 },
-      { month: "Mar", value: 22 },
-    ],
+  // Calculate real counts
+  const caseCounts = {
+    total: allCases.length,
+    pending: allCases.filter((c: any) => c.status === "pending").length,
+    disposed: allCases.filter((c: any) => c.status === "disposed").length,
+    open: allCases.filter((c: any) => c.status === "open" || c.status === "in-progress").length,
+    notApplicable: allCases.filter((c: any) => c.status === "not applicable").length,
   };
+  const clientCount = clientsList.length;
 
-  const casesChart = [
-    { month: "Oct", value: 3 },
-    { month: "Nov", value: 5 },
-    { month: "Dec", value: 2 },
-    { month: "Jan", value: 6 },
-    { month: "Feb", value: 4 },
-    { month: "Mar", value: 4 },
-  ];
+  // Upcoming hearings from real data (cases with next_hearing_date in the future)
+  const now = new Date();
+  const upcomingHearings = allCases
+    .filter((c: any) => c.next_hearing_date && new Date(c.next_hearing_date) >= now)
+    .sort((a: any, b: any) => new Date(a.next_hearing_date).getTime() - new Date(b.next_hearing_date).getTime())
+    .slice(0, 5)
+    .map((c: any) => ({ purpose: c.title, hearing_date: c.next_hearing_date, court_name: c.court_type || "Court" }));
 
-  const dummyClients = [
-    { id: "1", name: "Ramesh Gupta",      email: "ramesh.gupta@gmail.com",   phone: "98765-43210", city: "Indore",   state: "MP" },
-    { id: "2", name: "Priya Sharma",      email: "priya.sharma@yahoo.com",    phone: "91234-56789", city: "Bhopal",   state: "MP" },
-    { id: "3", name: "Acme Textiles Ltd.",email: "legal@acmetextiles.in",     phone: "07314-112233",city: "Indore",   state: "MP" },
-    { id: "4", name: "Suresh Patel",      email: "suresh.patel@outlook.com",  phone: "99887-76655", city: "Ujjain",   state: "MP" },
-    { id: "5", name: "Meena Desai",       email: "mdesai@corp.co.in",         phone: "88001-22334", city: "Jabalpur", state: "MP" },
-    { id: "6", name: "Vikram Rao",        email: "vikram.rao@lawfirm.com",    phone: "70001-55443", city: "Gwalior",  state: "MP" },
-    { id: "7", name: "Anita Joshi",       email: "anita.joshi@email.com",     phone: "94500-66778", city: "Rewa",     state: "MP" },
-    { id: "8", name: "Kiran Enterprises", email: "accounts@kiranent.in",      phone: "0731-9988776", city: "Indore",  state: "MP" },
-  ];
+  const hearingData = { total: upcomingHearings.length, today: allCases.filter((c: any) => c.next_hearing_date === format(now, "yyyy-MM-dd")).length };
+
+  // Recent cases (last 5 created)
+  const recentActivity = allCases.slice(0, 5).map((c: any) => ({
+    type: "Case", label: c.title, time: c.created_at,
+  }));
+
+  const profile = { full_name: "Adv. Manmohan Sarda" };
+
+  const overdueInvoices: any[] = [];
+
+  // Cases by month for bar chart (from created_at)
+  const casesChart = (() => {
+    const months: Record<string, number> = {};
+    allCases.forEach((c: any) => {
+      if (c.created_at) {
+        const m = format(new Date(c.created_at), "MMM yyyy");
+        months[m] = (months[m] || 0) + 1;
+      }
+    });
+    return Object.entries(months).slice(-6).map(([month, value]) => ({ month: month.split(" ")[0], value }));
+  })();
+
+  const adviceStats = { thisMonth: caseCounts.pending, chart: casesChart.length > 0 ? casesChart.map(c => ({ month: c.month, value: c.value })) : [{ month: "—", value: 0 }] };
 
   // ────────────────────────────────────────────────────────────────────────────
 
   const stats = [
-    { label: "Total Cases",   value: caseCounts.total,   icon: BriefcaseBusiness, color: "text-blue-500",    bg: "bg-blue-500/10" },
-    { label: "Open Cases",    value: caseCounts.open,    icon: Clock,             color: "text-amber-500",   bg: "bg-amber-500/10" },
-    { label: "Closed Cases",  value: caseCounts.closed,  icon: CheckCircle2,      color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { label: "Pending Cases", value: caseCounts.pending, icon: AlertCircle,       color: "text-purple-500",  bg: "bg-purple-500/10" },
+    { label: "Total Cases",    value: caseCounts.total,          icon: BriefcaseBusiness, color: "text-blue-500",    bg: "bg-blue-500/10" },
+    { label: "Pending Cases",  value: caseCounts.pending,        icon: Clock,             color: "text-amber-500",   bg: "bg-amber-500/10" },
+    { label: "Disposed Cases", value: caseCounts.disposed,       icon: CheckCircle2,      color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { label: "Not Applicable", value: caseCounts.notApplicable,  icon: AlertCircle,       color: "text-purple-500",  bg: "bg-purple-500/10" },
   ];
 
   const pieData = caseCounts.total > 0
     ? [
-        { name: "Open",    value: Math.round((caseCounts.open    / caseCounts.total) * 100), color: "#3b82f6" },
-        { name: "Closed",  value: Math.round((caseCounts.closed  / caseCounts.total) * 100), color: "#10b981" },
-        { name: "Pending", value: Math.round((caseCounts.pending / caseCounts.total) * 100), color: "#f59e0b" },
-      ]
+        { name: "Pending",        value: caseCounts.pending,        color: "#f59e0b" },
+        { name: "Disposed",       value: caseCounts.disposed,       color: "#10b981" },
+        { name: "Open",           value: caseCounts.open,           color: "#3b82f6" },
+        { name: "Not Applicable", value: caseCounts.notApplicable,  color: "#8b5cf6" },
+      ].filter(d => d.value > 0)
     : [{ name: "No Data", value: 100, color: "hsl(var(--muted))" }];
 
   const quickActions = [
@@ -127,7 +133,7 @@ export default function Dashboard() {
     return "Good Evening";
   })();
 
-  const displayName = profile.full_name || user?.email?.split("@")[0] || "User";
+  const displayName = profile.full_name || user?.email?.split("@")[0] || "Counsellor";
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -267,7 +273,7 @@ export default function Dashboard() {
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground">Client Directory</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">{dummyClients.length} registered clients</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{clientsList.length} registered clients</p>
             </div>
           </div>
           <button onClick={() => navigate("/clients")} className="text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-0.5 transition-colors">
@@ -286,7 +292,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {dummyClients.map((client, i) => (
+              {(clientsList.length > 0 ? clientsList.slice(0, 8) : []).map((client: any, i: number) => (
                 <tr key={client.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => navigate("/clients")}>
                   <td className="py-3.5 px-5 text-muted-foreground font-mono text-xs">{i + 1}</td>
                   <td className="py-3.5 px-5">
