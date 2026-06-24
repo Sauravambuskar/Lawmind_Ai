@@ -78,11 +78,20 @@ export default function CasesPage() {
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
       const session = (await supabase.auth.getSession()).data.session;
       const authToken = session?.access_token || supabaseKey;
-      const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=id,case_number,title,status,court_name,court_type,case_stage,stage,case_side,cnr_number,file_number,filing_date,next_hearing_date,last_hearing_date,case_imported_date,case_tags,disposed_date,document_size,fir_number,police_station,case_notes_1,case_notes_2,description,client_id,advocate_id,created_at&order=created_at.desc&limit=5000`, {
-        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-      });
-      if (!res.ok) throw new Error("Failed to fetch cases");
-      return (await res.json()) as CaseRow[];
+      const headers = { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` };
+      
+      // Fetch all cases in batches (PostgREST limits to 1000 per request)
+      const all: CaseRow[] = [];
+      let offset = 0;
+      while (true) {
+        const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=id,case_number,title,status,court_name,court_type,case_stage,stage,case_side,cnr_number,file_number,filing_date,next_hearing_date,last_hearing_date,case_imported_date,case_tags,disposed_date,document_size,fir_number,police_station,case_notes_1,case_notes_2,description,client_id,advocate_id,created_at&order=created_at.desc&offset=${offset}&limit=1000`, { headers });
+        if (!res.ok) break;
+        const batch = await res.json();
+        all.push(...batch);
+        if (batch.length < 1000) break;
+        offset += 1000;
+      }
+      return all;
     },
   });
 
