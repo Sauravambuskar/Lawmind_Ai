@@ -1,19 +1,25 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { PageHeader } from "@/components/PageHeader";
 import { PageLoader } from "@/components/PageLoader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import {
-  Gavel, ListTodo, Receipt, FileText, DollarSign, Clock,
-  CalendarDays, ChevronLeft, BriefcaseBusiness, User, AlertCircle,
-  Bell, BookOpen, StickyNote, Scale
+  Gavel, ListTodo, Receipt, FileText, DollarSign, Clock, Plus, Trash2,
+  CalendarDays, ChevronLeft, AlertCircle, Bell, Scale, StickyNote, Pencil
 } from "lucide-react";
 import { CASE_STATUS_CONFIG, type CaseStatus, CURRENCY } from "@/lib/constants";
 
-// ── Tab definitions ───────────────────────────────────────────────────
 const TABS = [
   { id: "history", label: "Case History", icon: Clock },
   { id: "documents", label: "Case Documents", icon: FileText },
@@ -26,393 +32,419 @@ const TABS = [
   { id: "expenses", label: "Expenses", icon: DollarSign },
   { id: "time", label: "Time Entries", icon: Clock },
 ] as const;
-
 type TabId = typeof TABS[number]["id"];
 
 export default function CaseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabId>("history");
 
-  // Fetch Case Details
-  const { data: caseData, isLoading: loadingCase } = useQuery({
+  const { data: caseData, isLoading } = useQuery({
     queryKey: ["case-detail", id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("cases").select("*").eq("id", id).single();
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => { const { data, error } = await supabase.from("cases").select("*").eq("id", id).single(); if (error) throw error; return data; },
     enabled: !!id,
   });
+  const { data: hearings = [] } = useQuery({ queryKey: ["case-hearings", id], queryFn: async () => { const { data } = await supabase.from("hearings").select("*").eq("case_id", id).order("hearing_date", { ascending: false }); return data || []; }, enabled: !!id });
+  const { data: tasks = [] } = useQuery({ queryKey: ["case-tasks", id], queryFn: async () => { const { data } = await supabase.from("tasks").select("*").eq("case_id", id).order("created_at", { ascending: false }); return data || []; }, enabled: !!id });
+  const { data: invoices = [] } = useQuery({ queryKey: ["case-invoices", id], queryFn: async () => { const { data } = await supabase.from("invoices").select("*").eq("case_id", id).order("created_at", { ascending: false }); return data || []; }, enabled: !!id });
+  const { data: expenses = [] } = useQuery({ queryKey: ["case-expenses", id], queryFn: async () => { const { data } = await supabase.from("expenses").select("*").eq("case_id", id).order("expense_date", { ascending: false }); return data || []; }, enabled: !!id });
+  const { data: documents = [] } = useQuery({ queryKey: ["case-documents", id], queryFn: async () => { const { data } = await supabase.from("documents").select("*").eq("case_id", id).order("created_at", { ascending: false }); return data || []; }, enabled: !!id });
 
-  // Fetch hearings
-  const { data: hearings = [] } = useQuery({
-    queryKey: ["case-hearings", id],
-    queryFn: async () => {
-      const { data } = await supabase.from("hearings").select("*").eq("case_id", id).order("hearing_date", { ascending: false });
-      return data || [];
-    },
-    enabled: !!id,
-  });
-
-  // Fetch tasks
-  const { data: tasks = [] } = useQuery({
-    queryKey: ["case-tasks", id],
-    queryFn: async () => {
-      const { data } = await supabase.from("tasks").select("*").eq("case_id", id).order("due_date", { ascending: false });
-      return data || [];
-    },
-    enabled: !!id,
-  });
-
-  // Fetch invoices
-  const { data: invoices = [] } = useQuery({
-    queryKey: ["case-invoices", id],
-    queryFn: async () => {
-      const { data } = await supabase.from("invoices").select("*").eq("case_id", id).order("issue_date", { ascending: false });
-      return data || [];
-    },
-    enabled: !!id,
-  });
-
-  // Fetch expenses
-  const { data: expenses = [] } = useQuery({
-    queryKey: ["case-expenses", id],
-    queryFn: async () => {
-      const { data } = await supabase.from("expenses").select("*").eq("case_id", id).order("expense_date", { ascending: false });
-      return data || [];
-    },
-    enabled: !!id,
-  });
-
-  // Fetch documents
-  const { data: documents = [] } = useQuery({
-    queryKey: ["case-documents", id],
-    queryFn: async () => {
-      const { data } = await supabase.from("documents").select("*").eq("case_id", id).order("created_at", { ascending: false });
-      return data || [];
-    },
-    enabled: !!id,
-  });
-
-  const showLoader = useMinLoader(loadingCase);
+  const showLoader = useMinLoader(isLoading);
   if (showLoader) return <PageLoader />;
-
-  if (!caseData) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 animate-in fade-in">
-        <AlertCircle className="w-12 h-12 text-muted-foreground opacity-50 mb-4" />
-        <h2 className="text-xl font-bold text-foreground">Case Not Found</h2>
-        <p className="text-muted-foreground mt-2 mb-6">The case you are looking for does not exist or was deleted.</p>
-        <button onClick={() => navigate("/cases")} className="text-primary hover:underline font-medium">Back to Cases</button>
-      </div>
-    );
-  }
+  if (!caseData) return <div className="flex flex-col items-center justify-center py-20"><AlertCircle className="w-12 h-12 text-muted-foreground opacity-50 mb-4" /><h2 className="text-xl font-bold">Case Not Found</h2><button onClick={() => navigate("/cases")} className="text-primary hover:underline mt-4">Back to Cases</button></div>;
 
   const sConf = CASE_STATUS_CONFIG[caseData.status as CaseStatus] ?? CASE_STATUS_CONFIG["open"];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header */}
+    <div className="space-y-5 animate-in fade-in duration-500">
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/cases")} className="p-2 rounded-md hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
+        <button onClick={() => navigate("/cases")} className="p-2 rounded-md hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"><ChevronLeft className="w-5 h-5" /></button>
         <PageHeader title={caseData.title} breadcrumbs={[{ label: "Cases", path: "/cases" }, { label: caseData.case_number }]} />
       </div>
 
-      {/* Case Info Card */}
+      {/* Case Info */}
       <div className="bg-card border border-border shadow-sm rounded-xl p-5">
-        <div className="flex flex-wrap items-center gap-4 mb-4">
-          <div className="font-mono font-medium text-foreground bg-muted/80 px-2.5 py-1 rounded-md text-xs border border-border">{caseData.case_number}</div>
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border ${sConf.bg} ${sConf.text} ${sConf.border}`}>
-            {caseData.status}
-          </span>
-          {caseData.court_type && <span className="text-xs bg-muted px-2 py-0.5 rounded border border-border text-muted-foreground">{caseData.court_type}</span>}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <span className="font-mono font-medium bg-muted/80 px-2.5 py-1 rounded-md text-xs border border-border">{caseData.case_number}</span>
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase border ${sConf.bg} ${sConf.text} ${sConf.border}`}>{caseData.status}</span>
+          {caseData.court_type && <span className="text-xs bg-muted px-2 py-0.5 rounded border border-border">{caseData.court_type}</span>}
           {caseData.case_side && <span className="text-xs bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300">{caseData.case_side}</span>}
         </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-sm">
-          <InfoField label="Court Name" value={caseData.court_name} />
-          <InfoField label="CNR Number" value={caseData.cnr_number} />
-          <InfoField label="File Number" value={caseData.file_number} />
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
+          <InfoField label="Court" value={caseData.court_name} />
+          <InfoField label="CNR" value={caseData.cnr_number} />
+          <InfoField label="File No." value={caseData.file_number} />
           <InfoField label="Filing Date" value={caseData.filing_date ? format(new Date(caseData.filing_date), "dd/MM/yyyy") : null} />
           <InfoField label="Next Hearing" value={caseData.next_hearing_date ? format(new Date(caseData.next_hearing_date), "dd/MM/yyyy") : null} />
           <InfoField label="Last Hearing" value={caseData.last_hearing_date ? format(new Date(caseData.last_hearing_date), "dd/MM/yyyy") : null} />
-          <InfoField label="Case Stage" value={caseData.case_stage} />
-          <InfoField label="Stage" value={caseData.stage} />
-          <InfoField label="FIR Number" value={caseData.fir_number} />
-          <InfoField label="Police Station" value={caseData.police_station} />
-          <InfoField label="Case Tags" value={caseData.case_tags} />
-          <InfoField label="Disposed Date" value={caseData.disposed_date ? format(new Date(caseData.disposed_date), "dd/MM/yyyy") : null} />
+          <InfoField label="Stage" value={caseData.case_stage || caseData.stage} />
+          <InfoField label="FIR No." value={caseData.fir_number} />
+          <InfoField label="Police Stn" value={caseData.police_station} />
+          <InfoField label="Tags" value={caseData.case_tags} />
+          <InfoField label="Disposed" value={caseData.disposed_date ? format(new Date(caseData.disposed_date), "dd/MM/yyyy") : null} />
+          <InfoField label="Doc Size" value={caseData.document_size} />
         </div>
-
-        {(caseData.case_notes_1 || caseData.case_notes_2) && (
-          <div className="mt-4 pt-4 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-3">
-            {caseData.case_notes_1 && <div className="text-xs bg-muted/30 p-2.5 rounded-lg border border-border/50"><span className="font-semibold text-muted-foreground">Note 1:</span> {caseData.case_notes_1}</div>}
-            {caseData.case_notes_2 && <div className="text-xs bg-muted/30 p-2.5 rounded-lg border border-border/50"><span className="font-semibold text-muted-foreground">Note 2:</span> {caseData.case_notes_2}</div>}
-          </div>
-        )}
       </div>
 
-      {/* Tabs Navigation */}
-      <div className="border-b border-border overflow-x-auto">
-        <nav className="flex gap-0 min-w-max">
-          {TABS.map(tab => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  isActive
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      {/* Tabs */}
+      <div className="border-b border-border overflow-x-auto"><nav className="flex gap-0 min-w-max">{TABS.map(tab => { const Icon = tab.icon; return (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"}`}><Icon className="w-4 h-4" />{tab.label}</button>); })}</nav></div>
 
       {/* Tab Content */}
       <div className="bg-card border border-border shadow-sm rounded-xl p-6 min-h-[400px]">
-        {activeTab === "history" && <TabCaseHistory hearings={hearings} tasks={tasks} invoices={invoices} expenses={expenses} documents={documents} />}
-        {activeTab === "documents" && <TabDocuments documents={documents} />}
-        {activeTab === "notes" && <TabNotes caseData={caseData} />}
+        {activeTab === "history" && <TabHistory hearings={hearings} tasks={tasks} invoices={invoices} expenses={expenses} documents={documents} />}
+        {activeTab === "documents" && <TabDocuments caseId={id!} userId={user?.id || ""} documents={documents} qc={queryClient} />}
+        {activeTab === "notes" && <TabNotes caseId={id!} userId={user?.id || ""} caseData={caseData} qc={queryClient} />}
         {activeTab === "notify" && <TabNotify />}
         {activeTab === "judgments" && <TabJudgments />}
-        {activeTab === "tasks" && <TabTasks tasks={tasks} />}
-        {activeTab === "appointments" && <TabAppointments hearings={hearings} />}
-        {activeTab === "invoices" && <TabInvoices invoices={invoices} />}
-        {activeTab === "expenses" && <TabExpenses expenses={expenses} />}
+        {activeTab === "tasks" && <TabTasks caseId={id!} userId={user?.id || ""} tasks={tasks} qc={queryClient} />}
+        {activeTab === "appointments" && <TabAppointments caseId={id!} userId={user?.id || ""} hearings={hearings} qc={queryClient} />}
+        {activeTab === "invoices" && <TabInvoices caseId={id!} userId={user?.id || ""} invoices={invoices} qc={queryClient} />}
+        {activeTab === "expenses" && <TabExpenses caseId={id!} userId={user?.id || ""} expenses={expenses} qc={queryClient} />}
         {activeTab === "time" && <TabTimeEntries />}
       </div>
     </div>
   );
 }
 
-// ── Info Field Component ──────────────────────────────────────────────
 function InfoField({ label, value }: { label: string; value: string | null | undefined }) {
+  return <div><p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</p><p className="text-sm font-medium text-foreground mt-0.5 truncate">{value || "—"}</p></div>;
+}
+function EmptyState({ icon: Icon, text }: { icon: any; text: string }) {
+  return <div className="flex flex-col items-center justify-center py-16"><Icon className="w-12 h-12 text-muted-foreground opacity-20 mb-3" /><p className="text-sm font-medium text-muted-foreground">{text}</p></div>;
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB: Case History (read-only timeline)
+// ══════════════════════════════════════════════════════════════
+function TabHistory({ hearings, tasks, invoices, expenses, documents }: any) {
+  const events: any[] = [];
+  (hearings || []).forEach((h: any) => events.push({ date: new Date(h.hearing_date), title: `Hearing: ${h.purpose || "Scheduled"}`, sub: h.court_name, type: "hearing", status: h.status }));
+  (tasks || []).forEach((t: any) => { if (t.due_date) events.push({ date: new Date(t.due_date), title: `Task: ${t.title}`, type: "task", status: t.status }); });
+  (invoices || []).forEach((inv: any) => { if (inv.issue_date) events.push({ date: new Date(inv.issue_date), title: `Invoice #${inv.invoice_number}`, sub: `${CURRENCY}${inv.total}`, type: "invoice", status: inv.status }); });
+  (expenses || []).forEach((e: any) => { if (e.expense_date) events.push({ date: new Date(e.expense_date), title: `Expense: ${e.title}`, sub: `${CURRENCY}${e.amount}`, type: "expense" }); });
+  (documents || []).forEach((d: any) => events.push({ date: new Date(d.created_at), title: `Doc: ${d.title}`, sub: d.document_type, type: "document" }));
+  events.sort((a, b) => b.date.getTime() - a.date.getTime());
+  if (!events.length) return <EmptyState icon={Clock} text="No case history yet" />;
+  return <div className="space-y-2">{events.map((ev, i) => (
+    <div key={i} className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/20 transition-colors">
+      <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${ev.type === "hearing" ? "bg-amber-500" : ev.type === "task" ? "bg-blue-500" : ev.type === "invoice" ? "bg-rose-500" : ev.type === "expense" ? "bg-orange-500" : "bg-emerald-500"}`} />
+      <div className="flex-1 min-w-0"><p className="text-sm font-medium">{ev.title}</p>{ev.sub && <p className="text-xs text-muted-foreground">{ev.sub}</p>}</div>
+      <div className="text-right shrink-0"><p className="text-xs text-muted-foreground">{format(ev.date, "dd MMM yyyy")}</p>{ev.status && <span className="text-[10px] uppercase font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{ev.status}</span>}</div>
+    </div>
+  ))}</div>;
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB: Appointments / Hearings — FULL CRUD
+// ══════════════════════════════════════════════════════════════
+function TabAppointments({ caseId, userId, hearings, qc }: { caseId: string; userId: string; hearings: any[]; qc: any }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ hearing_date: "", court_name: "", judge_name: "", purpose: "", status: "scheduled", notes: "" });
+  const [editId, setEditId] = useState<string | null>(null);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const payload = { ...form, case_id: caseId, user_id: userId, hearing_date: form.hearing_date || new Date().toISOString() };
+      if (editId) { await supabase.from("hearings").update(payload).eq("id", editId); }
+      else { await supabase.from("hearings").insert(payload); }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-hearings", caseId] }); qc.invalidateQueries({ queryKey: ["case-detail", caseId] }); setOpen(false); setEditId(null); setForm({ hearing_date: "", court_name: "", judge_name: "", purpose: "", status: "scheduled", notes: "" }); toast.success(editId ? "Updated" : "Hearing added"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const del = useMutation({ mutationFn: async (hid: string) => { await supabase.from("hearings").delete().eq("id", hid); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-hearings", caseId] }); toast.success("Deleted"); } });
+
+  const openEdit = (h: any) => { setEditId(h.id); setForm({ hearing_date: h.hearing_date?.slice(0, 16) || "", court_name: h.court_name || "", judge_name: h.judge_name || "", purpose: h.purpose || "", status: h.status || "scheduled", notes: h.notes || "" }); setOpen(true); };
+
   return (
     <div>
-      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
-      <p className="text-sm font-medium text-foreground mt-0.5">{value || "—"}</p>
-    </div>
-  );
-}
-
-// ── Tab: Case History (Timeline) ──────────────────────────────────────
-function TabCaseHistory({ hearings, tasks, invoices, expenses, documents }: any) {
-  const events: any[] = [];
-
-  (hearings || []).forEach((h: any) => {
-    events.push({ date: new Date(h.hearing_date), title: `Hearing: ${h.purpose || "Scheduled"}`, subtitle: `Court: ${h.court_name || "N/A"}`, type: "hearing", status: h.status });
-  });
-  (tasks || []).forEach((t: any) => {
-    if (t.due_date) events.push({ date: new Date(t.due_date), title: `Task: ${t.title}`, type: "task", status: t.status });
-  });
-  (invoices || []).forEach((inv: any) => {
-    if (inv.issue_date) events.push({ date: new Date(inv.issue_date), title: `Invoice #${inv.invoice_number}`, subtitle: `${CURRENCY}${inv.total}`, type: "invoice", status: inv.status });
-  });
-  (expenses || []).forEach((e: any) => {
-    if (e.expense_date) events.push({ date: new Date(e.expense_date), title: `Expense: ${e.category || "General"}`, subtitle: `${CURRENCY}${e.amount}`, type: "expense" });
-  });
-  (documents || []).forEach((d: any) => {
-    events.push({ date: new Date(d.created_at), title: `Document: ${d.title}`, subtitle: d.file_type, type: "document" });
-  });
-
-  events.sort((a, b) => b.date.getTime() - a.date.getTime());
-
-  if (events.length === 0) return <EmptyState icon={Clock} text="No case history yet" />;
-
-  return (
-    <div className="space-y-3">
-      {events.map((ev, i) => (
-        <div key={i} className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/20 transition-colors">
-          <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${ev.type === "hearing" ? "bg-amber-500" : ev.type === "task" ? "bg-blue-500" : ev.type === "invoice" ? "bg-rose-500" : ev.type === "expense" ? "bg-orange-500" : "bg-emerald-500"}`} />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">{ev.title}</p>
-            {ev.subtitle && <p className="text-xs text-muted-foreground">{ev.subtitle}</p>}
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-xs text-muted-foreground">{format(ev.date, "dd MMM yyyy")}</p>
-            {ev.status && <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded mt-1 inline-block">{ev.status}</span>}
-          </div>
+      <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-foreground">Hearings / Appointments</h3><Button size="sm" onClick={() => { setEditId(null); setForm({ hearing_date: "", court_name: "", judge_name: "", purpose: "", status: "scheduled", notes: "" }); setOpen(true); }}><Plus className="w-4 h-4 mr-1" />Add Hearing</Button></div>
+      {hearings.length === 0 ? <EmptyState icon={Gavel} text="No hearings scheduled" /> : <div className="space-y-2">{hearings.map((h: any) => (
+        <div key={h.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
+          <Gavel className="w-5 h-5 text-amber-500 shrink-0" />
+          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{h.purpose || "Hearing"}</p><p className="text-xs text-muted-foreground">{h.court_name || "—"} • Judge: {h.judge_name || "—"}</p></div>
+          <div className="text-right shrink-0"><p className="text-xs font-medium">{h.hearing_date ? format(new Date(h.hearing_date), "dd MMM yyyy") : "—"}</p><span className="text-[10px] uppercase font-bold bg-muted px-1.5 py-0.5 rounded">{h.status}</span></div>
+          <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(h)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(h.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
         </div>
-      ))}
+      ))}</div>}
+      <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>{editId ? "Edit Hearing" : "Add Hearing"}</DialogTitle></DialogHeader>
+        <div className="grid gap-3 py-3">
+          <div className="grid grid-cols-2 gap-3"><div><Label>Date & Time *</Label><Input type="datetime-local" value={form.hearing_date} onChange={e => setForm(p => ({ ...p, hearing_date: e.target.value }))} /></div><div><Label>Status</Label><Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="scheduled">Scheduled</SelectItem><SelectItem value="completed">Completed</SelectItem><SelectItem value="adjourned">Adjourned</SelectItem><SelectItem value="cancelled">Cancelled</SelectItem></SelectContent></Select></div></div>
+          <div className="grid grid-cols-2 gap-3"><div><Label>Court Name</Label><Input value={form.court_name} onChange={e => setForm(p => ({ ...p, court_name: e.target.value }))} /></div><div><Label>Judge Name</Label><Input value={form.judge_name} onChange={e => setForm(p => ({ ...p, judge_name: e.target.value }))} /></div></div>
+          <div><Label>Purpose</Label><Input value={form.purpose} onChange={e => setForm(p => ({ ...p, purpose: e.target.value }))} placeholder="e.g. Evidence, Arguments, Order" /></div>
+          <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
+          <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full">{save.isPending ? "Saving..." : editId ? "Update" : "Add Hearing"}</Button>
+        </div>
+      </DialogContent></Dialog>
     </div>
   );
 }
 
-// ── Tab: Documents ────────────────────────────────────────────────────
-function TabDocuments({ documents }: { documents: any[] }) {
-  if (documents.length === 0) return <EmptyState icon={FileText} text="No documents uploaded for this case" />;
+// ══════════════════════════════════════════════════════════════
+// TAB: Tasks — FULL CRUD
+// ══════════════════════════════════════════════════════════════
+function TabTasks({ caseId, userId, tasks, qc }: { caseId: string; userId: string; tasks: any[]; qc: any }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ title: "", description: "", status: "todo", priority: "medium", due_date: "" });
+  const [editId, setEditId] = useState<string | null>(null);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const payload = { ...form, case_id: caseId, user_id: userId, due_date: form.due_date || null };
+      if (editId) { await supabase.from("tasks").update(payload).eq("id", editId); }
+      else { await supabase.from("tasks").insert(payload); }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-tasks", caseId] }); setOpen(false); setEditId(null); setForm({ title: "", description: "", status: "todo", priority: "medium", due_date: "" }); toast.success(editId ? "Updated" : "Task added"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const del = useMutation({ mutationFn: async (tid: string) => { await supabase.from("tasks").delete().eq("id", tid); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-tasks", caseId] }); toast.success("Deleted"); } });
+
+  const openEdit = (t: any) => { setEditId(t.id); setForm({ title: t.title || "", description: t.description || "", status: t.status || "todo", priority: t.priority || "medium", due_date: t.due_date || "" }); setOpen(true); };
+
   return (
-    <div className="space-y-2">
-      {documents.map((d: any) => (
-        <div key={d.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20 transition-colors">
+    <div>
+      <div className="flex justify-between items-center mb-4"><h3 className="font-bold">Tasks</h3><Button size="sm" onClick={() => { setEditId(null); setForm({ title: "", description: "", status: "todo", priority: "medium", due_date: "" }); setOpen(true); }}><Plus className="w-4 h-4 mr-1" />Add Task</Button></div>
+      {tasks.length === 0 ? <EmptyState icon={ListTodo} text="No tasks" /> : <div className="space-y-2">{tasks.map((t: any) => (
+        <div key={t.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
+          <div className={`w-3 h-3 rounded-full shrink-0 ${t.status === "done" ? "bg-emerald-500" : t.status === "in_progress" ? "bg-blue-500" : "bg-amber-400"}`} />
+          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{t.title}</p>{t.description && <p className="text-xs text-muted-foreground truncate">{t.description}</p>}</div>
+          <div className="text-right shrink-0">{t.due_date && <p className="text-xs text-muted-foreground">{format(new Date(t.due_date), "dd MMM yyyy")}</p>}<span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${t.priority === "high" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" : "bg-muted text-muted-foreground"}`}>{t.priority}</span></div>
+          <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(t.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
+        </div>
+      ))}</div>}
+      <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>{editId ? "Edit Task" : "Add Task"}</DialogTitle></DialogHeader>
+        <div className="grid gap-3 py-3">
+          <div><Label>Title *</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} /></div>
+          <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
+          <div className="grid grid-cols-3 gap-3">
+            <div><Label>Status</Label><Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todo">To Do</SelectItem><SelectItem value="in_progress">In Progress</SelectItem><SelectItem value="done">Done</SelectItem></SelectContent></Select></div>
+            <div><Label>Priority</Label><Select value={form.priority} onValueChange={v => setForm(p => ({ ...p, priority: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="high">High</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="low">Low</SelectItem></SelectContent></Select></div>
+            <div><Label>Due Date</Label><Input type="date" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))} /></div>
+          </div>
+          <Button onClick={() => save.mutate()} disabled={!form.title || save.isPending} className="w-full">{save.isPending ? "Saving..." : editId ? "Update" : "Add Task"}</Button>
+        </div>
+      </DialogContent></Dialog>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB: Documents — FULL CRUD
+// ══════════════════════════════════════════════════════════════
+function TabDocuments({ caseId, userId, documents, qc }: { caseId: string; userId: string; documents: any[]; qc: any }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ title: "", description: "", document_type: "", file_url: "" });
+  const [editId, setEditId] = useState<string | null>(null);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const payload = { ...form, case_id: caseId, user_id: userId };
+      if (editId) { await supabase.from("documents").update(payload).eq("id", editId); }
+      else { await supabase.from("documents").insert(payload); }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-documents", caseId] }); setOpen(false); setEditId(null); setForm({ title: "", description: "", document_type: "", file_url: "" }); toast.success(editId ? "Updated" : "Document added"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const del = useMutation({ mutationFn: async (did: string) => { await supabase.from("documents").delete().eq("id", did); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-documents", caseId] }); toast.success("Deleted"); } });
+
+  const openEdit = (d: any) => { setEditId(d.id); setForm({ title: d.title || "", description: d.description || "", document_type: d.document_type || "", file_url: d.file_url || "" }); setOpen(true); };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-4"><h3 className="font-bold">Case Documents</h3><Button size="sm" onClick={() => { setEditId(null); setForm({ title: "", description: "", document_type: "", file_url: "" }); setOpen(true); }}><Plus className="w-4 h-4 mr-1" />Add Document</Button></div>
+      {documents.length === 0 ? <EmptyState icon={FileText} text="No documents" /> : <div className="space-y-2">{documents.map((d: any) => (
+        <div key={d.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
           <FileText className="w-5 h-5 text-primary shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">{d.title}</p>
-            <p className="text-xs text-muted-foreground">{d.file_type} • {format(new Date(d.created_at), "dd MMM yyyy")}</p>
-          </div>
+          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{d.title}</p><p className="text-xs text-muted-foreground">{d.document_type || "General"} • {format(new Date(d.created_at), "dd MMM yyyy")}</p></div>
+          {d.file_url && <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View</a>}
+          <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(d)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
         </div>
-      ))}
+      ))}</div>}
+      <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>{editId ? "Edit Document" : "Add Document"}</DialogTitle></DialogHeader>
+        <div className="grid gap-3 py-3">
+          <div><Label>Title *</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} /></div>
+          <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
+          <div className="grid grid-cols-2 gap-3"><div><Label>Document Type</Label><Input value={form.document_type} onChange={e => setForm(p => ({ ...p, document_type: e.target.value }))} placeholder="e.g. Affidavit, Petition" /></div><div><Label>File URL</Label><Input value={form.file_url} onChange={e => setForm(p => ({ ...p, file_url: e.target.value }))} placeholder="https://..." /></div></div>
+          <Button onClick={() => save.mutate()} disabled={!form.title || save.isPending} className="w-full">{save.isPending ? "Saving..." : editId ? "Update" : "Add Document"}</Button>
+        </div>
+      </DialogContent></Dialog>
     </div>
   );
 }
 
-// ── Tab: Notes ────────────────────────────────────────────────────────
-function TabNotes({ caseData }: { caseData: any }) {
-  const notes = [caseData.case_notes_1, caseData.case_notes_2, caseData.description].filter(Boolean);
-  if (notes.length === 0) return <EmptyState icon={StickyNote} text="No notes added for this case" />;
+// ══════════════════════════════════════════════════════════════
+// TAB: Invoices — FULL CRUD
+// ══════════════════════════════════════════════════════════════
+function TabInvoices({ caseId, userId, invoices, qc }: { caseId: string; userId: string; invoices: any[]; qc: any }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ invoice_number: "", amount: "", tax: "0", total: "", status: "draft", due_date: "", notes: "" });
+  const [editId, setEditId] = useState<string | null>(null);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const payload = { invoice_number: form.invoice_number, amount: Number(form.amount) || 0, tax: Number(form.tax) || 0, total: Number(form.total) || Number(form.amount) || 0, status: form.status, due_date: form.due_date || null, notes: form.notes || null, case_id: caseId, user_id: userId };
+      if (editId) { await supabase.from("invoices").update(payload).eq("id", editId); }
+      else { await supabase.from("invoices").insert(payload); }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-invoices", caseId] }); setOpen(false); setEditId(null); setForm({ invoice_number: "", amount: "", tax: "0", total: "", status: "draft", due_date: "", notes: "" }); toast.success(editId ? "Updated" : "Invoice added"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const del = useMutation({ mutationFn: async (iid: string) => { await supabase.from("invoices").delete().eq("id", iid); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-invoices", caseId] }); toast.success("Deleted"); } });
+
+  const openEdit = (inv: any) => { setEditId(inv.id); setForm({ invoice_number: inv.invoice_number || "", amount: String(inv.amount || ""), tax: String(inv.tax || "0"), total: String(inv.total || ""), status: inv.status || "draft", due_date: inv.due_date || "", notes: inv.notes || "" }); setOpen(true); };
+
   return (
-    <div className="space-y-3">
-      {notes.map((note, i) => (
-        <div key={i} className="p-4 bg-muted/20 border border-border rounded-lg">
-          <p className="text-sm text-foreground whitespace-pre-wrap">{note}</p>
+    <div>
+      <div className="flex justify-between items-center mb-4"><h3 className="font-bold">Invoices</h3><Button size="sm" onClick={() => { setEditId(null); setForm({ invoice_number: "", amount: "", tax: "0", total: "", status: "draft", due_date: "", notes: "" }); setOpen(true); }}><Plus className="w-4 h-4 mr-1" />Add Invoice</Button></div>
+      {invoices.length === 0 ? <EmptyState icon={Receipt} text="No invoices" /> : <div className="space-y-2">{invoices.map((inv: any) => (
+        <div key={inv.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
+          <Receipt className="w-5 h-5 text-rose-500 shrink-0" />
+          <div className="flex-1 min-w-0"><p className="text-sm font-medium">#{inv.invoice_number}</p><p className="text-xs text-muted-foreground">{inv.due_date ? format(new Date(inv.due_date), "dd MMM yyyy") : "No due date"}</p></div>
+          <div className="text-right shrink-0"><p className="text-sm font-bold">{CURRENCY}{inv.total}</p><span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${inv.status === "paid" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"}`}>{inv.status}</span></div>
+          <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(inv.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
         </div>
-      ))}
+      ))}</div>}
+      <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>{editId ? "Edit Invoice" : "Add Invoice"}</DialogTitle></DialogHeader>
+        <div className="grid gap-3 py-3">
+          <div className="grid grid-cols-2 gap-3"><div><Label>Invoice Number *</Label><Input value={form.invoice_number} onChange={e => setForm(p => ({ ...p, invoice_number: e.target.value }))} /></div><div><Label>Status</Label><Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="draft">Draft</SelectItem><SelectItem value="sent">Sent</SelectItem><SelectItem value="paid">Paid</SelectItem><SelectItem value="overdue">Overdue</SelectItem></SelectContent></Select></div></div>
+          <div className="grid grid-cols-3 gap-3"><div><Label>Amount</Label><Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value, total: String(Number(e.target.value) + Number(p.tax)) }))} /></div><div><Label>Tax</Label><Input type="number" value={form.tax} onChange={e => setForm(p => ({ ...p, tax: e.target.value, total: String(Number(p.amount) + Number(e.target.value)) }))} /></div><div><Label>Total</Label><Input type="number" value={form.total} onChange={e => setForm(p => ({ ...p, total: e.target.value }))} /></div></div>
+          <div className="grid grid-cols-2 gap-3"><div><Label>Due Date</Label><Input type="date" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))} /></div></div>
+          <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
+          <Button onClick={() => save.mutate()} disabled={!form.invoice_number || save.isPending} className="w-full">{save.isPending ? "Saving..." : editId ? "Update" : "Add Invoice"}</Button>
+        </div>
+      </DialogContent></Dialog>
     </div>
   );
 }
 
-// ── Tab: Notify to Clients ────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// TAB: Expenses — FULL CRUD
+// ══════════════════════════════════════════════════════════════
+function TabExpenses({ caseId, userId, expenses, qc }: { caseId: string; userId: string; expenses: any[]; qc: any }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ title: "", description: "", amount: "", category: "", expense_date: new Date().toISOString().slice(0, 10) });
+  const [editId, setEditId] = useState<string | null>(null);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const payload = { title: form.title, description: form.description || null, amount: Number(form.amount) || 0, category: form.category || null, expense_date: form.expense_date, case_id: caseId, user_id: userId };
+      if (editId) { await supabase.from("expenses").update(payload).eq("id", editId); }
+      else { await supabase.from("expenses").insert(payload); }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-expenses", caseId] }); setOpen(false); setEditId(null); setForm({ title: "", description: "", amount: "", category: "", expense_date: new Date().toISOString().slice(0, 10) }); toast.success(editId ? "Updated" : "Expense added"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const del = useMutation({ mutationFn: async (eid: string) => { await supabase.from("expenses").delete().eq("id", eid); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-expenses", caseId] }); toast.success("Deleted"); } });
+
+  const openEdit = (e: any) => { setEditId(e.id); setForm({ title: e.title || "", description: e.description || "", amount: String(e.amount || ""), category: e.category || "", expense_date: e.expense_date || "" }); setOpen(true); };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-4"><h3 className="font-bold">Expenses</h3><Button size="sm" onClick={() => { setEditId(null); setForm({ title: "", description: "", amount: "", category: "", expense_date: new Date().toISOString().slice(0, 10) }); setOpen(true); }}><Plus className="w-4 h-4 mr-1" />Add Expense</Button></div>
+      {expenses.length === 0 ? <EmptyState icon={DollarSign} text="No expenses" /> : <div className="space-y-2">{expenses.map((e: any) => (
+        <div key={e.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
+          <DollarSign className="w-5 h-5 text-orange-500 shrink-0" />
+          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{e.title}</p><p className="text-xs text-muted-foreground">{e.category || "General"} • {e.expense_date ? format(new Date(e.expense_date), "dd MMM yyyy") : "—"}</p></div>
+          <p className="text-sm font-bold shrink-0">{CURRENCY}{e.amount}</p>
+          <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(e)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(e.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
+        </div>
+      ))}</div>}
+      <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>{editId ? "Edit Expense" : "Add Expense"}</DialogTitle></DialogHeader>
+        <div className="grid gap-3 py-3">
+          <div><Label>Title *</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Court Filing Fee" /></div>
+          <div className="grid grid-cols-3 gap-3"><div><Label>Amount *</Label><Input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} /></div><div><Label>Category</Label><Input value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Filing, Travel" /></div><div><Label>Date</Label><Input type="date" value={form.expense_date} onChange={e => setForm(p => ({ ...p, expense_date: e.target.value }))} /></div></div>
+          <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
+          <Button onClick={() => save.mutate()} disabled={!form.title || save.isPending} className="w-full">{save.isPending ? "Saving..." : editId ? "Update" : "Add Expense"}</Button>
+        </div>
+      </DialogContent></Dialog>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB: Notes — CRUD via communication_logs
+// ══════════════════════════════════════════════════════════════
+function TabNotes({ caseId, userId, caseData, qc }: { caseId: string; userId: string; caseData: any; qc: any }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ summary: "", notes: "", type: "other" as string });
+
+  const { data: logs = [] } = useQuery({
+    queryKey: ["case-comms", caseId],
+    queryFn: async () => { const { data } = await supabase.from("communication_logs").select("*").eq("case_id", caseId).order("date", { ascending: false }); return data || []; },
+  });
+
+  const save = useMutation({
+    mutationFn: async () => { await supabase.from("communication_logs").insert({ summary: form.summary, notes: form.notes || null, type: form.type, case_id: caseId, user_id: userId }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-comms", caseId] }); setOpen(false); setForm({ summary: "", notes: "", type: "other" }); toast.success("Note added"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const del = useMutation({ mutationFn: async (lid: string) => { await supabase.from("communication_logs").delete().eq("id", lid); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-comms", caseId] }); toast.success("Deleted"); } });
+
+  const allNotes = [...(caseData.case_notes_1 ? [{ id: "n1", summary: caseData.case_notes_1, type: "note", date: caseData.created_at, fixed: true }] : []), ...(caseData.case_notes_2 ? [{ id: "n2", summary: caseData.case_notes_2, type: "note", date: caseData.created_at, fixed: true }] : []), ...logs];
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-4"><h3 className="font-bold">Notes & Communications</h3><Button size="sm" onClick={() => { setForm({ summary: "", notes: "", type: "other" }); setOpen(true); }}><Plus className="w-4 h-4 mr-1" />Add Note</Button></div>
+      {allNotes.length === 0 ? <EmptyState icon={StickyNote} text="No notes" /> : <div className="space-y-2">{allNotes.map((n: any) => (
+        <div key={n.id} className="flex items-start gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
+          <StickyNote className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0"><p className="text-sm">{n.summary}</p>{n.notes && <p className="text-xs text-muted-foreground mt-1">{n.notes}</p>}</div>
+          <div className="text-right shrink-0"><span className="text-[10px] uppercase font-bold bg-muted px-1.5 py-0.5 rounded">{n.type}</span>{n.date && <p className="text-xs text-muted-foreground mt-1">{format(new Date(n.date), "dd MMM yyyy")}</p>}</div>
+          {!n.fixed && <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => del.mutate(n.id)}><Trash2 className="w-3.5 h-3.5" /></Button>}
+        </div>
+      ))}</div>}
+      <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>Add Note</DialogTitle></DialogHeader>
+        <div className="grid gap-3 py-3">
+          <div><Label>Summary *</Label><Input value={form.summary} onChange={e => setForm(p => ({ ...p, summary: e.target.value }))} placeholder="Brief note..." /></div>
+          <div><Label>Details</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
+          <div><Label>Type</Label><Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="call">Call</SelectItem><SelectItem value="email">Email</SelectItem><SelectItem value="meeting">Meeting</SelectItem><SelectItem value="message">Message</SelectItem><SelectItem value="letter">Letter</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div>
+          <Button onClick={() => save.mutate()} disabled={!form.summary || save.isPending} className="w-full">{save.isPending ? "Saving..." : "Add Note"}</Button>
+        </div>
+      </DialogContent></Dialog>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// TAB: Notify to Clients (placeholder with action button)
+// ══════════════════════════════════════════════════════════════
 function TabNotify() {
   return (
     <div className="text-center py-12">
       <Bell className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-3" />
-      <p className="text-sm font-medium text-muted-foreground">Client notification feature</p>
-      <p className="text-xs text-muted-foreground mt-1">Send hearing reminders, case updates, and notices to clients via SMS/Email</p>
+      <p className="text-sm font-medium text-muted-foreground">Client Notification</p>
+      <p className="text-xs text-muted-foreground mt-1 mb-4">Send hearing reminders, updates, and notices to clients via SMS/Email</p>
+      <Button variant="outline" disabled><Bell className="w-4 h-4 mr-2" />Send Notification (Coming Soon)</Button>
     </div>
   );
 }
 
-// ── Tab: Related Judgments ─────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// TAB: Related Judgments (placeholder)
+// ══════════════════════════════════════════════════════════════
 function TabJudgments() {
   return (
     <div className="text-center py-12">
       <Scale className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-3" />
       <p className="text-sm font-medium text-muted-foreground">Related Judgments</p>
-      <p className="text-xs text-muted-foreground mt-1">Link relevant court judgments and precedents to this case</p>
+      <p className="text-xs text-muted-foreground mt-1 mb-4">Link court judgments and precedents to this case</p>
+      <Button variant="outline" disabled><Plus className="w-4 h-4 mr-2" />Add Judgment (Coming Soon)</Button>
     </div>
   );
 }
 
-// ── Tab: Tasks ────────────────────────────────────────────────────────
-function TabTasks({ tasks }: { tasks: any[] }) {
-  if (tasks.length === 0) return <EmptyState icon={ListTodo} text="No tasks assigned to this case" />;
-  return (
-    <div className="space-y-2">
-      {tasks.map((t: any) => (
-        <div key={t.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20 transition-colors">
-          <div className={`w-3 h-3 rounded-full shrink-0 ${t.status === "completed" ? "bg-emerald-500" : t.status === "in_progress" ? "bg-blue-500" : "bg-amber-400"}`} />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">{t.title}</p>
-            {t.description && <p className="text-xs text-muted-foreground truncate">{t.description}</p>}
-          </div>
-          <div className="text-right shrink-0">
-            {t.due_date && <p className="text-xs text-muted-foreground">{format(new Date(t.due_date), "dd MMM yyyy")}</p>}
-            <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${t.status === "completed" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}>
-              {t.status}
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Tab: Appointments / Hearings ──────────────────────────────────────
-function TabAppointments({ hearings }: { hearings: any[] }) {
-  if (hearings.length === 0) return <EmptyState icon={CalendarDays} text="No appointments or hearings scheduled" />;
-  return (
-    <div className="space-y-2">
-      {hearings.map((h: any) => (
-        <div key={h.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20 transition-colors">
-          <Gavel className="w-5 h-5 text-amber-500 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">{h.purpose || "Hearing"}</p>
-            <p className="text-xs text-muted-foreground">{h.court_name || "Court N/A"} • Judge: {h.judge_name || "N/A"}</p>
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-xs font-medium text-foreground">{format(new Date(h.hearing_date), "dd MMM yyyy")}</p>
-            <span className="text-[10px] uppercase font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{h.status}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Tab: Invoices ─────────────────────────────────────────────────────
-function TabInvoices({ invoices }: { invoices: any[] }) {
-  if (invoices.length === 0) return <EmptyState icon={Receipt} text="No invoices for this case" />;
-  return (
-    <div className="space-y-2">
-      {invoices.map((inv: any) => (
-        <div key={inv.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20 transition-colors">
-          <Receipt className="w-5 h-5 text-rose-500 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">Invoice #{inv.invoice_number}</p>
-            <p className="text-xs text-muted-foreground">{inv.issue_date ? format(new Date(inv.issue_date), "dd MMM yyyy") : "—"}</p>
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-sm font-bold text-foreground">{CURRENCY}{inv.total}</p>
-            <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${inv.status === "paid" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"}`}>
-              {inv.status}
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Tab: Expenses ─────────────────────────────────────────────────────
-function TabExpenses({ expenses }: { expenses: any[] }) {
-  if (expenses.length === 0) return <EmptyState icon={DollarSign} text="No expenses recorded for this case" />;
-  return (
-    <div className="space-y-2">
-      {expenses.map((e: any) => (
-        <div key={e.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20 transition-colors">
-          <DollarSign className="w-5 h-5 text-orange-500 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">{e.category || "Expense"}</p>
-            <p className="text-xs text-muted-foreground">{e.description || "—"}</p>
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-sm font-bold text-foreground">{CURRENCY}{e.amount}</p>
-            {e.expense_date && <p className="text-xs text-muted-foreground">{format(new Date(e.expense_date), "dd MMM yyyy")}</p>}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Tab: Time Entries ─────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// TAB: Time Entries (placeholder)
+// ══════════════════════════════════════════════════════════════
 function TabTimeEntries() {
   return (
     <div className="text-center py-12">
       <Clock className="w-12 h-12 text-muted-foreground opacity-30 mx-auto mb-3" />
       <p className="text-sm font-medium text-muted-foreground">Time Entries</p>
-      <p className="text-xs text-muted-foreground mt-1">Track billable hours and time spent on this case</p>
-    </div>
-  );
-}
-
-// ── Empty State Helper ────────────────────────────────────────────────
-function EmptyState({ icon: Icon, text }: { icon: any; text: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <Icon className="w-12 h-12 text-muted-foreground opacity-20 mb-3" />
-      <p className="text-sm font-medium text-muted-foreground">{text}</p>
+      <p className="text-xs text-muted-foreground mt-1 mb-4">Track billable hours and time spent on this case</p>
+      <Button variant="outline" disabled><Plus className="w-4 h-4 mr-2" />Log Time (Coming Soon)</Button>
     </div>
   );
 }
