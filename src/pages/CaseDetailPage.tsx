@@ -33,7 +33,7 @@ export default function CaseDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cases")
-        .select("*, clients(name), advocates(name)")
+        .select("*")
         .eq("id", id)
         .single();
       if (error) throw error;
@@ -192,14 +192,14 @@ export default function CaseDetailPage() {
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider pt-0.5">Client</span>
                 <span className="text-sm font-medium text-foreground flex items-center gap-2">
                   <User className="w-4 h-4 text-blue-500" />
-                  {(caseData.clients as any)?.name || "—"}
+                  {caseData.description || "—"}
                 </span>
               </div>
               <div className="grid grid-cols-[100px_1fr] gap-2 items-start">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider pt-0.5">Advocate</span>
                 <span className="text-sm font-medium text-foreground flex items-center gap-2">
                   <BriefcaseBusiness className="w-4 h-4 text-purple-500" />
-                  {(caseData.advocates as any)?.name || "—"}
+                  {caseData.case_notes_1 || "—"}
                 </span>
               </div>
             </div>

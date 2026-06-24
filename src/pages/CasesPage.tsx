@@ -28,18 +28,29 @@ type CaseRow = {
   title: string;
   description: string | null;
   status: string;
-  case_type: string | null;
   court_name: string | null;
+  court_type: string | null;
   client_id: string | null;
   advocate_id: string | null;
+  cnr_number: string | null;
+  file_number: string | null;
+  case_stage: string | null;
+  stage: string | null;
+  next_hearing_date: string | null;
+  last_hearing_date: string | null;
+  case_tags: string | null;
+  case_side: string | null;
+  fir_number: string | null;
+  police_station: string | null;
+  case_notes_1: string | null;
+  case_notes_2: string | null;
+  filing_date: string | null;
   created_at: string;
-  clients?: { name: string } | null;
-  advocates?: { name: string } | null;
 };
 
 const emptyForm = {
   case_number: "", title: "", description: "", status: "open",
-  case_type: "", court_name: "", court_type: "", client_id: "", advocate_id: "",
+  court_name: "", court_type: "", client_id: "", advocate_id: "",
   filing_date: "", template_id: "", matter_id: "",
   cnr_number: "", file_number: "", case_stage: "", stage: "",
   last_hearing_date: "", next_hearing_date: "", case_imported_date: "",
@@ -62,7 +73,7 @@ export default function CasesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cases")
-        .select("*, clients(name), advocates(name)")
+        .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as CaseRow[];
@@ -115,21 +126,21 @@ export default function CasesPage() {
         next_hearing_date: next_hearing_date || null,
         case_imported_date: case_imported_date || null,
         disposed_date: disposed_date || null,
-        matter_id: matter_id === "none" ? null : (matter_id || null),
       };
       // Remove empty string fields to avoid DB issues
       Object.keys(payload).forEach(k => {
         if (payload[k] === "") payload[k] = null;
       });
-      // Remove template_id from payload (it's only used for task generation)
+      // Remove template_id and matter_id from payload (not in DB)
       delete payload.template_id;
+      delete payload.matter_id;
       
       if (editId) {
         const { error } = await supabase.from("cases").update(payload).eq("id", editId);
         if (error) throw error;
         await writeAuditLog({ user_id: user!.id, action: "update", table_name: "cases", record_id: editId, new_data: payload });
       } else {
-        const { data, error } = await supabase.from("cases").insert({ ...payload, user_id: user!.id }).select().single();
+        const { data, error } = await supabase.from("cases").insert({ ...payload, created_by: user!.id }).select().single();
         if (error) throw error;
         await writeAuditLog({ user_id: user!.id, action: "insert", table_name: "cases", record_id: data?.id, new_data: payload });
         
@@ -229,7 +240,6 @@ export default function CasesPage() {
       title: c.title,
       description: c.description || "",
       status: c.status,
-      case_type: c.case_type || "",
       court_name: c.court_name || "",
       court_type: (c as any).court_type || "",
       client_id: c.client_id || "",
@@ -298,10 +308,11 @@ export default function CasesPage() {
       selected.map(c => ({
         case_number: c.case_number,
         title: c.title,
-        client: c.clients?.name || "",
-        advocate: c.advocates?.name || "",
         court: c.court_name || "",
+        court_type: c.court_type || "",
         status: c.status,
+        case_stage: c.case_stage || "",
+        next_hearing_date: c.next_hearing_date || "",
       })),
       "cases-export",
     );
@@ -323,10 +334,11 @@ export default function CasesPage() {
                 filtered.map(c => ({
                   case_number: c.case_number,
                   title: c.title,
-                  client: c.clients?.name || "",
-                  advocate: c.advocates?.name || "",
                   court: c.court_name || "",
+                  court_type: c.court_type || "",
                   status: c.status,
+                  case_stage: c.case_stage || "",
+                  next_hearing_date: c.next_hearing_date || "",
                 })),
                 "cases",
               )
@@ -349,8 +361,8 @@ export default function CasesPage() {
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Title *</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="bg-muted/50" /></div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Description</Label><Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="bg-muted/50" /></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Type</Label><Input value={form.case_type} onChange={e => setForm(p => ({ ...p, case_type: e.target.value }))} className="bg-muted/50" /></div>
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Court Name</Label><Input value={form.court_name} onChange={e => setForm(p => ({ ...p, court_name: e.target.value }))} className="bg-muted/50" /></div>
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Court Type</Label><Input value={form.court_type} onChange={e => setForm(p => ({ ...p, court_type: e.target.value }))} placeholder="e.g. JMFC / ACJM / Civil" className="bg-muted/50" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Filing Date</Label><Input type="date" value={form.filing_date} onChange={e => setForm(p => ({ ...p, filing_date: e.target.value }))} className="bg-muted/50" /></div>
@@ -371,12 +383,8 @@ export default function CasesPage() {
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">File Number</Label><Input value={form.file_number} onChange={e => setForm(p => ({ ...p, file_number: e.target.value }))} placeholder="e.g. 123/2024" className="bg-muted/50" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Court Type</Label><Input value={form.court_type} onChange={e => setForm(p => ({ ...p, court_type: e.target.value }))} placeholder="e.g. JMFC / ACJM / Civil" className="bg-muted/50" /></div>
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Side</Label><Input value={form.case_side} onChange={e => setForm(p => ({ ...p, case_side: e.target.value }))} placeholder="e.g. Complainant / Respondent" className="bg-muted/50" /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Stage</Label><Input value={form.case_stage} onChange={e => setForm(p => ({ ...p, case_stage: e.target.value }))} placeholder="e.g. Evidence / Arguments" className="bg-muted/50" /></div>
-                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Stage</Label><Input value={form.stage} onChange={e => setForm(p => ({ ...p, stage: e.target.value }))} placeholder="e.g. Pending / Final" className="bg-muted/50" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Next Hearing Date</Label><Input type="date" value={form.next_hearing_date} onChange={e => setForm(p => ({ ...p, next_hearing_date: e.target.value }))} className="bg-muted/50" /></div>
@@ -503,7 +511,7 @@ export default function CasesPage() {
                 </th>
                 <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Case ID</th>
                 <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Details</th>
-                <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Client / Advocate</th>
+                <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Stage / Side</th>
                 <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Court</th>
                 <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Status</th>
                 <th className="text-right py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Actions</th>
@@ -547,17 +555,17 @@ export default function CasesPage() {
                       <Link to={`/cases/${c.id}`} className="font-semibold text-foreground hover:text-primary transition-colors hover:underline">
                         {c.title}
                       </Link>
-                      {c.case_type && <p className="text-xs text-muted-foreground mt-0.5">{c.case_type}</p>}
+                      {c.court_type && <p className="text-xs text-muted-foreground mt-0.5">{c.court_type}</p>}
                     </td>
                     <td className="py-4 px-5">
                       <div className="flex flex-col gap-1">
                         <span className="text-sm font-medium text-foreground flex items-center gap-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
-                          {c.clients?.name || <span className="text-muted-foreground italic text-xs">Unassigned</span>}
+                          {c.case_stage || <span className="text-muted-foreground italic text-xs">—</span>}
                         </span>
                         <span className="text-xs text-muted-foreground flex items-center gap-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-purple-500/50" />
-                          {c.advocates?.name || <span className="italic">Unassigned</span>}
+                          {c.case_side || <span className="italic">—</span>}
                         </span>
                       </div>
                     </td>
