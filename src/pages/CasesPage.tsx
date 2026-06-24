@@ -78,7 +78,7 @@ export default function CasesPage() {
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
       const session = (await supabase.auth.getSession()).data.session;
       const authToken = session?.access_token || supabaseKey;
-      const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=*&order=created_at.desc`, {
+      const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=id,case_number,title,status,court_name,court_type,case_stage,stage,case_side,cnr_number,file_number,filing_date,next_hearing_date,last_hearing_date,case_imported_date,case_tags,disposed_date,document_size,fir_number,police_station,case_notes_1,case_notes_2,description,client_id,advocate_id,created_at&order=created_at.desc&limit=5000`, {
         headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
       });
       if (!res.ok) throw new Error("Failed to fetch cases");
@@ -478,9 +478,10 @@ export default function CasesPage() {
                   />
                 </th>
                 <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Case ID</th>
-                <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Details</th>
+                <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Title</th>
                 <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Stage / Side</th>
                 <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Court</th>
+                <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Next Hearing</th>
                 <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Status</th>
                 <th className="text-right py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Actions</th>
               </tr>
@@ -488,7 +489,7 @@ export default function CasesPage() {
             <tbody>
               {paginatedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center">
+                  <td colSpan={8} className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                         <BriefcaseBusiness className="w-8 h-8 text-muted-foreground opacity-50" />
@@ -538,6 +539,7 @@ export default function CasesPage() {
                       </div>
                     </td>
                     <td className="py-4 px-5 text-muted-foreground font-medium">{c.court_name || "—"}</td>
+                    <td className="py-4 px-5 text-muted-foreground text-xs font-medium">{c.next_hearing_date || "—"}</td>
                     <td className="py-4 px-5">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border ${sConf.bg} ${sConf.text} ${sConf.border}`}>
                         {c.status}
