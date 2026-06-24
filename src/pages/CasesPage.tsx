@@ -39,7 +39,12 @@ type CaseRow = {
 
 const emptyForm = {
   case_number: "", title: "", description: "", status: "open",
-  case_type: "", court_name: "", client_id: "", advocate_id: "", filing_date: "", template_id: "", matter_id: "",
+  case_type: "", court_name: "", court_type: "", client_id: "", advocate_id: "",
+  filing_date: "", template_id: "", matter_id: "",
+  cnr_number: "", file_number: "", case_stage: "", stage: "",
+  last_hearing_date: "", next_hearing_date: "", case_imported_date: "",
+  case_tags: "", case_side: "", disposed_date: "", document_size: "",
+  fir_number: "", police_station: "", case_notes_1: "", case_notes_2: "",
 };
 
 export default function CasesPage() {
@@ -98,14 +103,26 @@ export default function CasesPage() {
   // ── Save (create / update) ──────────────────────────────────────────────
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const { client_id, advocate_id, filing_date, template_id, matter_id, ...rest } = form;
-      const payload = { 
+      const { client_id, advocate_id, filing_date, template_id, matter_id,
+        last_hearing_date, next_hearing_date, case_imported_date, disposed_date,
+        ...rest } = form;
+      const payload: Record<string, any> = { 
         ...rest, 
         client_id: client_id || null, 
         advocate_id: advocate_id || null, 
-        filing_date: filing_date || null, 
-        matter_id: matter_id === "none" ? null : (matter_id || null) 
+        filing_date: filing_date || null,
+        last_hearing_date: last_hearing_date || null,
+        next_hearing_date: next_hearing_date || null,
+        case_imported_date: case_imported_date || null,
+        disposed_date: disposed_date || null,
+        matter_id: matter_id === "none" ? null : (matter_id || null),
       };
+      // Remove empty string fields to avoid DB issues
+      Object.keys(payload).forEach(k => {
+        if (payload[k] === "") payload[k] = null;
+      });
+      // Remove template_id from payload (it's only used for task generation)
+      delete payload.template_id;
       
       if (editId) {
         const { error } = await supabase.from("cases").update(payload).eq("id", editId);
@@ -214,11 +231,27 @@ export default function CasesPage() {
       status: c.status,
       case_type: c.case_type || "",
       court_name: c.court_name || "",
+      court_type: (c as any).court_type || "",
       client_id: c.client_id || "",
       advocate_id: c.advocate_id || "",
-      filing_date: c.filing_date || "",
+      filing_date: (c as any).filing_date || "",
       matter_id: (c as any).matter_id || "",
-      template_id: "", // Don't show template on edit
+      template_id: "",
+      cnr_number: (c as any).cnr_number || "",
+      file_number: (c as any).file_number || "",
+      case_stage: (c as any).case_stage || "",
+      stage: (c as any).stage || "",
+      last_hearing_date: (c as any).last_hearing_date || "",
+      next_hearing_date: (c as any).next_hearing_date || "",
+      case_imported_date: (c as any).case_imported_date || "",
+      case_tags: (c as any).case_tags || "",
+      case_side: (c as any).case_side || "",
+      disposed_date: (c as any).disposed_date || "",
+      document_size: (c as any).document_size || "",
+      fir_number: (c as any).fir_number || "",
+      police_station: (c as any).police_station || "",
+      case_notes_1: (c as any).case_notes_1 || "",
+      case_notes_2: (c as any).case_notes_2 || "",
     });
     setOpen(true);
   };
@@ -309,9 +342,9 @@ export default function CasesPage() {
                 <Plus className="w-4 h-4 mr-2" /> New Case
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-2xl">
               <DialogHeader><DialogTitle className="text-xl font-bold">{editId ? "Edit Case Detail" : "Create New Case"}</DialogTitle></DialogHeader>
-              <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-1 custom-scrollbar">
+              <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-1 custom-scrollbar">
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Number *</Label><Input value={form.case_number} onChange={e => setForm(p => ({ ...p, case_number: e.target.value }))} className="bg-muted/50" /></div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Title *</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="bg-muted/50" /></div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Description</Label><Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="bg-muted/50" /></div>
@@ -332,6 +365,37 @@ export default function CasesPage() {
                     </Select>
                   </div>
                 </div>
+                {/* ── Additional Case Fields (from import sheet) ── */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">CNR Number</Label><Input value={form.cnr_number} onChange={e => setForm(p => ({ ...p, cnr_number: e.target.value }))} placeholder="e.g. MHAK010012345" className="bg-muted/50" /></div>
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">File Number</Label><Input value={form.file_number} onChange={e => setForm(p => ({ ...p, file_number: e.target.value }))} placeholder="e.g. 123/2024" className="bg-muted/50" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Court Type</Label><Input value={form.court_type} onChange={e => setForm(p => ({ ...p, court_type: e.target.value }))} placeholder="e.g. JMFC / ACJM / Civil" className="bg-muted/50" /></div>
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Side</Label><Input value={form.case_side} onChange={e => setForm(p => ({ ...p, case_side: e.target.value }))} placeholder="e.g. Complainant / Respondent" className="bg-muted/50" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Stage</Label><Input value={form.case_stage} onChange={e => setForm(p => ({ ...p, case_stage: e.target.value }))} placeholder="e.g. Evidence / Arguments" className="bg-muted/50" /></div>
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Stage</Label><Input value={form.stage} onChange={e => setForm(p => ({ ...p, stage: e.target.value }))} placeholder="e.g. Pending / Final" className="bg-muted/50" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Next Hearing Date</Label><Input type="date" value={form.next_hearing_date} onChange={e => setForm(p => ({ ...p, next_hearing_date: e.target.value }))} className="bg-muted/50" /></div>
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Last Hearing Date</Label><Input type="date" value={form.last_hearing_date} onChange={e => setForm(p => ({ ...p, last_hearing_date: e.target.value }))} className="bg-muted/50" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">FIR Number</Label><Input value={form.fir_number} onChange={e => setForm(p => ({ ...p, fir_number: e.target.value }))} placeholder="e.g. FIR 456/2024" className="bg-muted/50" /></div>
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Police Station</Label><Input value={form.police_station} onChange={e => setForm(p => ({ ...p, police_station: e.target.value }))} placeholder="e.g. Ramdaspeth, Akola" className="bg-muted/50" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Disposed Date</Label><Input type="date" value={form.disposed_date} onChange={e => setForm(p => ({ ...p, disposed_date: e.target.value }))} className="bg-muted/50" /></div>
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Imported Date</Label><Input type="date" value={form.case_imported_date} onChange={e => setForm(p => ({ ...p, case_imported_date: e.target.value }))} className="bg-muted/50" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Tags</Label><Input value={form.case_tags} onChange={e => setForm(p => ({ ...p, case_tags: e.target.value }))} placeholder="e.g. NI Act, 138, Cheque" className="bg-muted/50" /></div>
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Document Size</Label><Input value={form.document_size} onChange={e => setForm(p => ({ ...p, document_size: e.target.value }))} placeholder="e.g. 25 pages" className="bg-muted/50" /></div>
+                </div>
+                <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Notes 1</Label><Input value={form.case_notes_1} onChange={e => setForm(p => ({ ...p, case_notes_1: e.target.value }))} placeholder="Additional notes..." className="bg-muted/50" /></div>
+                <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Notes 2</Label><Input value={form.case_notes_2} onChange={e => setForm(p => ({ ...p, case_notes_2: e.target.value }))} placeholder="Additional notes..." className="bg-muted/50" /></div>
                 <div className="grid gap-2">
                   <Label className="font-semibold text-muted-foreground">Client</Label>
                   <Select value={form.client_id} onValueChange={v => setForm(p => ({ ...p, client_id: v }))}>
