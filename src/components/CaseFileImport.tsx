@@ -261,15 +261,36 @@ export function CaseFileImport() {
     }
 
     // Batch insert (Supabase supports up to 1000 rows per insert)
+    // Use raw fetch to bypass PostgREST schema cache issues after ALTER TABLE
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    const session = (await supabase.auth.getSession()).data.session;
+    const authToken = session?.access_token || supabaseKey;
+
     const batchSize = 500;
     for (let i = 0; i < dbRows.length; i += batchSize) {
       const batch = dbRows.slice(i, i + batchSize);
-      const { error } = await (supabase.from("cases") as any).insert(batch);
-      if (error) {
+      try {
+        const res = await fetch(`${supabaseUrl}/rest/v1/cases`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": supabaseKey,
+            "Authorization": `Bearer ${authToken}`,
+            "Prefer": "return=minimal",
+          },
+          body: JSON.stringify(batch),
+        });
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({ message: res.statusText }));
+          failed += batch.length;
+          errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${errBody.message || res.statusText}`);
+        } else {
+          success += batch.length;
+        }
+      } catch (e: any) {
         failed += batch.length;
-        errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
-      } else {
-        success += batch.length;
+        errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${e.message || "Network error"}`);
       }
     }
 
