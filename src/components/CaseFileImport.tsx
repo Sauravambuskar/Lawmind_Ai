@@ -260,6 +260,17 @@ export function CaseFileImport() {
       dbRows.push(dbRow);
     }
 
+    // ── Normalize all rows to have the same keys (PostgREST requirement) ──
+    const allKeys = new Set<string>();
+    dbRows.forEach(row => Object.keys(row).forEach(k => allKeys.add(k)));
+    const normalizedRows = dbRows.map(row => {
+      const normalized: Record<string, any> = {};
+      allKeys.forEach(k => {
+        normalized[k] = row[k] !== undefined ? row[k] : null;
+      });
+      return normalized;
+    });
+
     // Batch insert (Supabase supports up to 1000 rows per insert)
     // Use raw fetch to bypass PostgREST schema cache issues after ALTER TABLE
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
@@ -268,8 +279,8 @@ export function CaseFileImport() {
     const authToken = session?.access_token || supabaseKey;
 
     const batchSize = 500;
-    for (let i = 0; i < dbRows.length; i += batchSize) {
-      const batch = dbRows.slice(i, i + batchSize);
+    for (let i = 0; i < normalizedRows.length; i += batchSize) {
+      const batch = normalizedRows.slice(i, i + batchSize);
       try {
         const res = await fetch(`${supabaseUrl}/rest/v1/cases`, {
           method: "POST",
