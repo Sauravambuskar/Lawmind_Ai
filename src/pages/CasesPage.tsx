@@ -38,8 +38,11 @@ type CaseRow = {
   stage: string | null;
   next_hearing_date: string | null;
   last_hearing_date: string | null;
+  case_imported_date: string | null;
   case_tags: string | null;
   case_side: string | null;
+  disposed_date: string | null;
+  document_size: string | null;
   fir_number: string | null;
   police_station: string | null;
   case_notes_1: string | null;
@@ -241,27 +244,27 @@ export default function CasesPage() {
       description: c.description || "",
       status: c.status,
       court_name: c.court_name || "",
-      court_type: (c as any).court_type || "",
+      court_type: c.court_type || "",
       client_id: c.client_id || "",
       advocate_id: c.advocate_id || "",
-      filing_date: (c as any).filing_date || "",
-      matter_id: (c as any).matter_id || "",
+      filing_date: c.filing_date || "",
+      matter_id: "",
       template_id: "",
-      cnr_number: (c as any).cnr_number || "",
-      file_number: (c as any).file_number || "",
-      case_stage: (c as any).case_stage || "",
-      stage: (c as any).stage || "",
-      last_hearing_date: (c as any).last_hearing_date || "",
-      next_hearing_date: (c as any).next_hearing_date || "",
-      case_imported_date: (c as any).case_imported_date || "",
-      case_tags: (c as any).case_tags || "",
-      case_side: (c as any).case_side || "",
-      disposed_date: (c as any).disposed_date || "",
-      document_size: (c as any).document_size || "",
-      fir_number: (c as any).fir_number || "",
-      police_station: (c as any).police_station || "",
-      case_notes_1: (c as any).case_notes_1 || "",
-      case_notes_2: (c as any).case_notes_2 || "",
+      cnr_number: c.cnr_number || "",
+      file_number: c.file_number || "",
+      case_stage: c.case_stage || "",
+      stage: c.stage || "",
+      last_hearing_date: c.last_hearing_date || "",
+      next_hearing_date: c.next_hearing_date || "",
+      case_imported_date: c.case_imported_date || "",
+      case_tags: c.case_tags || "",
+      case_side: c.case_side || "",
+      disposed_date: c.disposed_date || "",
+      document_size: c.document_size || "",
+      fir_number: c.fir_number || "",
+      police_station: c.police_station || "",
+      case_notes_1: c.case_notes_1 || "",
+      case_notes_2: c.case_notes_2 || "",
     });
     setOpen(true);
   };
@@ -366,25 +369,15 @@ export default function CasesPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Filing Date</Label><Input type="date" value={form.filing_date} onChange={e => setForm(p => ({ ...p, filing_date: e.target.value }))} className="bg-muted/50" /></div>
-                  <div className="grid gap-2">
-                    <Label className="font-semibold text-muted-foreground">Matter Classification</Label>
-                    <Select value={form.matter_id} onValueChange={v => setForm(p => ({ ...p, matter_id: v }))}>
-                      <SelectTrigger className="bg-muted/50"><SelectValue placeholder="Select matter" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {matters.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                {/* ── Additional Case Fields (from import sheet) ── */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">CNR Number</Label><Input value={form.cnr_number} onChange={e => setForm(p => ({ ...p, cnr_number: e.target.value }))} placeholder="e.g. MHAK010012345" className="bg-muted/50" /></div>
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">File Number</Label><Input value={form.file_number} onChange={e => setForm(p => ({ ...p, file_number: e.target.value }))} placeholder="e.g. 123/2024" className="bg-muted/50" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">CNR Number</Label><Input value={form.cnr_number} onChange={e => setForm(p => ({ ...p, cnr_number: e.target.value }))} placeholder="e.g. MHAK010012345" className="bg-muted/50" /></div>
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Side</Label><Input value={form.case_side} onChange={e => setForm(p => ({ ...p, case_side: e.target.value }))} placeholder="e.g. Complainant / Respondent" className="bg-muted/50" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Stage</Label><Input value={form.case_stage} onChange={e => setForm(p => ({ ...p, case_stage: e.target.value }))} placeholder="e.g. Evidence / Arguments" className="bg-muted/50" /></div>
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Stage</Label><Input value={form.stage} onChange={e => setForm(p => ({ ...p, stage: e.target.value }))} placeholder="e.g. Pending / Final" className="bg-muted/50" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Next Hearing Date</Label><Input type="date" value={form.next_hearing_date} onChange={e => setForm(p => ({ ...p, next_hearing_date: e.target.value }))} className="bg-muted/50" /></div>
@@ -396,11 +389,20 @@ export default function CasesPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Disposed Date</Label><Input type="date" value={form.disposed_date} onChange={e => setForm(p => ({ ...p, disposed_date: e.target.value }))} className="bg-muted/50" /></div>
-                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Imported Date</Label><Input type="date" value={form.case_imported_date} onChange={e => setForm(p => ({ ...p, case_imported_date: e.target.value }))} className="bg-muted/50" /></div>
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Tags</Label><Input value={form.case_tags} onChange={e => setForm(p => ({ ...p, case_tags: e.target.value }))} placeholder="e.g. NI Act, 138, Cheque" className="bg-muted/50" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Tags</Label><Input value={form.case_tags} onChange={e => setForm(p => ({ ...p, case_tags: e.target.value }))} placeholder="e.g. NI Act, 138, Cheque" className="bg-muted/50" /></div>
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Document Size</Label><Input value={form.document_size} onChange={e => setForm(p => ({ ...p, document_size: e.target.value }))} placeholder="e.g. 25 pages" className="bg-muted/50" /></div>
+                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Imported Date</Label><Input type="date" value={form.case_imported_date} onChange={e => setForm(p => ({ ...p, case_imported_date: e.target.value }))} className="bg-muted/50" /></div>
+                </div>
+                <div className="grid gap-2">
+                  <Label className="font-semibold text-muted-foreground">Status</Label>
+                  <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
+                    <SelectTrigger className="bg-muted/50"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CASE_STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Notes 1</Label><Input value={form.case_notes_1} onChange={e => setForm(p => ({ ...p, case_notes_1: e.target.value }))} placeholder="Additional notes..." className="bg-muted/50" /></div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Notes 2</Label><Input value={form.case_notes_2} onChange={e => setForm(p => ({ ...p, case_notes_2: e.target.value }))} placeholder="Additional notes..." className="bg-muted/50" /></div>
@@ -416,28 +418,6 @@ export default function CasesPage() {
                   <Select value={form.advocate_id} onValueChange={v => setForm(p => ({ ...p, advocate_id: v }))}>
                     <SelectTrigger className="bg-muted/50"><SelectValue placeholder="Select advocate" /></SelectTrigger>
                     <SelectContent>{advocates.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                {!editId && templates.length > 0 && (
-                  <div className="grid gap-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                    <Label className="font-semibold text-primary">Apply Workflow Template</Label>
-                    <Select value={form.template_id} onValueChange={v => setForm(p => ({ ...p, template_id: v }))}>
-                      <SelectTrigger className="bg-background"><SelectValue placeholder="Select template (Optional)" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-[10px] text-muted-foreground">Automatically generates workflow tasks.</p>
-                  </div>
-                )}
-                <div className="grid gap-2">
-                  <Label className="font-semibold text-muted-foreground">Status</Label>
-                  <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
-                    <SelectTrigger className="bg-muted/50"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {CASE_STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
-                    </SelectContent>
                   </Select>
                 </div>
               </div>
