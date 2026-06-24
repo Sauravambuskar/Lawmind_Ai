@@ -3,6 +3,7 @@ import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Plus, Search, Pencil, Download, BriefcaseBusiness, Filter, Trash2, CheckSquare, Eye } from "lucide-react";
+import { CaseFileImport } from "@/components/CaseFileImport";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -281,6 +282,7 @@ export default function CasesPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <PageHeader title="Case Management" breadcrumbs={[{ label: "Dashboard", path: "/" }, { label: "Cases" }]} />
         <div className="flex gap-2 w-full sm:w-auto">
+          <CaseFileImport />
           <Button
             variant="outline"
             onClick={() =>

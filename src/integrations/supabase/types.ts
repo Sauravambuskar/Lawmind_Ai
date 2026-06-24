@@ -114,6 +114,22 @@ export type Database = {
           case_type: string | null
           client_id: string | null
           court_name: string | null
+          court_type: string | null
+          cnr_number: string | null
+          file_number: string | null
+          case_stage: string | null
+          stage: string | null
+          last_hearing_date: string | null
+          next_hearing_date: string | null
+          case_imported_date: string | null
+          case_tags: string | null
+          case_side: string | null
+          disposed_date: string | null
+          document_size: string | null
+          fir_number: string | null
+          police_station: string | null
+          case_notes_1: string | null
+          case_notes_2: string | null
           created_at: string
           description: string | null
           filing_date: string | null
@@ -129,6 +145,22 @@ export type Database = {
           case_type?: string | null
           client_id?: string | null
           court_name?: string | null
+          court_type?: string | null
+          cnr_number?: string | null
+          file_number?: string | null
+          case_stage?: string | null
+          stage?: string | null
+          last_hearing_date?: string | null
+          next_hearing_date?: string | null
+          case_imported_date?: string | null
+          case_tags?: string | null
+          case_side?: string | null
+          disposed_date?: string | null
+          document_size?: string | null
+          fir_number?: string | null
+          police_station?: string | null
+          case_notes_1?: string | null
+          case_notes_2?: string | null
           created_at?: string
           description?: string | null
           filing_date?: string | null
@@ -144,6 +176,22 @@ export type Database = {
           case_type?: string | null
           client_id?: string | null
           court_name?: string | null
+          court_type?: string | null
+          cnr_number?: string | null
+          file_number?: string | null
+          case_stage?: string | null
+          stage?: string | null
+          last_hearing_date?: string | null
+          next_hearing_date?: string | null
+          case_imported_date?: string | null
+          case_tags?: string | null
+          case_side?: string | null
+          disposed_date?: string | null
+          document_size?: string | null
+          fir_number?: string | null
+          police_station?: string | null
+          case_notes_1?: string | null
+          case_notes_2?: string | null
           created_at?: string
           description?: string | null
           filing_date?: string | null
