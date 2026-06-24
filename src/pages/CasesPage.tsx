@@ -274,7 +274,12 @@ export default function CasesPage() {
       (c.title || "").toLowerCase().includes(search.toLowerCase()) ||
       (c.case_number || "").toLowerCase().includes(search.toLowerCase()),
     )
-    .filter(c => statusFilter === "all" || c.status === statusFilter);
+    .filter(c => {
+      if (statusFilter === "all") return true;
+      if (statusFilter === "court") return (c.court_type || "").toLowerCase().includes("court") || (c.court_name || "").length > 0;
+      if (statusFilter === "affidavit") return (c.case_stage || "").toLowerCase().includes("affidavit") || (c.title || "").toLowerCase().includes("affidavit");
+      return c.status === statusFilter;
+    });
 
   const { paginatedItems, currentPage, totalPages, totalItems, startIndex, nextPage, prevPage, goToPage } = usePagination(filtered);
 
@@ -446,7 +451,7 @@ export default function CasesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {CASE_STATUS_FILTER.map(s => (
-                    <SelectItem key={s} value={s} className="capitalize">{s === "all" ? "All" : s}</SelectItem>
+                    <SelectItem key={s} value={s} className="capitalize">{s === "all" ? "All" : s === "not applicable" ? "Not Applicable" : s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
