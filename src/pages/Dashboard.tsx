@@ -188,68 +188,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Alerts Row */}
-      {(upcomingHearings.length > 0 || overdueInvoices.length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {upcomingHearings.length > 0 && (
-            <div className="bg-card border border-amber-500/20 shadow-sm rounded-xl p-5 overflow-hidden relative">
-              <div className="absolute left-0 top-0 w-1 h-full bg-amber-500" />
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <div className="p-1.5 bg-amber-500/10 rounded-md"><CalendarClock className="w-4 h-4 text-amber-600" /></div>
-                  Upcoming Hearings
-                </h3>
-                <button onClick={() => navigate("/hearings")} className="text-xs font-medium text-muted-foreground hover:text-foreground flex items-center">
-                  View all <ChevronRight className="w-3 h-3 ml-0.5" />
-                </button>
-              </div>
-              <div className="space-y-3">
-                {upcomingHearings.map((h: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors border border-border/50">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground line-clamp-1">{h.purpose || h.cases?.[0]?.title || "Hearing"}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{h.court_name || "Court TBD"}</p>
-                    </div>
-                    <span className="text-xs font-semibold text-amber-600 bg-amber-500/10 px-2.5 py-1 rounded-md whitespace-nowrap">
-                      {format(new Date(h.hearing_date), "MMM d, h:mm a")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {overdueInvoices.length > 0 && (
-            <div className="bg-card border border-rose-500/20 shadow-sm rounded-xl p-5 overflow-hidden relative">
-              <div className="absolute left-0 top-0 w-1 h-full bg-rose-500" />
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <div className="p-1.5 bg-rose-500/10 rounded-md"><AlertTriangle className="w-4 h-4 text-rose-600" /></div>
-                  Overdue Invoices
-                </h3>
-                <button onClick={() => navigate("/invoices")} className="text-xs font-medium text-muted-foreground hover:text-foreground flex items-center">
-                  View all <ChevronRight className="w-3 h-3 ml-0.5" />
-                </button>
-              </div>
-              <div className="space-y-3">
-                {overdueInvoices.map((inv: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors border border-border/50">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">#{inv.invoice_number}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{inv.clients?.name || "No client"}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-rose-600">
-                        {CURRENCY}{Number(inv.total).toLocaleString(LOCALE, { minimumFractionDigits: 0 })}
-                      </p>
-                      <p className="text-[10px] uppercase font-semibold text-rose-500/70 mt-0.5">Due {inv.due_date}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -324,6 +262,35 @@ export default function Dashboard() {
           </table>
         </div>
       </div>
+
+      {/* Upcoming Hearings */}
+      {upcomingHearings.length > 0 && (
+        <div className="bg-card border border-amber-500/20 shadow-sm rounded-xl p-5 overflow-hidden relative">
+          <div className="absolute left-0 top-0 w-1 h-full bg-amber-500" />
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <div className="p-1.5 bg-amber-500/10 rounded-md"><CalendarClock className="w-4 h-4 text-amber-600" /></div>
+              Upcoming Hearings ({upcomingHearings.length})
+            </h3>
+            <button onClick={() => navigate("/cases")} className="text-xs font-medium text-muted-foreground hover:text-foreground flex items-center">
+              View all <ChevronRight className="w-3 h-3 ml-0.5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {upcomingHearings.map((h: any, i: number) => (
+              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors border border-border/50">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground line-clamp-1">{h.purpose || "Hearing"}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{h.court_name || "Court"}</p>
+                </div>
+                <span className="text-xs font-semibold text-amber-600 bg-amber-500/10 px-2.5 py-1 rounded-md whitespace-nowrap ml-2">
+                  {format(new Date(h.hearing_date), "dd MMM yyyy")}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Main Charts & Quick Actions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
