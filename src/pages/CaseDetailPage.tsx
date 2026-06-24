@@ -43,7 +43,17 @@ export default function CaseDetailPage() {
 
   const { data: caseData, isLoading } = useQuery({
     queryKey: ["case-detail", id],
-    queryFn: async () => { const { data, error } = await supabase.from("cases").select("*").eq("id", id).single(); if (error) throw error; return data; },
+    queryFn: async () => {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const session = (await supabase.auth.getSession()).data.session;
+      const authToken = session?.access_token || supabaseKey;
+      const res = await fetch(`${supabaseUrl}/rest/v1/cases?id=eq.${id}&select=*`, {
+        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Accept": "application/vnd.pgrst.object+json" },
+      });
+      if (!res.ok) throw new Error("Failed to fetch case");
+      return await res.json();
+    },
     enabled: !!id,
   });
   const { data: hearings = [] } = useQuery({ queryKey: ["case-hearings", id], queryFn: async () => { const { data } = await supabase.from("hearings").select("*").eq("case_id", id).order("hearing_date", { ascending: false }); return data || []; }, enabled: !!id });

@@ -74,12 +74,15 @@ export default function CasesPage() {
   const { data: cases = [], isLoading } = useQuery({
     queryKey: ["cases"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("cases")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as CaseRow[];
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const session = (await supabase.auth.getSession()).data.session;
+      const authToken = session?.access_token || supabaseKey;
+      const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=*&order=created_at.desc`, {
+        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch cases");
+      return (await res.json()) as CaseRow[];
     },
   });
 
@@ -94,22 +97,6 @@ export default function CasesPage() {
     queryKey: ["advocates"],
     queryFn: async () => {
       const { data } = await supabase.from("advocates").select("id, name");
-      return data || [];
-    },
-  });
-
-  const { data: templates = [] } = useQuery({
-    queryKey: ["case_templates"],
-    queryFn: async () => {
-      const { data } = await supabase.from("case_templates").select("id, name");
-      return data || [];
-    },
-  });
-
-  const { data: matters = [] } = useQuery({
-    queryKey: ["matters"],
-    queryFn: async () => {
-      const { data } = await supabase.from("matters").select("id, name");
       return data || [];
     },
   });
@@ -137,36 +124,25 @@ export default function CasesPage() {
       // Remove template_id and matter_id from payload (not in DB)
       delete payload.template_id;
       delete payload.matter_id;
-      
+
+      // Use raw fetch to bypass PostgREST schema cache issues
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const session = (await supabase.auth.getSession()).data.session;
+      const authToken = session?.access_token || supabaseKey;
+      const headers = { "Content-Type": "application/json", "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Prefer": "return=representation" };
+
       if (editId) {
-        const { error } = await supabase.from("cases").update(payload).eq("id", editId);
-        if (error) throw error;
+        const res = await fetch(`${supabaseUrl}/rest/v1/cases?id=eq.${editId}`, { method: "PATCH", headers, body: JSON.stringify(payload) });
+        if (!res.ok) { const err = await res.json().catch(() => ({ message: res.statusText })); throw new Error(err.message || "Update failed"); }
         await writeAuditLog({ user_id: user!.id, action: "update", table_name: "cases", record_id: editId, new_data: payload });
       } else {
-        const { data, error } = await supabase.from("cases").insert({ ...payload, created_by: user!.id }).select().single();
-        if (error) throw error;
-        await writeAuditLog({ user_id: user!.id, action: "insert", table_name: "cases", record_id: data?.id, new_data: payload });
-        
-        // Auto-generate tasks from template
-        if (template_id && template_id !== "none" && data?.id) {
-          const { data: templateTasks } = await supabase.from("case_template_tasks").select("*").eq("template_id", template_id);
-          if (templateTasks && templateTasks.length > 0) {
-            const newTasks = templateTasks.map(t => {
-              const due = new Date();
-              due.setDate(due.getDate() + (t.days_offset || 0));
-              return {
-                case_id: data.id,
-                title: t.title,
-                description: t.description,
-                priority: t.priority,
-                due_date: due.toISOString().slice(0, 10),
-                status: "pending",
-                user_id: user!.id,
-              };
-            });
-            await supabase.from("tasks").insert(newTasks);
-          }
-        }
+        const insertPayload = { ...payload, created_by: user!.id };
+        const res = await fetch(`${supabaseUrl}/rest/v1/cases`, { method: "POST", headers, body: JSON.stringify(insertPayload) });
+        if (!res.ok) { const err = await res.json().catch(() => ({ message: res.statusText })); throw new Error(err.message || "Insert failed"); }
+        const data = await res.json();
+        const newId = Array.isArray(data) ? data[0]?.id : data?.id;
+        await writeAuditLog({ user_id: user!.id, action: "insert", table_name: "cases", record_id: newId, new_data: payload });
       }
     },
     onSuccess: () => {
@@ -184,8 +160,12 @@ export default function CasesPage() {
   // ── Delete single (optimistic) ──────────────────────────────────────────
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("cases").delete().eq("id", id);
-      if (error) throw error;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const session = (await supabase.auth.getSession()).data.session;
+      const authToken = session?.access_token || supabaseKey;
+      const res = await fetch(`${supabaseUrl}/rest/v1/cases?id=eq.${id}`, { method: "DELETE", headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` } });
+      if (!res.ok) { const err = await res.json().catch(() => ({ message: "Delete failed" })); throw new Error(err.message); }
       await writeAuditLog({ user_id: user!.id, action: "delete", table_name: "cases", record_id: id });
     },
     onMutate: async (id) => {
@@ -209,11 +189,14 @@ export default function CasesPage() {
   // ── Bulk delete (optimistic) ────────────────────────────────────────────
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      const { error } = await supabase.from("cases").delete().in("id", ids);
-      if (error) throw error;
-      await Promise.all(ids.map(id =>
-        writeAuditLog({ user_id: user!.id, action: "delete", table_name: "cases", record_id: id }),
-      ));
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const session = (await supabase.auth.getSession()).data.session;
+      const authToken = session?.access_token || supabaseKey;
+      const idsParam = ids.map(i => `"${i}"`).join(",");
+      const res = await fetch(`${supabaseUrl}/rest/v1/cases?id=in.(${idsParam})`, { method: "DELETE", headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` } });
+      if (!res.ok) { const err = await res.json().catch(() => ({ message: "Bulk delete failed" })); throw new Error(err.message); }
+      await Promise.all(ids.map(id => writeAuditLog({ user_id: user!.id, action: "delete", table_name: "cases", record_id: id })));
     },
     onMutate: async (ids) => {
       await queryClient.cancelQueries({ queryKey: ["cases"] });
