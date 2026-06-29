@@ -276,6 +276,38 @@ npm run preview      # Preview production build locally
 
 ---
 
+## File Storage (Cloudinary)
+
+Instead of using Supabase Storage (1 GB free limit), we use **Cloudinary** for file/document uploads:
+
+| Feature | Free Limit |
+|---------|-----------|
+| Storage | 25 GB |
+| Bandwidth | 25 GB/month |
+| Max file size | 10 MB (raw files) |
+| Supported | PDF, DOCX, JPG, PNG, any file |
+
+### Setup Steps:
+1. Go to https://cloudinary.com and create a free account
+2. Go to **Settings → Upload → Upload Presets**
+3. Click **Add Upload Preset**
+4. Set "Signing Mode" to **Unsigned**
+5. Name it `lawmind_docs` (or anything)
+6. Copy your **Cloud Name** from dashboard
+7. Add to `.env` and Vercel environment variables:
+   ```
+   VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
+   VITE_CLOUDINARY_UPLOAD_PRESET=lawmind_docs
+   ```
+
+### How It Works:
+- Files upload directly from browser → Cloudinary (no server needed)
+- Cloudinary returns a permanent URL
+- URL is stored in Supabase `documents.file_url` column
+- Zero Supabase storage used for files
+
+---
+
 ## How to Add a New Feature
 
 1. **New page:** Create in `src/pages/NewPage.tsx`, add route in `src/App.tsx`, add sidebar link in `src/components/AppSidebar.tsx`
