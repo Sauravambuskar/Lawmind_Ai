@@ -19,15 +19,18 @@ function useNotifications() {
       const now = new Date();
       const soon = addDays(now, 3);
       const todayStr = now.toISOString().split("T")[0];
+      const soonStr = soon.toISOString().split("T")[0];
 
-      const [hearingsRes, invoicesRes] = await Promise.all([
-        supabase
-          .from("hearings")
-          .select("id, purpose, hearing_date, court_name, cases(title)")
-          .gte("hearing_date", now.toISOString())
-          .lte("hearing_date", soon.toISOString())
-          .order("hearing_date", { ascending: true })
-          .limit(10),
+      // Check cases with next_hearing_date in next 3 days (real imported data)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const session = (await supabase.auth.getSession()).data.session;
+      const authToken = session?.access_token || supabaseKey;
+
+      const [casesRes, invoicesRes] = await Promise.all([
+        fetch(`${supabaseUrl}/rest/v1/cases?select=id,case_number,title,court_name,next_hearing_date&next_hearing_date=gte.${todayStr}&next_hearing_date=lte.${soonStr}&order=next_hearing_date.asc&limit=10`, {
+          headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
+        }),
         supabase
           .from("invoices")
           .select("id, invoice_number, total, due_date, clients(name)")
@@ -38,15 +41,16 @@ function useNotifications() {
           .limit(10),
       ]);
 
-      const hearings: Notification[] = (hearingsRes.data || []).map(h => ({
+      const casesData = casesRes.ok ? await casesRes.json() : [];
+      const hearings: Notification[] = (casesData || []).map((c: any) => ({
         kind: "hearing",
-        id: h.id,
-        label: h.purpose || (h.cases as any)?.title || "Hearing",
-        sub: h.court_name || "Court TBD",
-        date: h.hearing_date,
+        id: c.id,
+        label: c.title || c.case_number,
+        sub: c.court_name || "Court TBD",
+        date: c.next_hearing_date + "T00:00:00",
       }));
 
-      const invoices: Notification[] = (invoicesRes.data || []).map(inv => ({
+      const invoices: Notification[] = ((invoicesRes.data || []) as any[]).map(inv => ({
         kind: "invoice",
         id: inv.id,
         label: `Invoice #${inv.invoice_number}`,
@@ -57,7 +61,7 @@ function useNotifications() {
 
       return [...hearings, ...invoices];
     },
-    refetchInterval: 5 * 60 * 1000, // refresh every 5 min
+    refetchInterval: 5 * 60 * 1000,
   });
 }
 
@@ -70,7 +74,8 @@ export function NotificationBell() {
 
   const handleClick = (n: Notification) => {
     setOpen(false);
-    navigate(n.kind === "hearing" ? "/hearings" : "/invoices");
+    if (n.kind === "hearing") navigate(`/cases/${n.id}`);
+    else navigate("/invoices");
   };
 
   return (
