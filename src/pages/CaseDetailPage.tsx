@@ -846,20 +846,98 @@ Notes: ${caseData.case_notes_1 || ""} ${caseData.case_notes_2 || ""}
 
       {/* Generated document */}
       {generatedDoc && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <p className="text-sm font-semibold text-foreground">Generated Document</p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={handleCopy}>
                 {copied ? <><Check className="w-3.5 h-3.5 mr-1 text-emerald-500" />Copied</> : "Copy"}
               </Button>
+              <Button variant="outline" size="sm" onClick={() => handlePrintDoc(generatedDoc, caseData)}>
+                🖨️ Print
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleDownloadPDF(generatedDoc, caseData)}>
+                📄 PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleDownloadWord(generatedDoc, caseData)}>
+                📝 Word
+              </Button>
             </div>
           </div>
-          <div className="bg-white dark:bg-muted/20 border border-border rounded-xl p-4 max-h-[500px] overflow-y-auto custom-scrollbar">
+          <div className="bg-white dark:bg-muted/20 border border-border rounded-xl p-5 max-h-[500px] overflow-y-auto custom-scrollbar" id="ai-doc-preview">
             <pre className="whitespace-pre-wrap text-xs font-mono text-foreground leading-relaxed">{generatedDoc}</pre>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+// ── Print Document ────────────────────────────────────────────────────
+function handlePrintDoc(content: string, caseData: any) {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) { toast.error("Popup blocked. Allow popups to print."); return; }
+  printWindow.document.write(`<!DOCTYPE html><html><head><title>${caseData.case_number} - Document</title>
+<style>
+  body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.8; margin: 40px 60px; color: #000; }
+  pre { white-space: pre-wrap; word-wrap: break-word; font-family: 'Times New Roman', serif; font-size: 13pt; margin: 0; }
+  @media print { body { margin: 20mm 25mm; } }
+</style></head><body><pre>${content}</pre>
+<script>window.onload = function() { window.print(); }</script></body></html>`);
+  printWindow.document.close();
+}
+
+// ── Download as PDF ───────────────────────────────────────────────────
+async function handleDownloadPDF(content: string, caseData: any) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 25;
+  const usableWidth = pageWidth - margin * 2;
+  const lineHeight = 6;
+  let y = margin;
+
+  doc.setFont("times", "normal");
+  doc.setFontSize(12);
+
+  const lines = content.split("\n");
+  for (const line of lines) {
+    if (y + lineHeight > pageHeight - margin) { doc.addPage(); y = margin; }
+    if (line.trim() === "") { y += lineHeight * 0.4; continue; }
+    const wrapped = doc.splitTextToSize(line, usableWidth);
+    for (const wLine of wrapped) {
+      if (y + lineHeight > pageHeight - margin) { doc.addPage(); y = margin; }
+      doc.text(wLine, margin, y);
+      y += lineHeight;
+    }
+  }
+
+  // Page numbers
+  const total = doc.getNumberOfPages();
+  for (let i = 1; i <= total; i++) { doc.setPage(i); doc.setFontSize(9); doc.setTextColor(120); doc.text(`Page ${i} of ${total}`, pageWidth / 2, pageHeight - 10, { align: "center" }); doc.setTextColor(0); }
+
+  doc.save(`${caseData.case_number}_document.pdf`);
+  toast.success("PDF downloaded");
+}
+
+// ── Download as Word (.doc) ───────────────────────────────────────────
+function handleDownloadWord(content: string, caseData: any) {
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>${caseData.case_number}</title>
+<style>
+  body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.8; margin: 1in; }
+  pre { white-space: pre-wrap; word-wrap: break-word; font-family: 'Times New Roman', serif; font-size: 13pt; }
+</style></head><body><pre>${content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre></body></html>`;
+
+  const blob = new Blob([html], { type: "application/msword" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${caseData.case_number}_document.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast.success("Word document downloaded");
 }
