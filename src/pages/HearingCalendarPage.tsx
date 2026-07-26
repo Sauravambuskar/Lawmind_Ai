@@ -18,19 +18,55 @@ export default function HearingCalendarPage() {
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
       const session = (await supabase.auth.getSession()).data.session;
       const authToken = session?.access_token || supabaseKey;
-      // Fetch cases with next_hearing_date set
-      const all: any[] = [];
+      const headers = { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` };
+
+      // 1. Fetch cases with next_hearing_date
+      const caseHearings: any[] = [];
       let offset = 0;
       while (true) {
-        const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=id,case_number,title,next_hearing_date,court_name,case_stage&next_hearing_date=not.is.null&order=next_hearing_date.asc&offset=${offset}&limit=1000`, {
-          headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-        });
+        const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=id,case_number,title,next_hearing_date,court_name,case_stage&next_hearing_date=not.is.null&order=next_hearing_date.asc&offset=${offset}&limit=1000`, { headers });
         if (!res.ok) break;
         const batch = await res.json();
-        all.push(...batch);
+        caseHearings.push(...batch);
         if (batch.length < 1000) break;
         offset += 1000;
       }
+
+      // 2. Fetch hearings table entries
+      const { data: hearingsData } = await supabase.from("hearings").select("id, case_id, hearing_date, court_name, purpose, status").order("hearing_date", { ascending: true });
+
+      // 3. Merge both sources (avoid duplicates by using a map keyed by date+case)
+      const all: any[] = [];
+      const seen = new Set<string>();
+
+      // Add case hearings
+      caseHearings.forEach(c => {
+        const key = `${c.next_hearing_date}_${c.id}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          all.push({ ...c, source: "case" });
+        }
+      });
+
+      // Add hearings table entries
+      (hearingsData || []).forEach((h: any) => {
+        const dateStr = h.hearing_date ? h.hearing_date.split("T")[0] : null;
+        if (!dateStr) return;
+        const key = `${dateStr}_${h.case_id || h.id}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          all.push({
+            id: h.case_id || h.id,
+            case_number: h.purpose || "Hearing",
+            title: h.purpose || "Scheduled Hearing",
+            next_hearing_date: dateStr,
+            court_name: h.court_name,
+            case_stage: h.status,
+            source: "hearing",
+          });
+        }
+      });
+
       return all;
     },
   });
