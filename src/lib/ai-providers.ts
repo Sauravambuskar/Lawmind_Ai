@@ -1,4 +1,4 @@
-export type AIProvider = 'groq' | 'openai' | 'gemini' | 'custom';
+export type AIProvider = 'groq' | 'openai' | 'gemini' | 'openrouter' | 'custom';
 
 export interface AIProviderConfig {
   provider: AIProvider;
@@ -62,6 +62,22 @@ export const PROVIDER_INFO: Record<AIProvider, {
     ],
     color: '#4285f4',
     description: 'Google\'s multimodal AI models',
+  },
+  openrouter: {
+    label: 'OpenRouter',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    models: [
+      { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B (Free)' },
+      { id: 'google/gemma-2-9b-it:free', name: 'Gemma 2 9B (Free)' },
+      { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B (Free)' },
+      { id: 'microsoft/phi-3-mini-128k-instruct:free', name: 'Phi-3 Mini (Free)' },
+      { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat' },
+      { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
+      { id: 'openai/gpt-4o', name: 'GPT-4o (via OpenRouter)' },
+      { id: 'google/gemini-2.0-flash-001', name: 'Gemini 2.0 Flash' },
+    ],
+    color: '#6366f1',
+    description: 'Access 100+ AI models through one API key (free tier available)',
   },
   custom: {
     label: 'Custom',
@@ -161,6 +177,7 @@ export async function sendAIMessage(
   if (config.provider === 'gemini') {
     return sendGeminiMessage(config, messages);
   }
+  // groq, openai, openrouter, custom — all OpenAI-compatible
   return sendOpenAICompatible(config, messages);
 }
 

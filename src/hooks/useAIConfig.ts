@@ -20,6 +20,7 @@ const DEFAULT_CONFIG: AIConfig = {
     groq: { apiKey: '', model: 'llama-3.3-70b-versatile', enabled: false },
     openai: { apiKey: '', model: 'gpt-4o-mini', enabled: false },
     gemini: { apiKey: '', model: 'gemini-2.0-flash', enabled: false },
+    openrouter: { apiKey: '', model: 'meta-llama/llama-3.3-70b-instruct:free', enabled: false },
     custom: { apiKey: '', model: '', baseUrl: '', enabled: false },
   },
   activeProvider: 'groq',
@@ -215,7 +216,7 @@ export function useAIConfig() {
     }
 
     // Then all other providers with keys
-    const otherProviders: AIProvider[] = ['groq', 'openai', 'gemini', 'custom'];
+    const otherProviders: AIProvider[] = ['groq', 'openai', 'openrouter', 'gemini', 'custom'];
     otherProviders
       .filter(p => p !== config.activeProvider)
       .forEach(p => {
