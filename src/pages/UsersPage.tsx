@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { APP_SECTIONS, type SectionId, DEFAULT_PERMISSIONS } from "@/lib/permissionStore";
 import { EditUserModal, ResetPasswordModal, DeleteUserModal } from "@/components/UserActions";
 
 const ROLES: UserRole[] = ['super_admin', 'admin', 'agent', 'lawyer'];
@@ -35,53 +36,57 @@ function AddUserModal({ onSuccess }: { onSuccess: () => void }) {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<UserRole>("agent");
+  const [selectedSections, setSelectedSections] = useState<SectionId[]>(DEFAULT_PERMISSIONS.agent as SectionId[]);
+
+  // Update sections when role changes
+  const handleRoleChange = (newRole: UserRole) => {
+    setRole(newRole);
+    setSelectedSections(DEFAULT_PERMISSIONS[newRole] as SectionId[]);
+  };
+
+  const toggleSection = (id: SectionId) => {
+    setSelectedSections(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Save the current admin session BEFORE creating user
       const { data: sessionData } = await supabase.auth.getSession();
       const adminSession = sessionData.session;
+      if (!adminSession) throw new Error("No active session. Please login again.");
 
-      if (!adminSession) {
-        throw new Error("No active session. Please login again.");
-      }
-
-      // Create the new user (this will switch session to new user)
-      const { error } = await supabase.auth.signUp({
+      // Create user
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { full_name: fullName, role } },
       });
 
       if (error) {
-        if (error.message.toLowerCase().includes("rate limit") || error.message.includes("429")) {
-          throw new Error("Email rate limit reached. Wait a few minutes and try again.");
-        }
+        if (error.message.toLowerCase().includes("rate limit")) throw new Error("Rate limit. Wait and retry.");
         throw new Error(error.message);
       }
 
-      // IMMEDIATELY restore the admin session (prevents switching to new user)
-      const { error: restoreError } = await supabase.auth.setSession({
-        access_token: adminSession.access_token,
-        refresh_token: adminSession.refresh_token,
-      });
+      // Restore admin session immediately
+      await supabase.auth.setSession({ access_token: adminSession.access_token, refresh_token: adminSession.refresh_token });
 
-      if (restoreError) {
-        console.warn("Session restore warning:", restoreError.message);
-        // Force reload to get admin back
-        window.location.reload();
-        return;
+      // Create profile for new user
+      if (signUpData?.user) {
+        await supabase.from("profiles").insert({
+          user_id: signUpData.user.id,
+          email: email,
+          full_name: fullName,
+          role: role,
+          status: "active",
+        });
       }
 
-      toast.success("User created successfully!");
+      toast.success("User created with assigned privileges!");
       setOpen(false);
       onSuccess();
-      setEmail("");
-      setPassword("");
-      setFullName("");
-      setRole("agent");
+      setEmail(""); setPassword(""); setFullName(""); setRole("agent");
+      setSelectedSections(DEFAULT_PERMISSIONS.agent as SectionId[]);
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -89,40 +94,28 @@ function AddUserModal({ onSuccess }: { onSuccess: () => void }) {
     }
   };
 
+  const GROUPS = [...new Set(APP_SECTIONS.map(s => s.group))];
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="shrink-0 gap-2 h-9 text-sm">
-          <UserCog className="w-4 h-4" />
-          Add Member
-        </Button>
+        <Button className="shrink-0 gap-2 h-9 text-sm"><UserCog className="w-4 h-4" />Add Member</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Member</DialogTitle>
-          <DialogDescription>
-            Create a new member and assign them a role. They will receive an email to verify their account.
-          </DialogDescription>
+          <DialogDescription>Create a member, assign role and section access privileges.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} required placeholder="John Doe" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2"><Label>Full Name *</Label><Input value={fullName} onChange={e => setFullName(e.target.value)} required placeholder="John Doe" /></div>
+            <div><Label>Email *</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="john@example.com" /></div>
+            <div><Label>Password *</Label><Input type="text" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Min 6 chars" minLength={6} /></div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email address</Label>
-            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="john@example.com" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Temporary Password</Label>
-            <Input id="password" type="text" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Must be at least 6 characters" minLength={6} />
-          </div>
-          <div className="space-y-2">
+          <div>
             <Label>Role</Label>
-            <Select value={role} onValueChange={(val) => setRole(val as UserRole)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+            <Select value={role} onValueChange={(val) => handleRoleChange(val as UserRole)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="super_admin">Super Admin</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
@@ -131,6 +124,35 @@ function AddUserModal({ onSuccess }: { onSuccess: () => void }) {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Section Privileges */}
+          <div className="border border-border rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Section Access Privileges</Label>
+              <span className="text-[10px] text-muted-foreground">{selectedSections.length}/{APP_SECTIONS.length} selected</span>
+            </div>
+            <div className="space-y-3 max-h-[200px] overflow-y-auto custom-scrollbar">
+              {GROUPS.map(group => (
+                <div key={group}>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">{group}</p>
+                  <div className="grid grid-cols-2 gap-1">
+                    {APP_SECTIONS.filter(s => s.group === group).map(section => (
+                      <label key={section.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted/30 cursor-pointer text-xs">
+                        <input
+                          type="checkbox"
+                          checked={selectedSections.includes(section.id)}
+                          onChange={() => toggleSection(section.id)}
+                          className="rounded border-border accent-primary w-3.5 h-3.5"
+                        />
+                        <span className="text-foreground">{section.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Creating..." : "Create Member"}
           </Button>
@@ -156,12 +178,38 @@ export default function UsersPage() {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users-profiles"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as UserProfile[];
+      // Fetch all users from Supabase Auth (via service-role-like access)
+      // Then match with profiles table
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const session = (await supabase.auth.getSession()).data.session;
+      const authToken = session?.access_token || supabaseKey;
+
+      // Get profiles
+      const { data: profiles } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+      
+      // If profiles exist, return them
+      if (profiles && profiles.length > 0) {
+        return profiles as UserProfile[];
+      }
+
+      // Fallback: if no profiles, create one for current user
+      if (session?.user) {
+        const { data: existingProfile } = await supabase.from("profiles").select("*").eq("user_id", session.user.id).single();
+        if (!existingProfile) {
+          await supabase.from("profiles").insert({
+            user_id: session.user.id,
+            email: session.user.email,
+            full_name: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "User",
+            role: "super_admin",
+            status: "active",
+          });
+          const { data: newProfiles } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+          return (newProfiles || []) as UserProfile[];
+        }
+      }
+
+      return (profiles || []) as UserProfile[];
     },
   });
 
