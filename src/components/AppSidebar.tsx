@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { getRoleLabel, getRoleBadge, getRoleDot } from "@/hooks/useRole";
-import { usePermissionStore } from "@/lib/permissionStore";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   Home, Users, UserCheck, MessageSquare,
   Calendar, CalendarDays, FileText, Receipt, File, DollarSign,
@@ -116,17 +116,14 @@ function NavItems({
   const { profile } = useAuth();
   const role = profile?.role ?? 'agent';
   const isAdminOrAbove = role === 'admin' || role === 'super_admin';
-  const { hasAccess, loadPermissions } = usePermissionStore();
-
-  // Load permissions on first render
-  useState(() => { loadPermissions(); });
+  const { hasAccess } = usePermissions();
 
   // Helper to check if a nav item is accessible based on path
   const canAccess = (path: string) => {
     // Always allow dashboard and profile
     if (path === "/" || path === "/profile") return true;
     // Map path to section ID
-    const sectionId = path.replace(/^\/setup\//, "").replace(/^\/staff\//, "staff").replace(/^\//, "").replace(/\//g, "-") || "dashboard";
+    const sectionId = path.replace(/^\/setup\//, "").replace(/^\/staff.*/, "staff").replace(/^\//, "");
     return hasAccess(role, sectionId);
   };
 

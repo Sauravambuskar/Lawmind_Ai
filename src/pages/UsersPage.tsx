@@ -40,15 +40,24 @@ function AddUserModal({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     setLoading(true);
     try {
-      // Use the PHP admin endpoint — creates the user + profile without
-      // touching the current admin's session.
+      // signUp with email confirmation disabled avoids Supabase's
+      // auth email rate limit (4/hour on free plan)
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName, role } },
+        options: {
+          data: { full_name: fullName, role },
+          emailRedirectTo: undefined, // Don't send confirmation email
+        },
       });
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        // Friendly message for rate limit
+        if (error.message.toLowerCase().includes("rate limit") || error.message.includes("429")) {
+          throw new Error("Email rate limit reached (Supabase free plan allows 4 emails/hour). Please wait an hour, or disable 'Confirm email' in Supabase Dashboard → Authentication → Providers → Email.");
+        }
+        throw new Error(error.message);
+      }
 
       toast.success("User created successfully!");
       setOpen(false);

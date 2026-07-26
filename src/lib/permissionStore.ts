@@ -1,4 +1,3 @@
-import { create } from "zustand";
 import { supabase } from "@/integrations/supabase/client";
 import type { UserRole } from "@/hooks/auth.types";
 
@@ -12,6 +11,7 @@ export const APP_SECTIONS = [
   { id: "advice", label: "Advice", group: "Practice" },
   { id: "cases", label: "Cases", group: "Practice" },
   { id: "hearings", label: "Hearings", group: "Practice" },
+  { id: "hearing-calendar", label: "Hearing Calendar", group: "Practice" },
   { id: "evidence", label: "Evidence", group: "Practice" },
   { id: "invoices", label: "Invoices", group: "Practice" },
   { id: "documents", label: "Documents", group: "Practice" },
@@ -27,108 +27,107 @@ export const APP_SECTIONS = [
   { id: "tags", label: "Tags", group: "Setup" },
   { id: "expense-types", label: "Expense Types", group: "Setup" },
   { id: "templates", label: "Templates", group: "Setup" },
-  { id: "audit-logs", label: "Audit Logs", group: "Setup" },
+  { id: "logs", label: "Audit Logs", group: "Setup" },
   { id: "ai-settings", label: "AI Settings", group: "Setup" },
+  { id: "email", label: "Email Settings", group: "Setup" },
   { id: "reports", label: "Reports", group: "Setup" },
   { id: "permissions", label: "Permissions", group: "Setup" },
 ] as const;
 
 export type SectionId = typeof APP_SECTIONS[number]["id"];
-
-// Permission map: role → array of allowed section IDs
 export type PermissionMap = Record<UserRole, SectionId[]>;
 
-// Default permissions — super_admin and admin get everything
-const ALL_SECTIONS: SectionId[] = APP_SECTIONS.map(s => s.id);
+const ALL_SECTIONS = APP_SECTIONS.map(s => s.id) as SectionId[];
 
-const DEFAULT_PERMISSIONS: PermissionMap = {
+export const DEFAULT_PERMISSIONS: PermissionMap = {
   super_admin: [...ALL_SECTIONS],
   admin: [...ALL_SECTIONS],
-  agent: ["dashboard", "today", "clients", "cases", "hearings", "tasks", "documents", "notes", "contacts", "expenses"],
-  lawyer: ["dashboard", "today", "clients", "advocates", "cases", "hearings", "evidence", "invoices", "documents", "impdocs", "notice-maker", "quick-docs", "expenses", "contacts", "notes", "tasks", "ai-agent"],
+  agent: ["dashboard", "today", "clients", "cases", "hearings", "hearing-calendar", "tasks", "documents", "notes", "contacts", "expenses"] as SectionId[],
+  lawyer: ["dashboard", "today", "clients", "advocates", "cases", "hearings", "hearing-calendar", "evidence", "invoices", "documents", "impdocs", "notice-maker", "quick-docs", "expenses", "contacts", "notes", "tasks", "ai-agent"] as SectionId[],
 };
 
-interface PermissionState {
-  permissions: PermissionMap;
-  loaded: boolean;
-  loading: boolean;
-  // Actions
-  loadPermissions: () => Promise<void>;
-  setRolePermissions: (role: UserRole, sections: SectionId[]) => Promise<void>;
-  hasAccess: (role: UserRole, sectionId: string) => boolean;
+// ── Simple module-level store (no external dependency) ──
+let _permissions: PermissionMap = { ...DEFAULT_PERMISSIONS };
+let _loaded = false;
+let _loading = false;
+const _listeners = new Set<() => void>();
+
+function notify() { _listeners.forEach(fn => fn()); }
+
+export function subscribeToPermissions(fn: () => void) {
+  _listeners.add(fn);
+  return () => { _listeners.delete(fn); };
 }
 
-export const usePermissionStore = create<PermissionState>((set, get) => ({
-  permissions: DEFAULT_PERMISSIONS,
-  loaded: false,
-  loading: false,
+export function getPermissions(): PermissionMap {
+  return _permissions;
+}
 
-  loadPermissions: async () => {
-    if (get().loaded || get().loading) return;
-    set({ loading: true });
+export function isPermissionsLoaded() { return _loaded; }
 
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
+/** Load permissions from Supabase (once) */
+export async function loadPermissions(): Promise<void> {
+  if (_loaded || _loading) return;
+  _loading = true;
 
-      const res = await fetch(`${supabaseUrl}/rest/v1/role_permissions?select=*`, {
-        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-      });
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    const session = (await supabase.auth.getSession()).data.session;
+    const authToken = session?.access_token || supabaseKey;
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.length > 0) {
-          const perms = { ...DEFAULT_PERMISSIONS };
-          data.forEach((row: any) => {
-            if (row.role && row.sections) {
-              perms[row.role as UserRole] = row.sections;
-            }
-          });
-          set({ permissions: perms, loaded: true, loading: false });
-          return;
-        }
+    const res = await fetch(`${supabaseUrl}/rest/v1/role_permissions?select=*`, {
+      headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const perms = { ...DEFAULT_PERMISSIONS };
+        data.forEach((row: any) => {
+          if (row.role && Array.isArray(row.sections)) {
+            perms[row.role as UserRole] = row.sections;
+          }
+        });
+        _permissions = perms;
       }
-    } catch (e) {
-      // Table might not exist yet — use defaults
     }
+  } catch {
+    // Table may not exist — keep defaults
+  }
 
-    set({ loaded: true, loading: false });
-  },
+  _loaded = true;
+  _loading = false;
+  notify();
+}
 
-  setRolePermissions: async (role: UserRole, sections: SectionId[]) => {
-    set((state) => ({
-      permissions: { ...state.permissions, [role]: sections },
-    }));
+/** Save permissions for a role */
+export async function setRolePermissions(role: UserRole, sections: SectionId[]): Promise<void> {
+  _permissions = { ..._permissions, [role]: sections };
+  notify();
 
-    // Save to DB
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    const session = (await supabase.auth.getSession()).data.session;
+    const authToken = session?.access_token || supabaseKey;
+    const headers = { "Content-Type": "application/json", "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` };
 
-      // Upsert
-      await fetch(`${supabaseUrl}/rest/v1/role_permissions?role=eq.${role}`, {
-        method: "DELETE",
-        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-      });
-      await fetch(`${supabaseUrl}/rest/v1/role_permissions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Prefer": "return=minimal" },
-        body: JSON.stringify({ role, sections }),
-      });
-    } catch (e) {
-      // Silent — permissions still work from local state
-    }
-  },
+    await fetch(`${supabaseUrl}/rest/v1/role_permissions?role=eq.${role}`, { method: "DELETE", headers });
+    await fetch(`${supabaseUrl}/rest/v1/role_permissions`, {
+      method: "POST",
+      headers: { ...headers, "Prefer": "return=minimal" },
+      body: JSON.stringify({ role, sections }),
+    });
+  } catch {
+    // Silent — local state still applied
+  }
+}
 
-  hasAccess: (role: UserRole, sectionId: string) => {
-    // super_admin always has access to everything
-    if (role === "super_admin") return true;
-    const perms = get().permissions[role];
-    if (!perms) return false;
-    return perms.includes(sectionId as SectionId);
-  },
-}));
+/** Check if a role has access to a section */
+export function hasAccess(role: UserRole, sectionId: string): boolean {
+  if (role === "super_admin") return true;
+  const perms = _permissions[role];
+  if (!perms) return false;
+  return perms.includes(sectionId as SectionId);
+}

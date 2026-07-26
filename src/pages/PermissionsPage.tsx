@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Shield, Check, X, Save } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
-import { usePermissionStore, APP_SECTIONS, type SectionId } from "@/lib/permissionStore";
+import { usePermissions } from "@/hooks/usePermissions";
+import { APP_SECTIONS, type SectionId } from "@/lib/permissionStore";
 import type { UserRole } from "@/hooks/auth.types";
 
 const ROLES: { id: UserRole; label: string; color: string }[] = [
@@ -19,11 +20,10 @@ const GROUPS = [...new Set(APP_SECTIONS.map(s => s.group))];
 
 export default function PermissionsPage() {
   const { isAdminOrAbove } = useRole();
-  const { permissions, loadPermissions, setRolePermissions } = usePermissionStore();
+  const { permissions, setRolePermissions } = usePermissions();
   const [localPerms, setLocalPerms] = useState(permissions);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { loadPermissions(); }, []);
   useEffect(() => { setLocalPerms(permissions); }, [permissions]);
 
   const toggle = (role: UserRole, sectionId: SectionId) => {
