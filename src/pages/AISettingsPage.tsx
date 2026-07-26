@@ -19,6 +19,7 @@ const ICONS: Record<AIProvider, typeof Zap> = {
   groq: Zap,
   openai: Brain,
   gemini: Sparkles,
+  openrouter: ExternalLink,
   custom: Cpu,
 };
 
@@ -83,7 +84,7 @@ export default function AISettingsPage() {
           <ProviderCard
             key={provider}
             provider={provider}
-            entry={config.providers[provider]}
+            entry={config.providers[provider] || { apiKey: '', model: '', enabled: false }}
             isActive={config.activeProvider === provider}
             onUpdate={(u) => updateProvider(provider, u)}
             onSetActive={() => setActiveProvider(provider)}
