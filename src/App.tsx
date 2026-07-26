@@ -38,6 +38,7 @@ const ProfilePage       = lazy(() => import("./pages/ProfilePage"));
 const AuthPage          = lazy(() => import("./pages/AuthPage"));
 const AIAgentPage       = lazy(() => import("./pages/AIAgentPage"));
 const AISettingsPage    = lazy(() => import("./pages/AISettingsPage"));
+const PermissionsPage  = lazy(() => import("./pages/PermissionsPage"));
 const TasksPage         = lazy(() => import("./pages/TasksPage"));
 const TodayPage         = lazy(() => import("./pages/TodayPage"));
 const ImpDocsPage      = lazy(() => import("./pages/ImpDocsPage"));
@@ -98,6 +99,7 @@ const App = () => (
                   <Route path="/setup/reports"       element={<ReportsPage />} />
                   <Route path="/setup/logs"          element={<AuditLogsPage />} />
                   <Route path="/setup/ai-settings"   element={<AISettingsPage />} />
+                  <Route path="/setup/permissions"   element={<PermissionsPage />} />
                   <Route path="/ai-agent"            element={<AIAgentPage />} />
                   <Route path="/tasks"               element={<TasksPage />} />
                   <Route path="/today"               element={<TodayPage />} />

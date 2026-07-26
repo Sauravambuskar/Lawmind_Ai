@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { getRoleLabel, getRoleBadge, getRoleDot } from "@/hooks/useRole";
+import { usePermissionStore } from "@/lib/permissionStore";
 import {
   Home, Users, UserCheck, MessageSquare,
   Calendar, FileText, Receipt, File, DollarSign,
   ChevronDown, ChevronRight, Scale, Phone, StickyNote,
   Settings2, BarChart3, User, X, BriefcaseBusiness, Bot,
-  ListTodo, Sunrise, FolderOpen, FileSignature,
+  ListTodo, Sunrise, FolderOpen, FileSignature, Shield,
 } from "lucide-react";
 
 const AIAgentIcon = ({ className, strokeWidth, ...props }: { className?: string; strokeWidth?: number }) => (
@@ -68,6 +69,7 @@ const navSections = [
         ],
       },
       { label: "Reports", icon: BarChart3, path: "/setup/reports" },
+      { label: "Permissions", icon: Shield, path: "/setup/permissions" },
       { label: "Profile", icon: User, path: "/profile" },
     ],
   },
@@ -112,6 +114,19 @@ function NavItems({
   const { profile } = useAuth();
   const role = profile?.role ?? 'agent';
   const isAdminOrAbove = role === 'admin' || role === 'super_admin';
+  const { hasAccess, loadPermissions } = usePermissionStore();
+
+  // Load permissions on first render
+  useState(() => { loadPermissions(); });
+
+  // Helper to check if a nav item is accessible based on path
+  const canAccess = (path: string) => {
+    // Always allow dashboard and profile
+    if (path === "/" || path === "/profile") return true;
+    // Map path to section ID
+    const sectionId = path.replace(/^\/setup\//, "").replace(/^\/staff\//, "staff").replace(/^\//, "").replace(/\//g, "-") || "dashboard";
+    return hasAccess(role, sectionId);
+  };
 
   const activeCls = "bg-amber-400/[0.15] text-amber-400 font-bold drop-shadow-md tracking-wide";
   const regularCls = "text-slate-100 font-semibold hover:bg-white/10 hover:text-white drop-shadow-sm tracking-wide";
@@ -124,7 +139,8 @@ function NavItems({
           <div className="space-y-0.5 px-2">
             {section.items.filter(item => {
               if (item.label === 'Staff Management') return isAdminOrAbove;
-              return true;
+              if (item.label === 'Permissions') return isAdminOrAbove;
+              return canAccess(item.path);
             }).map(item => (
               <div key={item.label} className="relative">
                 {item.children ? (
