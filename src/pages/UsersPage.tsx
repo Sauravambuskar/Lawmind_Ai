@@ -40,23 +40,39 @@ function AddUserModal({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     setLoading(true);
     try {
-      // signUp with email confirmation disabled avoids Supabase's
-      // auth email rate limit (4/hour on free plan)
-      const { data, error } = await supabase.auth.signUp({
+      // Save the current admin session BEFORE creating user
+      const { data: sessionData } = await supabase.auth.getSession();
+      const adminSession = sessionData.session;
+
+      if (!adminSession) {
+        throw new Error("No active session. Please login again.");
+      }
+
+      // Create the new user (this will switch session to new user)
+      const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: { full_name: fullName, role },
-          emailRedirectTo: undefined, // Don't send confirmation email
-        },
+        options: { data: { full_name: fullName, role } },
       });
 
       if (error) {
-        // Friendly message for rate limit
         if (error.message.toLowerCase().includes("rate limit") || error.message.includes("429")) {
-          throw new Error("Email rate limit reached (Supabase free plan allows 4 emails/hour). Please wait an hour, or disable 'Confirm email' in Supabase Dashboard → Authentication → Providers → Email.");
+          throw new Error("Email rate limit reached. Wait a few minutes and try again.");
         }
         throw new Error(error.message);
+      }
+
+      // IMMEDIATELY restore the admin session (prevents switching to new user)
+      const { error: restoreError } = await supabase.auth.setSession({
+        access_token: adminSession.access_token,
+        refresh_token: adminSession.refresh_token,
+      });
+
+      if (restoreError) {
+        console.warn("Session restore warning:", restoreError.message);
+        // Force reload to get admin back
+        window.location.reload();
+        return;
       }
 
       toast.success("User created successfully!");
