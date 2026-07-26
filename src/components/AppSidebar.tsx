@@ -5,7 +5,7 @@ import { getRoleLabel, getRoleBadge, getRoleDot } from "@/hooks/useRole";
 import { usePermissionStore } from "@/lib/permissionStore";
 import {
   Home, Users, UserCheck, MessageSquare,
-  Calendar, FileText, Receipt, File, DollarSign,
+  Calendar, CalendarDays, FileText, Receipt, File, DollarSign,
   ChevronDown, ChevronRight, Scale, Phone, StickyNote,
   Settings2, BarChart3, User, X, BriefcaseBusiness, Bot,
   ListTodo, Sunrise, FolderOpen, FileSignature, Shield,
@@ -41,6 +41,7 @@ const navSections = [
       { label: "Advice", icon: MessageSquare, path: "/advice" },
       { label: "Cases", icon: BriefcaseBusiness, path: "/cases" },
       { label: "Hearings", icon: Calendar, path: "/hearings" },
+      { label: "Hearing Calendar", icon: CalendarDays, path: "/hearing-calendar" },
       { label: "Evidence", icon: FileText, path: "/evidence" },
       { label: "Invoices", icon: Receipt, path: "/invoices" },
       { label: "Documents", icon: File, path: "/documents" },

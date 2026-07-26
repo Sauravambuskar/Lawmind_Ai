@@ -195,7 +195,47 @@ export function useAIConfig() {
     };
   }, [config]);
 
-  const hasActiveKey = config.providers[config.activeProvider]?.apiKey?.length > 0;
+  /**
+   * Get ALL configured providers in priority order (active first, then others).
+   * Used for failover — if primary fails, system auto-switches to next.
+   */
+  const getAllConfigs = useCallback(() => {
+    const configs: { provider: AIProvider; apiKey: string; model: string; baseUrl?: string; name: string }[] = [];
+    
+    // Active provider first
+    const active = config.providers[config.activeProvider];
+    if (active?.apiKey) {
+      configs.push({
+        provider: config.activeProvider,
+        apiKey: active.apiKey,
+        model: active.model,
+        baseUrl: active.baseUrl,
+        name: config.activeProvider,
+      });
+    }
 
-  return { config, loading, updateProvider, setActiveProvider, getActiveConfig, hasActiveKey };
+    // Then all other providers with keys
+    const otherProviders: AIProvider[] = ['groq', 'openai', 'gemini', 'custom'];
+    otherProviders
+      .filter(p => p !== config.activeProvider)
+      .forEach(p => {
+        const entry = config.providers[p];
+        if (entry?.apiKey) {
+          configs.push({
+            provider: p,
+            apiKey: entry.apiKey,
+            model: entry.model,
+            baseUrl: entry.baseUrl,
+            name: p,
+          });
+        }
+      });
+
+    return configs;
+  }, [config]);
+
+  const hasActiveKey = config.providers[config.activeProvider]?.apiKey?.length > 0;
+  const totalConfiguredKeys = Object.values(config.providers).filter(p => p.apiKey?.length > 0).length;
+
+  return { config, loading, updateProvider, setActiveProvider, getActiveConfig, getAllConfigs, hasActiveKey, totalConfiguredKeys };
 }

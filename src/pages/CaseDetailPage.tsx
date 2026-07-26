@@ -22,7 +22,7 @@ import {
 import { CASE_STATUS_CONFIG, CASE_STATUSES, type CaseStatus, CURRENCY } from "@/lib/constants";
 import { CloudinaryUpload } from "@/components/CloudinaryUpload";
 import { useAIConfig } from "@/hooks/useAIConfig";
-import { sendAIMessage } from "@/lib/ai-providers";
+import { sendAIMessageWithFailover } from "@/lib/ai-providers";
 
 const TABS = [
   { id: "history", label: "Case History", icon: Clock },
@@ -718,7 +718,7 @@ function TabJudgments({ caseId, userId, qc }: { caseId: string; userId: string; 
 // TAB: AI Document Drafting
 // ══════════════════════════════════════════════════════════════
 function TabTimeEntries({ caseId, userId, caseData, qc }: { caseId: string; userId: string; caseData: any; qc: any }) {
-  const { getActiveConfig, hasActiveKey } = useAIConfig();
+  const { getActiveConfig, getAllConfigs, hasActiveKey, totalConfiguredKeys } = useAIConfig();
   const [docType, setDocType] = useState("adjournment");
   const [customPrompt, setCustomPrompt] = useState("");
   const [generatedDoc, setGeneratedDoc] = useState("");
@@ -764,13 +764,15 @@ Notes: ${caseData.case_notes_1 || ""} ${caseData.case_notes_2 || ""}
       : `Draft a formal ${docLabel} for the following case in professional legal language suitable for Indian courts (Akola/Washim, Maharashtra). Use the case details provided. Keep all fixed legal text verbatim. Leave blanks as ____ where specific data is missing.\n\nCase Details:\n${caseContext}`;
 
     try {
-      const config = getActiveConfig();
-      const response = await sendAIMessage(config, [
+      const configs = getAllConfigs();
+      const response = await sendAIMessageWithFailover(configs, [
         { role: "system", content: "You are a legal document drafting assistant for advocates in Maharashtra, India. You draft precise, formal court documents. Never invent facts. Leave blanks as ____ for missing information." },
         { role: "user", content: prompt },
       ]);
       setGeneratedDoc(response.content);
-      toast.success(`${docLabel} drafted successfully`);
+      const usedProvider = response.provider;
+      const failoverNote = response.failedProviders ? ` (failover: ${response.failedProviders.length} provider(s) failed, used ${usedProvider})` : "";
+      toast.success(`${docLabel} drafted via ${usedProvider}${failoverNote}`);
     } catch (e: any) {
       toast.error(e.message || "AI generation failed");
     } finally {
@@ -796,6 +798,13 @@ Notes: ${caseData.case_notes_1 || ""} ${caseData.case_notes_2 || ""}
         <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl text-sm">
           <p className="font-semibold text-amber-800 dark:text-amber-300">AI not configured</p>
           <p className="text-amber-700 dark:text-amber-400 mt-1">Go to <strong>AI Settings</strong> in the sidebar and add a Groq / OpenAI / Gemini API key to use this feature.</p>
+        </div>
+      )}
+
+      {hasActiveKey && totalConfiguredKeys > 1 && (
+        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-lg text-xs">
+          <span className="font-bold text-emerald-700 dark:text-emerald-300">🛡️ Failover Active:</span>
+          <span className="text-emerald-600 dark:text-emerald-400 ml-1">{totalConfiguredKeys} API keys configured. If one fails, system auto-switches to next available.</span>
         </div>
       )}
 

@@ -22,6 +22,7 @@ const AdvicePage        = lazy(() => import("./pages/AdvicePage"));
 const CasesPage         = lazy(() => import("./pages/CasesPage"));
 const CaseDetailPage    = lazy(() => import("./pages/CaseDetailPage"));
 const HearingsPage      = lazy(() => import("./pages/HearingsPage"));
+const HearingCalendarPage = lazy(() => import("./pages/HearingCalendarPage"));
 const EvidencePage      = lazy(() => import("./pages/EvidencePage"));
 const InvoicesPage      = lazy(() => import("./pages/InvoicesPage"));
 const DocumentsPage     = lazy(() => import("./pages/DocumentsPage"));
@@ -83,6 +84,7 @@ const App = () => (
                   <Route path="/cases"               element={<CasesPage />} />
                   <Route path="/cases/:id"           element={<CaseDetailPage />} />
                   <Route path="/hearings"            element={<HearingsPage />} />
+                  <Route path="/hearing-calendar"   element={<HearingCalendarPage />} />
                   <Route path="/evidence"            element={<EvidencePage />} />
                   <Route path="/invoices"            element={<InvoicesPage />} />
                   <Route path="/documents"           element={<DocumentsPage />} />

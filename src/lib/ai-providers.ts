@@ -165,6 +165,57 @@ export async function sendAIMessage(
 }
 
 /**
+ * Multi-key failover: tries primary config, if it fails (rate limit, quota, etc.)
+ * automatically switches to next available provider/key.
+ * 
+ * Usage: sendAIMessageWithFailover(configs, messages)
+ * configs = array of AIProviderConfig in priority order
+ */
+export async function sendAIMessageWithFailover(
+  configs: AIProviderConfig[],
+  messages: AIMessage[],
+): Promise<AIResponse & { failedProviders?: string[] }> {
+  const failedProviders: string[] = [];
+
+  for (const config of configs) {
+    if (!config.apiKey) continue; // Skip empty keys
+
+    try {
+      const response = await sendAIMessage(config, messages);
+      return { ...response, failedProviders: failedProviders.length > 0 ? failedProviders : undefined };
+    } catch (error: any) {
+      const msg = error?.message || "";
+      failedProviders.push(`${config.provider}(${config.model}): ${msg}`);
+
+      // If it's a rate limit / quota error, try next provider
+      const isRetryable = 
+        msg.includes("429") || 
+        msg.includes("rate") || 
+        msg.includes("quota") || 
+        msg.includes("limit") ||
+        msg.includes("exceeded") ||
+        msg.includes("capacity") ||
+        msg.includes("overloaded") ||
+        msg.includes("500") ||
+        msg.includes("503") ||
+        msg.includes("timeout");
+
+      if (!isRetryable) {
+        // Non-retryable error (e.g. invalid API key, bad request) — still try next
+        continue;
+      }
+      // Retryable — try next config
+      continue;
+    }
+  }
+
+  // All providers failed
+  throw new Error(
+    `All AI providers failed:\n${failedProviders.join("\n")}`
+  );
+}
+
+/**
  * Returns null on success, or an error message string on failure.
  */
 export async function testConnection(config: AIProviderConfig): Promise<string | null> {
