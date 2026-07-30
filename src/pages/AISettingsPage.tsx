@@ -8,10 +8,11 @@ import {
   testConnection,
   type AIProvider,
 } from "@/lib/ai-providers";
+import { getExtraKeys, addExtraKey, removeExtraKey, getTotalExtraKeys } from "@/lib/multiKeyStore";
 import { PageHeader } from "@/components/PageHeader";
 import {
   Key, Eye, EyeOff, CheckCircle2, XCircle, Loader2,
-  Zap, Brain, Sparkles, Cpu, ExternalLink, ShieldCheck, ShieldAlert,
+  Zap, Brain, Sparkles, Cpu, ExternalLink, ShieldCheck, ShieldAlert, Plus, Trash2, Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -264,6 +265,9 @@ function ProviderCard({ provider, entry, isActive, onUpdate, onSetActive, onTest
         </div>
       </label>
 
+      {/* Extra Keys for Failover */}
+      <ExtraKeysSection provider={provider} />
+
       {/* Custom base URL */}
       {provider === "custom" && (
         <label className="block mb-3">
@@ -334,6 +338,86 @@ function ProviderCard({ provider, entry, isActive, onUpdate, onSetActive, onTest
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ────────────────────── Extra Keys Section (Multi-Key Failover) ────────────────────── */
+function ExtraKeysSection({ provider }: { provider: AIProvider }) {
+  const [extraKeys, setExtraKeys] = useState(getExtraKeys(provider));
+  const [newKey, setNewKey] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+
+  const handleAdd = () => {
+    if (!newKey.trim()) return;
+    addExtraKey(provider, newKey.trim());
+    setExtraKeys(getExtraKeys(provider));
+    setNewKey("");
+    setShowAdd(false);
+    toast.success(`Extra key added for ${PROVIDER_INFO[provider].label} failover pool`);
+  };
+
+  const handleRemove = (id: string) => {
+    removeExtraKey(provider, id);
+    setExtraKeys(getExtraKeys(provider));
+    toast.success("Key removed from failover pool");
+  };
+
+  return (
+    <div className="mb-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1">
+          <Shield className="w-3 h-3" /> Failover Keys ({extraKeys.length})
+        </span>
+        <button
+          onClick={() => setShowAdd(!showAdd)}
+          className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5"
+        >
+          <Plus className="w-3 h-3" /> Add Key
+        </button>
+      </div>
+
+      {/* Existing extra keys */}
+      {extraKeys.length > 0 && (
+        <div className="space-y-1 mb-2">
+          {extraKeys.map((ek) => (
+            <div key={ek.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-slate-800/60 border border-slate-700/40">
+              <Key className="w-3 h-3 text-slate-500 shrink-0" />
+              <span className="text-[11px] text-slate-300 font-mono flex-1 truncate">
+                {ek.key.slice(0, 8)}...{ek.key.slice(-4)}
+              </span>
+              <span className="text-[9px] text-slate-500">{ek.label}</span>
+              <button onClick={() => handleRemove(ek.id)} className="text-slate-500 hover:text-red-400 transition-colors">
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add new key input */}
+      {showAdd && (
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            placeholder={`Paste another ${PROVIDER_INFO[provider].label} API key...`}
+            value={newKey}
+            onChange={(e) => setNewKey(e.target.value)}
+            className="flex-1 rounded-md border border-slate-600/60 bg-slate-900/60 px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:border-amber-400/50 focus:outline-none"
+          />
+          <button
+            onClick={handleAdd}
+            disabled={!newKey.trim()}
+            className="px-3 py-1.5 rounded-md bg-amber-400/90 text-[11px] font-bold text-slate-900 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Add
+          </button>
+        </div>
+      )}
+
+      {extraKeys.length === 0 && !showAdd && (
+        <p className="text-[10px] text-slate-600 italic">Add extra keys for zero-downtime failover</p>
+      )}
     </div>
   );
 }
