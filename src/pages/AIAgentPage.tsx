@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, type FormEvent } from "react"
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/hooks/useAuth";
-import { sendAIMessage, PROVIDER_INFO, type AIMessage } from "@/lib/ai-providers";
+import { sendAIMessageWithFailover, PROVIDER_INFO, type AIMessage } from "@/lib/ai-providers";
 import { buildDataContext, getSystemPrompt } from "@/lib/ai-data-context";
 import { Link } from "react-router-dom";
 import {
@@ -47,7 +47,7 @@ function getGreeting() {
 /* ═══════════════════════════ Page ═══════════════════════════ */
 
 export default function AIAgentPage() {
-  const { config, loading: configLoading, getActiveConfig, hasActiveKey } = useAIConfig();
+  const { config, loading: configLoading, getActiveConfig, getAllConfigs, hasActiveKey } = useAIConfig();
   const { isAdminOrAbove } = useRole();
   const { profile } = useAuth();
 
@@ -86,7 +86,7 @@ export default function AIAgentPage() {
         { role: "user" as const, content: msg },
       ];
 
-      const result = await sendAIMessage(getActiveConfig(), history);
+      const result = await sendAIMessageWithFailover(getAllConfigs(), history);
       setMessages((p) => [...p, {
         id: crypto.randomUUID(), role: "assistant", content: result.content,
         timestamp: new Date(), model: result.model, tokens: result.tokensUsed,
@@ -103,7 +103,7 @@ export default function AIAgentPage() {
       setLoading(false);
       inputRef.current?.focus();
     }
-  }, [input, loading, hasActiveKey, includeData, messages, getActiveConfig]);
+  }, [input, loading, hasActiveKey, includeData, messages, getAllConfigs]);
 
   const handleSubmit  = (e: FormEvent) => { e.preventDefault(); handleSend(); };
   const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } };

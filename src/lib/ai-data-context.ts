@@ -100,17 +100,21 @@ export async function buildDataContext(userMessage: string): Promise<string> {
   if (/disposed|closed|completed/i.test(lower)) {
     parts.push(`\n## Disposed Cases\n${toTable(await fetchDisposedCases())}`);
   }
-  if (/upcoming|next.*hearing|tomorrow|today.*hearing|calendar/i.test(lower)) {
-    parts.push(`\n## Upcoming Hearings\n${toTable(await fetchUpcomingHearings())}`);
+  if (/upcoming|next.*hearing|tomorrow|today.*hearing|calendar|hearing.*date|show.*hearing/i.test(lower)) {
+    parts.push(`\n## Upcoming Hearings (next hearing dates from cases)\n${toTable(await fetchUpcomingHearings())}`);
   }
-  if (/case|matter|filing|court|all.*case/i.test(lower)) {
+  if (/case|matter|filing|court|all.*case|show.*case|list.*case/i.test(lower)) {
     parts.push(`\n## Cases (latest 50)\n${toTable(await fetchCases())}`);
   }
   if (/client|customer/i.test(lower)) {
     parts.push(`\n## Clients\n${toTable(await fetchClients())}`);
   }
-  if (/hearing|schedule|judge/i.test(lower)) {
+  if (/hearing|schedule|judge|court.*date/i.test(lower)) {
     parts.push(`\n## Hearings (from hearings table)\n${toTable(await fetchHearings())}`);
+    // Also include upcoming from cases table
+    if (!/upcoming/i.test(lower)) {
+      parts.push(`\n## Upcoming Hearings (from cases.next_hearing_date)\n${toTable(await fetchUpcomingHearings())}`);
+    }
   }
   if (/invoice|bill|payment|amount|revenue|money/i.test(lower)) {
     parts.push(`\n## Invoices\n${toTable(await fetchInvoices())}`);
