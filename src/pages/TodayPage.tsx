@@ -61,19 +61,29 @@ export default function TodayPage() {
   const todayStr = new Date().toISOString().split("T")[0];
   const weekEnd = addDays(new Date(), 7).toISOString().split("T")[0];
 
-  // Today's & upcoming hearings (next 7 days)
+  // Today's & upcoming hearings from cases.next_hearing_date (real data)
   const { data: hearings = [], isLoading: loadingH } = useQuery({
     queryKey: ["today-hearings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("hearings")
-        .select("id, purpose, hearing_date, court_name, judge_name, status, cases(title, case_number)")
-        .gte("hearing_date", todayStr)
-        .lte("hearing_date", weekEnd + "T23:59:59")
-        .neq("status", "cancelled")
-        .order("hearing_date", { ascending: true });
-      if (error) throw error;
-      return (data || []) as HearingRow[];
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const session = (await supabase.auth.getSession()).data.session;
+      const authToken = session?.access_token || supabaseKey;
+      const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=id,case_number,title,next_hearing_date,court_name,case_stage&next_hearing_date=gte.${todayStr}&next_hearing_date=lte.${weekEnd}&order=next_hearing_date.asc&limit=100`, {
+        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
+      });
+      if (!res.ok) return [];
+      const cases = await res.json();
+      // Map to HearingRow format
+      return cases.map((c: any) => ({
+        id: c.id,
+        purpose: c.title,
+        hearing_date: c.next_hearing_date + "T10:00:00",
+        court_name: c.court_name,
+        judge_name: null,
+        status: "scheduled",
+        cases: { title: c.title, case_number: c.case_number },
+      })) as HearingRow[];
     },
     refetchInterval: 5 * 60 * 1000,
   });
