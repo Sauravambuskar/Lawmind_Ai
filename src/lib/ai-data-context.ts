@@ -21,17 +21,25 @@ async function fetchSummaryStats(): Promise<string> {
   const authToken = session?.access_token || supabaseKey;
   const headers = { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Prefer": "count=exact" };
 
-  const tables = ['cases', 'clients', 'advocates', 'hearings', 'invoices', 'expenses', 'documents'];
-  const counts: Record<string, string> = {};
+  // Get case counts by status
+  const casesRes = await fetch(`${supabaseUrl}/rest/v1/cases?select=id&limit=1`, { headers });
+  const totalCases = (casesRes.headers.get("content-range") || "*/0").split("/")[1];
 
-  for (const t of tables) {
-    const res = await fetch(`${supabaseUrl}/rest/v1/${t}?select=id&limit=1`, { headers });
-    const range = res.headers.get("content-range") || "*/0";
-    const total = range.split("/")[1] || "0";
-    counts[t] = total;
-  }
+  const pendingRes = await fetch(`${supabaseUrl}/rest/v1/cases?select=id&status=eq.pending&limit=1`, { headers });
+  const pendingCases = (pendingRes.headers.get("content-range") || "*/0").split("/")[1];
 
-  return Object.entries(counts).map(([k, v]) => `- ${k}: ${v} records`).join('\n');
+  const disposedRes = await fetch(`${supabaseUrl}/rest/v1/cases?select=id&status=eq.disposed&limit=1`, { headers });
+  const disposedCases = (disposedRes.headers.get("content-range") || "*/0").split("/")[1];
+
+  const today = new Date().toISOString().split("T")[0];
+  const upcomingRes = await fetch(`${supabaseUrl}/rest/v1/cases?select=id&next_hearing_date=gte.${today}&limit=1`, { headers });
+  const upcomingHearings = (upcomingRes.headers.get("content-range") || "*/0").split("/")[1];
+
+  return `- Total Cases: ${totalCases}
+- Pending Cases: ${pendingCases}
+- Disposed Cases: ${disposedCases}
+- Cases with Upcoming Hearings: ${upcomingHearings}
+- NOTE: Hearing dates are stored in cases.next_hearing_date column (NOT in a separate hearings table)`;
 }
 
 async function fetchCases(limit = 50) {
@@ -43,7 +51,8 @@ async function fetchClients(limit = 30) {
 }
 
 async function fetchHearings(limit = 30) {
-  return fetchFromRest(`hearings?select=hearing_date,status,court_name,judge_name,purpose,notes&order=hearing_date.desc&limit=${limit}`);
+  // Hearings are stored in cases.next_hearing_date, not a separate table
+  return fetchUpcomingHearings();
 }
 
 async function fetchInvoices(limit = 30) {
@@ -100,21 +109,14 @@ export async function buildDataContext(userMessage: string): Promise<string> {
   if (/disposed|closed|completed/i.test(lower)) {
     parts.push(`\n## Disposed Cases\n${toTable(await fetchDisposedCases())}`);
   }
-  if (/upcoming|next.*hearing|tomorrow|today.*hearing|calendar|hearing.*date|show.*hearing/i.test(lower)) {
-    parts.push(`\n## Upcoming Hearings (next hearing dates from cases)\n${toTable(await fetchUpcomingHearings())}`);
+  if (/upcoming|next.*hearing|tomorrow|today.*hearing|calendar|hearing.*date|show.*hearing|hearing/i.test(lower)) {
+    parts.push(`\n## Upcoming Hearings (cases with future next_hearing_date)\n${toTable(await fetchUpcomingHearings())}`);
   }
   if (/case|matter|filing|court|all.*case|show.*case|list.*case/i.test(lower)) {
     parts.push(`\n## Cases (latest 50)\n${toTable(await fetchCases())}`);
   }
   if (/client|customer/i.test(lower)) {
     parts.push(`\n## Clients\n${toTable(await fetchClients())}`);
-  }
-  if (/hearing|schedule|judge|court.*date/i.test(lower)) {
-    parts.push(`\n## Hearings (from hearings table)\n${toTable(await fetchHearings())}`);
-    // Also include upcoming from cases table
-    if (!/upcoming/i.test(lower)) {
-      parts.push(`\n## Upcoming Hearings (from cases.next_hearing_date)\n${toTable(await fetchUpcomingHearings())}`);
-    }
   }
   if (/invoice|bill|payment|amount|revenue|money/i.test(lower)) {
     parts.push(`\n## Invoices\n${toTable(await fetchInvoices())}`);
@@ -129,7 +131,7 @@ export async function buildDataContext(userMessage: string): Promise<string> {
     parts.push(`\n## Documents\n${toTable(await fetchDocuments())}`);
   }
 
-  // If no specific keywords matched, provide overview
+  // If no specific keywords matched, provide overview with hearings
   if (parts.length === 1) {
     const [cases, upcoming] = await Promise.all([fetchCases(20), fetchUpcomingHearings()]);
     parts.push(`\n## Recent Cases (top 20)\n${toTable(cases)}`);
@@ -140,28 +142,29 @@ export async function buildDataContext(userMessage: string): Promise<string> {
 }
 
 export function getSystemPrompt(dataContext: string): string {
-  return `You are **LawMind AI**, an intelligent legal practice management assistant for Advocate Manmohan D. Sarda's law firm in Akola/Washim, Maharashtra, India.
+  return `You are **LawMind AI**, an intelligent legal practice assistant for Advocate Manmohan D. Sarda's law firm in Akola/Washim, Maharashtra, India.
 
-You have DIRECT ACCESS to the firm's real database. The data below is LIVE and REAL — use it to answer questions accurately.
+You have DIRECT ACCESS to the firm's LIVE database. The data below is REAL — use it to answer ALL questions.
 
-### Your Capabilities:
-1. **Answer questions about cases** — status, hearing dates, court names, case stages
-2. **Generate reports** — pending cases, upcoming hearings, financial summaries
-3. **Provide case analysis** — filter, sort, and present case data clearly
-4. **Draft legal documents** — based on case data
-5. **Calendar & scheduling** — show upcoming hearings, deadlines
+### IMPORTANT DATA NOTES:
+- **Hearing dates are in the "next_hearing_date" column of cases** (NOT a separate hearings table)
+- When asked about upcoming hearings → show cases where next_hearing_date is in the future
+- All case data (case_number, title, status, court_name, next_hearing_date, filing_date) is REAL
 
-### LIVE DATABASE DATA:
+### Your Job:
+1. **Answer with REAL data** — never say "data not available" if it's in the tables below
+2. **Show tables** when listing multiple records
+3. **Include case numbers, dates, court names** from the actual data
+4. **Format in Markdown** — use tables, bold, headers
+5. **Hearing = cases with next_hearing_date** (that's where hearing info lives)
+
+### LIVE DATABASE:
 ${dataContext}
 
-### Response Rules:
-- **USE the data above** to answer — it is REAL, not sample data
-- Present data in **tables** when showing multiple records
-- Be **specific** — include case numbers, dates, court names from the actual data
-- If asked "show pending cases" → filter and display the pending cases from the data above
-- If asked about hearings → show the actual upcoming hearing dates
-- Format in **Markdown** (tables, bold, lists)
-- If data is insufficient for the question, say which specific data is missing
-- Never say "I don't have access" — you DO have access via the data provided above
-- All monetary values are in ₹ (Indian Rupees)`;
+### Rules:
+- ALWAYS use the data above to answer
+- When user asks "show hearings" → show cases with next_hearing_date from the data
+- Never say "0 hearings" if there are cases with next_hearing_date values
+- All amounts in ₹ (Indian Rupees)
+- Be specific — use actual case numbers and dates from the data`;
 }
