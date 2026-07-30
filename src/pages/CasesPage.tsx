@@ -66,6 +66,7 @@ export default function CasesPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<"created_at" | "next_hearing_date" | "case_number" | "title">("created_at");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -271,6 +272,14 @@ export default function CasesPage() {
       if (statusFilter === "court") return (c.court_type || "").toLowerCase().includes("court") || (c.court_name || "").length > 0;
       if (statusFilter === "affidavit") return (c.case_stage || "").toLowerCase().includes("affidavit") || (c.title || "").toLowerCase().includes("affidavit");
       return c.status === statusFilter;
+    })
+    .sort((a, b) => {
+      const av = (a as any)[sortBy] || "";
+      const bv = (b as any)[sortBy] || "";
+      if (sortBy === "next_hearing_date" || sortBy === "created_at") {
+        return (bv || "").localeCompare(av || ""); // newest first
+      }
+      return (av || "").localeCompare(bv || "");
     });
 
   const { paginatedItems, currentPage, totalPages, totalItems, startIndex, nextPage, prevPage, goToPage } = usePagination(filtered);
@@ -445,6 +454,20 @@ export default function CasesPage() {
                   {CASE_STATUS_FILTER.map(s => (
                     <SelectItem key={s} value={s} className="capitalize">{s === "all" ? "All" : s === "not applicable" ? "Not Applicable" : s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 bg-background border border-input rounded-md px-3 py-2 text-sm">
+              <span className="text-muted-foreground font-medium hidden sm:inline text-xs">Sort:</span>
+              <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                <SelectTrigger className="w-28 h-6 border-0 p-0 focus:ring-0 shadow-none bg-transparent font-semibold text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="created_at">Newest</SelectItem>
+                  <SelectItem value="next_hearing_date">Next Hearing</SelectItem>
+                  <SelectItem value="case_number">Case No.</SelectItem>
+                  <SelectItem value="title">Title</SelectItem>
                 </SelectContent>
               </Select>
             </div>

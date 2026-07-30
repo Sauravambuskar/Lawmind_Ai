@@ -16,9 +16,22 @@ interface TemplateField {
   label: string;
   placeholder: string;
   required?: boolean;
-  type?: "text" | "date" | "textarea";
+  type?: "text" | "date" | "textarea" | "select";
   halfWidth?: boolean;
+  options?: string[];
 }
+
+// Pre-filled court name options
+const COURT_OPTIONS = [
+  "Hon'ble ___ th Addl. C.J.M., Akola",
+  "Hon'ble J.M.F.C., Akola",
+  "Hon'ble ___ th Addl. C.J.M., Washim",
+  "Hon'ble Civil Judge Senior Division, Washim",
+  "Hon'ble Civil Judge Junior Division, Akola",
+  "District and Session Court, Akola",
+  "Hon'ble ___ th Addl. Sessions Judge, Akola",
+  "Other (type below)",
+];
 
 interface DocTemplate {
   id: string;
@@ -38,7 +51,7 @@ const TEMPLATES: DocTemplate[] = [
     description: "Application for passing issue process order U/S 204 of Cr.P.C.",
     category: "criminal",
     fields: [
-      { key: "courtName", label: "Court Name", placeholder: "e.g. 6th Additional C.J.M., Akola", required: true },
+      { key: "courtName", label: "Court Name", placeholder: "Select court...", required: true, type: "select" as const, options: COURT_OPTIONS },
       { key: "caseNumber", label: "SCC No.", placeholder: "e.g. SCC 123/2024", required: true, halfWidth: true },
       { key: "filingFor", label: "F.F.", placeholder: "e.g. F.F.", halfWidth: true },
       { key: "complainant", label: "Complainant", placeholder: "Name of Complainant", required: true },
@@ -85,7 +98,7 @@ Date:- ${date}                                          ${v.advocateName || "___
     description: "Replace name of authorized person of complainant company (NI Act cases)",
     category: "criminal",
     fields: [
-      { key: "courtName", label: "Court Name", placeholder: "e.g. Hon'ble J.M.F.C. Akola", required: true },
+      { key: "courtName", label: "Court Name", placeholder: "Select court...", required: true, type: "select" as const, options: COURT_OPTIONS },
       { key: "caseNumber", label: "SCC No.", placeholder: "e.g. SCC 456/2020", required: true, halfWidth: true },
       { key: "filingFor", label: "F.F.", placeholder: "e.g. F.F.", halfWidth: true },
       { key: "companyName", label: "Complainant Company", placeholder: "e.g. Crystal Crop Protection Pvt. Ltd.", required: true },
@@ -96,10 +109,10 @@ Date:- ${date}                                          ${v.advocateName || "___
       { key: "date", label: "Date", placeholder: "", type: "date", halfWidth: true },
       { key: "place", label: "Place", placeholder: "e.g. Akola", halfWidth: true },
       { key: "advocateName", label: "Counsel Name", placeholder: "Advocate Name", halfWidth: true },
-      { key: "deponentName", label: "Deponent Full Name", placeholder: "e.g. Omprakash Laxminarayan Mundhada" },
-      { key: "deponentAge", label: "Deponent Age", placeholder: "e.g. 52", halfWidth: true },
-      { key: "deponentOcc", label: "Deponent Occupation", placeholder: "e.g. Service", halfWidth: true },
-      { key: "deponentAddress", label: "Deponent Address", placeholder: "e.g. R/o. Akola, Tq. Dist- Akola" },
+      { key: "deponentName", label: "Deponent Full Name (Optional)", placeholder: "e.g. Omprakash Laxminarayan Mundhada" },
+      { key: "deponentAge", label: "Deponent Age (Optional)", placeholder: "e.g. 52", halfWidth: true },
+      { key: "deponentOcc", label: "Deponent Occupation (Optional)", placeholder: "e.g. Service", halfWidth: true },
+      { key: "deponentAddress", label: "Deponent Address (Optional)", placeholder: "e.g. R/o. Akola, Tq. Dist- Akola" },
     ],
     generate: (v) => {
       const date = v.date ? new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "____/____/20__";
@@ -170,7 +183,7 @@ TEMPLATES.push(
     description: "Permission to file documents on record in civil suit",
     category: "civil",
     fields: [
-      { key: "courtName", label: "Court Name", placeholder: "e.g. Civil Judge Senior Division, Washim", required: true },
+      { key: "courtName", label: "Court Name", placeholder: "Select court...", required: true, type: "select" as const, options: COURT_OPTIONS },
       { key: "caseNumber", label: "Case No.", placeholder: "e.g. R.C.S. No. 227/2024", required: true, halfWidth: true },
       { key: "filingFor", label: "F.F. / Next Date", placeholder: "e.g. F.F. 16/12/2025", halfWidth: true },
       { key: "plaintiff", label: "Plaintiff Name", placeholder: "e.g. Miss Rajeshri", required: true },
@@ -225,7 +238,7 @@ Date: ${date}                                           ${v.plaintiff || "______
     description: "List of documents filed on behalf of party in civil suit",
     category: "civil",
     fields: [
-      { key: "courtName", label: "Court Name", placeholder: "e.g. Civil Judge Senior Division, Washim", required: true },
+      { key: "courtName", label: "Court Name", placeholder: "Select court...", required: true, type: "select" as const, options: COURT_OPTIONS },
       { key: "caseNumber", label: "Case No.", placeholder: "e.g. R.C.S. No. 227/2024", required: true, halfWidth: true },
       { key: "filingFor", label: "F.F. / Next Date", placeholder: "e.g. F.F. 16/12/2025", halfWidth: true },
       { key: "plaintiff", label: "Plaintiff Name", placeholder: "e.g. Miss Rajeshri", required: true },
@@ -487,7 +500,7 @@ Court Seal                                              ${v.acjmNumber || "___"}
     description: "Show cause notice to police for non-execution of warrant (JMFC, Akola)",
     category: "criminal",
     fields: [
-      { key: "courtName", label: "Court Name", placeholder: "e.g. 3rd JMFC, Akola", required: true },
+      { key: "courtName", label: "Court Name", placeholder: "Select court...", required: true, type: "select" as const, options: COURT_OPTIONS },
       { key: "sccNo", label: "S.C.C. No.", placeholder: "e.g. SCC 1317/2020", required: true, halfWidth: true },
       { key: "ffDate", label: "F.F. Date", placeholder: "e.g. ____/____/2022", halfWidth: true },
       { key: "complainant", label: "Complainant", placeholder: "e.g. AXIS CROP SCIENCE", required: true },
@@ -836,6 +849,23 @@ export default function QuickDocsPage() {
                             onChange={e => setValues(p => ({ ...p, [f.key]: e.target.value }))}
                             className="bg-muted/50 text-sm min-h-[70px] mt-1"
                           />
+                        ) : f.type === "select" && f.options ? (
+                          <div className="space-y-1.5 mt-1">
+                            <Select value={values[f.key] || ""} onValueChange={v => setValues(p => ({ ...p, [f.key]: v === "Other (type below)" ? "" : v }))}>
+                              <SelectTrigger className="bg-muted/50 text-sm"><SelectValue placeholder={f.placeholder || "Select..."} /></SelectTrigger>
+                              <SelectContent>
+                                {f.options.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            {(values[f.key] === "" || !f.options.includes(values[f.key] || "")) && (
+                              <Input
+                                placeholder="Or type custom court name..."
+                                value={values[f.key] || ""}
+                                onChange={e => setValues(p => ({ ...p, [f.key]: e.target.value }))}
+                                className="bg-muted/50 text-sm"
+                              />
+                            )}
+                          </div>
                         ) : (
                           <Input
                             type={f.type || "text"}
