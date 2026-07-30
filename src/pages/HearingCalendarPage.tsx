@@ -151,24 +151,27 @@ export default function HearingCalendarPage() {
             return (
               <div
                 key={key}
-                className={`min-h-[100px] border-r border-b border-border/50 p-1.5 transition-colors ${
+                className={`min-h-[110px] border-r border-b border-border/50 p-1.5 transition-colors ${
                   isCurrentDay ? "bg-primary/5 ring-2 ring-inset ring-primary/30" : "hover:bg-muted/20"
                 }`}
               >
                 {/* Day number */}
-                <div className={`text-right mb-1 ${isCurrentDay ? "font-bold text-primary" : "text-muted-foreground"}`}>
-                  <span className={`text-xs ${isCurrentDay ? "bg-primary text-white px-1.5 py-0.5 rounded-full" : ""}`}>
+                <div className={`text-right mb-1 ${isCurrentDay ? "font-bold text-primary" : "text-foreground"}`}>
+                  <span className={`text-xs font-semibold ${isCurrentDay ? "bg-primary text-white px-1.5 py-0.5 rounded-full" : ""}`}>
                     {format(day, "d")}
                   </span>
+                  {dayHearings.length > 0 && (
+                    <span className="ml-1 text-[9px] bg-primary/10 text-primary px-1 py-0.5 rounded-full font-bold">{dayHearings.length}</span>
+                  )}
                 </div>
 
                 {/* Hearings */}
-                <div className="space-y-0.5 overflow-y-auto max-h-[70px]">
+                <div className="space-y-0.5 overflow-y-auto max-h-[80px] custom-scrollbar">
                   {dayHearings.slice(0, 3).map((h: any) => (
                     <Link
                       key={h.id}
                       to={`/cases/${h.id}`}
-                      className="block px-1.5 py-0.5 rounded text-[10px] font-medium truncate bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                      className="block px-1.5 py-0.5 rounded text-[10px] font-bold truncate bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
                       title={`${h.case_number} - ${h.title}`}
                     >
                       {h.case_number}
