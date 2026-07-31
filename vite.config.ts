@@ -1,32 +1,26 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   base: "/",
   plugins: [react()],
-  css: {
-    postcss: {
-      plugins: [
-        (await import("tailwindcss")).default,
-        (await import("autoprefixer")).default,
-      ],
-    },
-  },
   resolve: {
     alias: {
-      "@": path.resolve(import.meta.dirname, "src"),
+      "@": path.resolve(__dirname, "src"),
     },
     dedupe: ["react", "react-dom"],
   },
-  root: path.resolve(import.meta.dirname),
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    chunkSizeWarningLimit: 2000,
   },
   server: {
     port: 5173,
-    strictPort: false,
-    host: "0.0.0.0",
+    host: true,
   },
 });
