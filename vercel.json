@@ -1,8 +1,8 @@
 {
-  "framework": "vite",
-  "buildCommand": "npm run build",
+  "framework": null,
+  "buildCommand": "npm install tailwindcss@3.4.19 autoprefixer@10.4.20 postcss@8.4.49 --no-save && npx vite build",
   "outputDirectory": "dist",
-  "installCommand": "npm install --legacy-peer-deps",
+  "installCommand": "npm install --legacy-peer-deps --include=dev",
   "rewrites": [
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
   ]
