@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Bell, CalendarClock, AlertTriangle, CheckCircle, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { restGet } from "@/lib/restClient";
 import { addDays, format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -12,6 +12,22 @@ type Notification =
   | { kind: "hearing"; id: string; label: string; sub: string; date: string }
   | { kind: "invoice"; id: string; label: string; sub: string; amount: number; dueDate: string };
 
+interface CaseRow {
+  id: string;
+  case_number: string;
+  title: string | null;
+  court_name: string | null;
+  next_hearing_date: string;
+}
+
+interface InvoiceRow {
+  id: string;
+  invoice_number: string;
+  total_amount: number | string | null;
+  due_date: string;
+  client_id: string | null;
+}
+
 function useNotifications() {
   return useQuery({
     queryKey: ["notifications"],
@@ -21,28 +37,31 @@ function useNotifications() {
       const todayStr = now.toISOString().split("T")[0];
       const soonStr = soon.toISOString().split("T")[0];
 
-      // Check cases with next_hearing_date in next 3 days (real imported data)
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-
-      const [casesRes, invoicesRes] = await Promise.all([
-        fetch(`${supabaseUrl}/rest/v1/cases?select=id,case_number,title,court_name,next_hearing_date&next_hearing_date=gte.${todayStr}&next_hearing_date=lte.${soonStr}&order=next_hearing_date.asc&limit=10`, {
-          headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-        }),
-        supabase
-          .from("invoices")
-          .select("id, invoice_number, total, due_date, clients(name)")
-          .lt("due_date", todayStr)
-          .neq("status", "paid")
-          .neq("status", "cancelled")
-          .order("due_date", { ascending: true })
-          .limit(10),
+      // Hearing data lives on cases.next_hearing_date (the hearings table is empty)
+      const [caseRows, invoiceRows] = await Promise.all([
+        restGet<CaseRow>(
+          `cases?select=id,case_number,title,court_name,next_hearing_date` +
+            `&next_hearing_date=gte.${todayStr}&next_hearing_date=lte.${soonStr}` +
+            `&order=next_hearing_date.asc&limit=10`,
+        ),
+        restGet<InvoiceRow>(
+          `invoices?select=id,invoice_number,total_amount,due_date,client_id` +
+            `&due_date=lt.${todayStr}&status=neq.paid&status=neq.cancelled` +
+            `&order=due_date.asc&limit=10`,
+        ),
       ]);
 
-      const casesData = casesRes.ok ? await casesRes.json() : [];
-      const hearings: Notification[] = (casesData || []).map((c: any) => ({
+      // Resolve client names separately — there is no FK join exposed on invoices
+      const clientIds = [...new Set(invoiceRows.map(i => i.client_id).filter(Boolean))];
+      const clientNames = new Map<string, string>();
+      if (clientIds.length) {
+        const clients = await restGet<{ id: string; name: string }>(
+          `clients?select=id,name&id=in.(${clientIds.join(",")})`,
+        );
+        clients.forEach(c => clientNames.set(c.id, c.name));
+      }
+
+      const hearings: Notification[] = caseRows.map(c => ({
         kind: "hearing",
         id: c.id,
         label: c.title || c.case_number,
@@ -50,18 +69,19 @@ function useNotifications() {
         date: c.next_hearing_date + "T00:00:00",
       }));
 
-      const invoices: Notification[] = ((invoicesRes.data || []) as any[]).map(inv => ({
+      const invoices: Notification[] = invoiceRows.map(inv => ({
         kind: "invoice",
         id: inv.id,
         label: `Invoice #${inv.invoice_number}`,
-        sub: (inv.clients as any)?.name || "No client",
-        amount: Number(inv.total),
+        sub: (inv.client_id && clientNames.get(inv.client_id)) || "No client",
+        amount: Number(inv.total_amount ?? 0),
         dueDate: inv.due_date,
       }));
 
       return [...hearings, ...invoices];
     },
     refetchInterval: 5 * 60 * 1000,
+    retry: false,
   });
 }
 

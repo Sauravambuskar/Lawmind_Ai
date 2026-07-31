@@ -25,7 +25,7 @@ export function OverduesList({ invoices }: Props) {
     ((inv as any).clients?.name || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalOverdue = filtered.reduce((s, i) => s + Number(i.total || 0), 0);
+  const totalOverdue = filtered.reduce((s, i) => s + Number(i.total_amount || 0), 0);
   const { paginatedItems, currentPage, totalPages, totalItems, startIndex, nextPage, prevPage, goToPage } = usePagination(filtered);
 
   const daysOverdue = (dueDate: string) => {
@@ -69,7 +69,7 @@ export function OverduesList({ invoices }: Props) {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-foreground">Overdue Invoices</h3>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered.map(inv => ({ invoice: inv.invoice_number, client: (inv as any).clients?.name || "", amount: inv.total, due_date: inv.due_date || "", days_overdue: inv.due_date ? daysOverdue(inv.due_date) : 0 })), "overdues")}>
+            <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered.map(inv => ({ invoice: inv.invoice_number, client: (inv as any).clients?.name || "", amount: inv.total_amount, due_date: inv.due_date || "", days_overdue: inv.due_date ? daysOverdue(inv.due_date) : 0 })), "overdues")}>
               <Download className="w-4 h-4 mr-2" /> Export
             </Button>
             <div className="relative">
@@ -99,7 +99,7 @@ export function OverduesList({ invoices }: Props) {
                   <tr key={inv.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                     <td className="py-3 px-4 text-sm font-mono">{inv.invoice_number}</td>
                     <td className="py-3 px-4 text-sm">{(inv as any).clients?.name || "—"}</td>
-                    <td className="py-3 px-4 text-sm text-right font-medium">₹{Number(inv.total).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                    <td className="py-3 px-4 text-sm text-right font-medium">₹{Number(inv.total_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
                     <td className="py-3 px-4 text-sm">{inv.due_date ? format(new Date(inv.due_date), "PP") : "—"}</td>
                     <td className="py-3 px-4 text-sm text-center font-semibold">{days}</td>
                     <td className="py-3 px-4">

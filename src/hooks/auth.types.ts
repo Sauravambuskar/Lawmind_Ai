@@ -10,4 +10,6 @@ export interface UserProfile {
   role: UserRole;
   status: 'active' | 'inactive';
   created_at: string;
+  /** Per-user section override. When null, the user's role permissions apply. */
+  sections: string[] | null;
 }

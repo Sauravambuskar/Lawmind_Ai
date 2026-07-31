@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
-import { supabase } from "@/integrations/supabase/client";
+import { restGetAll, restCount } from "@/lib/restClient";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line, Legend } from "recharts";
 import { format, subMonths } from "date-fns";
 import { IndianRupee, Briefcase, Users, FileText, Scale, Calendar } from "lucide-react";
@@ -11,17 +11,38 @@ function formatINR(n: number) {
   return "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+interface CaseStatRow {
+  status: string | null;
+  created_at: string | null;
+  court_type: string | null;
+}
+
+interface InvoiceStatRow {
+  amount: number | string | null;
+  total_amount: number | string | null;
+  status: string | null;
+  created_at: string | null;
+}
+
+interface ExpenseStatRow {
+  amount: number | string | null;
+  expense_date: string | null;
+  expense_types: { name: string } | null;
+}
+
 export default function ReportsPage() {
   const { data: caseStats, isLoading: l1 } = useQuery({
     queryKey: ["report-cases"],
     queryFn: async () => {
-      const { data } = await supabase.from("cases").select("status, created_at, case_type");
-      if (!data) return { byStatus: [], byMonth: [], byType: [], total: 0 };
+      // restGetAll paginates past PostgREST's 1000-row cap
+      const data = await restGetAll<CaseStatRow>("cases?select=status,created_at,court_type");
+      if (!data.length) return { byStatus: [], byMonth: [], byType: [], total: 0 };
       const statusMap: Record<string, number> = {};
       const typeMap: Record<string, number> = {};
       data.forEach(c => {
-        statusMap[c.status] = (statusMap[c.status] || 0) + 1;
-        const t = c.case_type || "Other";
+        const s = c.status || "unknown";
+        statusMap[s] = (statusMap[s] || 0) + 1;
+        const t = c.court_type || "Other";
         typeMap[t] = (typeMap[t] || 0) + 1;
       });
       const byStatus = Object.entries(statusMap).map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value }));
@@ -30,7 +51,7 @@ export default function ReportsPage() {
       const byMonth = Array.from({ length: 6 }, (_, i) => {
         const d = subMonths(now, 5 - i);
         const key = format(d, "yyyy-MM");
-        return { month: format(d, "MMM"), value: data.filter(c => c.created_at.startsWith(key)).length };
+        return { month: format(d, "MMM"), value: data.filter(c => (c.created_at || "").startsWith(key)).length };
       });
       return { byStatus, byMonth, byType, total: data.length };
     },
@@ -39,18 +60,22 @@ export default function ReportsPage() {
   const { data: invoiceStats, isLoading: l2 } = useQuery({
     queryKey: ["report-invoices"],
     queryFn: async () => {
-      const { data } = await supabase.from("invoices").select("amount, total, status, created_at");
-      if (!data) return { revenue: 0, paid: 0, pending: 0, overdue: 0, byMonth: [] };
-      const paid = data.filter(i => i.status === "paid").reduce((s, i) => s + Number(i.total), 0);
-      const pending = data.filter(i => i.status === "sent" || i.status === "draft").reduce((s, i) => s + Number(i.total), 0);
-      const overdue = data.filter(i => i.status === "overdue").reduce((s, i) => s + Number(i.total), 0);
+      const data = await restGetAll<InvoiceStatRow>("invoices?select=amount,total_amount,status,created_at");
+      if (!data.length) return { revenue: 0, paid: 0, pending: 0, overdue: 0, byMonth: [] };
+      const amt = (i: InvoiceStatRow) => Number(i.total_amount ?? i.amount ?? 0);
+      const paid = data.filter(i => i.status === "paid").reduce((s, i) => s + amt(i), 0);
+      const pending = data.filter(i => i.status === "sent" || i.status === "draft").reduce((s, i) => s + amt(i), 0);
+      const overdue = data.filter(i => i.status === "overdue").reduce((s, i) => s + amt(i), 0);
       const now = new Date();
       const byMonth = Array.from({ length: 6 }, (_, i) => {
         const d = subMonths(now, 5 - i);
         const key = format(d, "yyyy-MM");
-        const monthPaid = data.filter(inv => inv.created_at.startsWith(key) && inv.status === "paid").reduce((s, inv) => s + Number(inv.total), 0);
-        const monthTotal = data.filter(inv => inv.created_at.startsWith(key)).reduce((s, inv) => s + Number(inv.total), 0);
-        return { month: format(d, "MMM"), paid: monthPaid, total: monthTotal };
+        const inMonth = data.filter(inv => (inv.created_at || "").startsWith(key));
+        return {
+          month: format(d, "MMM"),
+          paid: inMonth.filter(inv => inv.status === "paid").reduce((s, inv) => s + amt(inv), 0),
+          total: inMonth.reduce((s, inv) => s + amt(inv), 0),
+        };
       });
       return { revenue: paid + pending + overdue, paid, pending, overdue, byMonth };
     },
@@ -59,17 +84,21 @@ export default function ReportsPage() {
   const { data: expenseStats, isLoading: l3 } = useQuery({
     queryKey: ["report-expenses"],
     queryFn: async () => {
-      const { data } = await supabase.from("expenses").select("amount, category, expense_date");
-      if (!data) return { total: 0, byCategory: [], byMonth: [] };
-      const total = data.reduce((s, e) => s + Number(e.amount), 0);
+      // Category comes from the related expense_types row, not a column on expenses
+      const data = await restGetAll<ExpenseStatRow>("expenses?select=amount,expense_date,expense_types(name)");
+      if (!data.length) return { total: 0, byCategory: [], byMonth: [] };
+      const total = data.reduce((s, e) => s + Number(e.amount || 0), 0);
       const catMap: Record<string, number> = {};
-      data.forEach(e => { const cat = e.category || "Uncategorized"; catMap[cat] = (catMap[cat] || 0) + Number(e.amount); });
+      data.forEach(e => {
+        const cat = e.expense_types?.name || "Uncategorized";
+        catMap[cat] = (catMap[cat] || 0) + Number(e.amount || 0);
+      });
       const byCategory = Object.entries(catMap).map(([name, value]) => ({ name, value }));
       const now = new Date();
       const byMonth = Array.from({ length: 6 }, (_, i) => {
         const d = subMonths(now, 5 - i);
         const key = format(d, "yyyy-MM");
-        return { month: format(d, "MMM"), value: data.filter(e => (e.expense_date || "").startsWith(key)).reduce((s, e) => s + Number(e.amount), 0) };
+        return { month: format(d, "MMM"), value: data.filter(e => (e.expense_date || "").startsWith(key)).reduce((s, e) => s + Number(e.amount || 0), 0) };
       });
       return { total, byCategory, byMonth };
     },
@@ -77,21 +106,21 @@ export default function ReportsPage() {
 
   const { data: clientCount = 0 } = useQuery({
     queryKey: ["report-clients"],
-    queryFn: async () => { const { count } = await supabase.from("clients").select("*", { count: "exact", head: true }); return count || 0; },
+    queryFn: () => restCount("clients"),
   });
 
   const { data: advocateCount = 0 } = useQuery({
     queryKey: ["report-advocates"],
-    queryFn: async () => { const { count } = await supabase.from("advocates").select("*", { count: "exact", head: true }); return count || 0; },
+    queryFn: () => restCount("advocates"),
   });
 
   const { data: hearingStats } = useQuery({
     queryKey: ["report-hearings"],
     queryFn: async () => {
-      const { data } = await supabase.from("hearings").select("status, hearing_date");
-      if (!data) return { total: 0, byStatus: [] };
+      const data = await restGetAll<{ status: string | null; hearing_date: string | null }>("hearings?select=status,hearing_date");
+      if (!data.length) return { total: 0, byStatus: [] };
       const statusMap: Record<string, number> = {};
-      data.forEach(h => { statusMap[h.status] = (statusMap[h.status] || 0) + 1; });
+      data.forEach(h => { const s = h.status || "unknown"; statusMap[s] = (statusMap[s] || 0) + 1; });
       const byStatus = Object.entries(statusMap).map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value }));
       return { total: data.length, byStatus };
     },

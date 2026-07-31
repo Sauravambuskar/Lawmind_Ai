@@ -68,7 +68,7 @@ export default function EvidencePage() {
         const { error } = await supabase.from("evidence").update(form).eq("id", editId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("evidence").insert({ ...form, user_id: user!.id });
+        const { error } = await supabase.from("evidence").insert({ ...form, created_by: user!.id });
         if (error) throw error;
       }
     },

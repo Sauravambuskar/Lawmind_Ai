@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { usePagination } from "@/hooks/usePagination";
@@ -42,49 +42,47 @@ export default function HearingsPage() {
 
   const { data: hearings = [], isLoading } = useQuery({
     queryKey: ["hearings"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("hearings").select("*, cases(title, case_number)").order("hearing_date", { ascending: true });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () =>
+      // DB columns are `title` and `judge`; alias to the UI's purpose/judge_name
+      restGetAll<any>(
+        "hearings?select=id,case_id,hearing_date,court_name,purpose:title,judge_name:judge,notes,status,cases(title,case_number)&order=hearing_date.asc",
+      ),
   });
 
   const { data: cases = [] } = useQuery({
-    queryKey: ["cases"],
-    queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, title, case_number");
-      return data || [];
-    },
+    queryKey: ["cases-lookup"],
+    queryFn: () => restGetAll<any>("cases?select=id,title,case_number&order=created_at.desc"),
   });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = { ...form };
-      if (editId) {
-        const { error } = await supabase.from("hearings").update(payload).eq("id", editId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("hearings").insert({ ...payload, user_id: user!.id });
-        if (error) throw error;
-      }
+      const payload = {
+        case_id: form.case_id || null,
+        hearing_date: form.hearing_date || new Date().toISOString(),
+        court_name: form.court_name || null,
+        title: form.purpose || null,
+        judge: form.judge_name || null,
+        notes: form.notes || null,
+        status: form.status,
+      };
+      if (editId) await restUpdate("hearings", `id=eq.${editId}`, payload);
+      else await restInsert("hearings", { ...payload, created_by: user!.id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["hearings"] });
       closeDialog();
       toast.success(editId ? "Hearing updated successfully" : "Hearing scheduled successfully");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save hearing"),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("hearings").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => restDelete("hearings", `id=eq.${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["hearings"] });
       toast.success("Hearing deleted");
     },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete hearing"),
   });
 
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };

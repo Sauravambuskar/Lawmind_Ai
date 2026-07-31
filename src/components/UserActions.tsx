@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KeyRound, Trash2, Pencil, Loader2, AlertTriangle } from "lucide-react";
+import { restUpdate } from "@/lib/restClient";
+import { APP_SECTIONS, DEFAULT_PERMISSIONS, type SectionId } from "@/lib/permissionStore";
 import type { UserProfile } from "@/hooks/auth.types";
 
 /* ═══════════════ Edit User Modal ═══════════════ */
@@ -21,34 +23,43 @@ export function EditUserModal({ member, open, onOpenChange, onSuccess }: EditUse
   const [fullName, setFullName] = useState(member.full_name || "");
   const [email, setEmail] = useState(member.email || "");
   const [phone, setPhone] = useState(member.phone || "");
+  const [useCustomSections, setUseCustomSections] = useState(
+    Array.isArray(member.sections) && member.sections.length > 0,
+  );
+  const [sections, setSections] = useState<SectionId[]>(
+    (member.sections as SectionId[] | null) ?? (DEFAULT_PERMISSIONS[member.role] as SectionId[]),
+  );
   const [loading, setLoading] = useState(false);
+
+  const toggleSection = (id: SectionId) =>
+    setSections(prev => (prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]));
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: fullName,
-          email,
-          phone: phone || null,
-        })
-        .eq("user_id", member.user_id);
-      if (error) throw error;
+      await restUpdate("profiles", `user_id=eq.${member.user_id}`, {
+        full_name: fullName,
+        email,
+        phone: phone || null,
+        // null => inherit the role's permissions
+        sections: useCustomSections ? sections : null,
+      });
       toast.success("User profile updated");
       onOpenChange(false);
       onSuccess();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to update profile");
     } finally {
       setLoading(false);
     }
   };
 
+  const groups = [...new Set(APP_SECTIONS.map(s => s.group))];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Pencil className="w-4 h-4" /> Edit User Profile
@@ -70,6 +81,50 @@ export function EditUserModal({ member, open, onOpenChange, onSuccess }: EditUse
             <Label>Phone <span className="text-muted-foreground text-xs">(optional)</span></Label>
             <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 9876543210" />
           </div>
+
+          {/* Section privileges */}
+          <div className="border border-border rounded-lg p-3 space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={useCustomSections}
+                onChange={e => setUseCustomSections(e.target.checked)}
+                className="rounded border-border accent-primary w-3.5 h-3.5"
+              />
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Custom section access
+              </span>
+            </label>
+            <p className="text-[10px] text-muted-foreground">
+              {useCustomSections
+                ? `${sections.length}/${APP_SECTIONS.length} sections allowed for this user only.`
+                : `Inheriting the ${member.role.replace("_", " ")} role permissions.`}
+            </p>
+
+            {useCustomSections && (
+              <div className="space-y-3 max-h-[200px] overflow-y-auto custom-scrollbar pt-1">
+                {groups.map(group => (
+                  <div key={group}>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">{group}</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      {APP_SECTIONS.filter(s => s.group === group).map(section => (
+                        <label key={section.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-muted/30 cursor-pointer text-xs">
+                          <input
+                            type="checkbox"
+                            checked={sections.includes(section.id)}
+                            onChange={() => toggleSection(section.id)}
+                            className="rounded border-border accent-primary w-3.5 h-3.5"
+                          />
+                          <span className="text-foreground">{section.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" className="flex-1" disabled={loading}>
@@ -107,8 +162,8 @@ export function ResetPasswordModal({ member, open, onOpenChange }: ResetPassword
       if (error) throw error;
       toast.success(`Password reset email sent to ${email}`);
       onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to send reset link");
     } finally {
       setLoading(false);
     }
@@ -152,18 +207,14 @@ export function DeleteUserModal({ member, open, onOpenChange, onSuccess }: Delet
   const handleDelete = async () => {
     setLoading(true);
     try {
-      // Deactivate the user profile (soft delete)
-      const { error } = await supabase
-        .from("profiles")
-        .update({ status: "inactive", role: "agent" })
-        .eq("user_id", member.user_id);
-      if (error) throw error;
+      // Soft delete: revoke access without destroying history
+      await restUpdate("profiles", `user_id=eq.${member.user_id}`, { status: "inactive", role: "agent" });
       toast.success(`${member.full_name || "User"} has been deactivated`);
       onOpenChange(false);
       setConfirmText("");
       onSuccess();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to deactivate user");
     } finally {
       setLoading(false);
     }

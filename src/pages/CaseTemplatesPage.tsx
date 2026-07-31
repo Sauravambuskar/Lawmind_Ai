@@ -58,7 +58,7 @@ export default function CaseTemplatesPage() {
         const { error } = await supabase.from("case_templates").update(templateForm).eq("id", editTemplateId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("case_templates").insert({ ...templateForm, user_id: user!.id });
+        const { error } = await supabase.from("case_templates").insert({ ...templateForm, created_by: user!.id });
         if (error) throw error;
       }
     },

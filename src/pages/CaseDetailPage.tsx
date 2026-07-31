@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useAuth } from "@/hooks/useAuth";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { PageHeader } from "@/components/PageHeader";
@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { CASE_STATUS_CONFIG, CASE_STATUSES, type CaseStatus, CURRENCY } from "@/lib/constants";
 import { CloudinaryUpload } from "@/components/CloudinaryUpload";
-import { restGet, restGetOne, restInsert, restUpdate, restDelete } from "@/lib/restClient";
+import { restGet, restGetAll, restGetOne, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { sendAIMessageWithFailover } from "@/lib/ai-providers";
 
@@ -51,11 +51,11 @@ export default function CaseDetailPage() {
     queryFn: () => restGetOne<any>(`cases?id=eq.${id}&select=*`),
     enabled: !!id,
   });
-  const { data: hearings = [] } = useQuery({ queryKey: ["case-hearings", id], queryFn: async () => { const { data } = await supabase.from("hearings").select("*").eq("case_id", id).order("hearing_date", { ascending: false }); return data || []; }, enabled: !!id });
-  const { data: tasks = [] } = useQuery({ queryKey: ["case-tasks", id], queryFn: async () => { const { data } = await supabase.from("tasks").select("*").eq("case_id", id).order("created_at", { ascending: false }); return data || []; }, enabled: !!id });
-  const { data: invoices = [] } = useQuery({ queryKey: ["case-invoices", id], queryFn: async () => { const { data } = await supabase.from("invoices").select("*").eq("case_id", id).order("created_at", { ascending: false }); return data || []; }, enabled: !!id });
-  const { data: expenses = [] } = useQuery({ queryKey: ["case-expenses", id], queryFn: async () => { const { data } = await supabase.from("expenses").select("*").eq("case_id", id).order("expense_date", { ascending: false }); return data || []; }, enabled: !!id });
-  const { data: documents = [] } = useQuery({ queryKey: ["case-documents", id], queryFn: async () => { const { data } = await supabase.from("documents").select("*").eq("case_id", id).order("created_at", { ascending: false }); return data || []; }, enabled: !!id });
+  const { data: hearings = [] } = useQuery({ queryKey: ["case-hearings", id], queryFn: () => restGetAll<any>(`hearings?select=*&case_id=eq.${id}&order=hearing_date.desc`), enabled: !!id });
+  const { data: tasks = [] } = useQuery({ queryKey: ["case-tasks", id], queryFn: () => restGetAll<any>(`tasks?select=*&case_id=eq.${id}&order=created_at.desc`), enabled: !!id });
+  const { data: invoices = [] } = useQuery({ queryKey: ["case-invoices", id], queryFn: () => restGetAll<any>(`invoices?select=*&case_id=eq.${id}&order=created_at.desc`), enabled: !!id });
+  const { data: expenses = [] } = useQuery({ queryKey: ["case-expenses", id], queryFn: () => restGetAll<any>(`expenses?select=*&case_id=eq.${id}&order=expense_date.desc`), enabled: !!id });
+  const { data: documents = [] } = useQuery({ queryKey: ["case-documents", id], queryFn: () => restGetAll<any>(`documents?select=*&case_id=eq.${id}&order=created_at.desc`), enabled: !!id });
 
   const showLoader = useMinLoader(isLoading);
   if (showLoader) return <PageLoader />;
@@ -169,11 +169,11 @@ function StatusChanger({ caseId, currentStatus, sConf, queryClient }: { caseId: 
 // ══════════════════════════════════════════════════════════════
 function TabHistory({ hearings, tasks, invoices, expenses, documents }: any) {
   const events: any[] = [];
-  (hearings || []).forEach((h: any) => events.push({ date: new Date(h.hearing_date), title: `Hearing: ${h.purpose || "Scheduled"}`, sub: h.court_name, type: "hearing", status: h.status }));
+  (hearings || []).forEach((h: any) => events.push({ date: new Date(h.hearing_date), title: `Hearing: ${h.title || "Scheduled"}`, sub: h.court_name, type: "hearing", status: h.status }));
   (tasks || []).forEach((t: any) => { if (t.due_date) events.push({ date: new Date(t.due_date), title: `Task: ${t.title}`, type: "task", status: t.status }); });
-  (invoices || []).forEach((inv: any) => { if (inv.issue_date) events.push({ date: new Date(inv.issue_date), title: `Invoice #${inv.invoice_number}`, sub: `${CURRENCY}${inv.total}`, type: "invoice", status: inv.status }); });
+  (invoices || []).forEach((inv: any) => { if (inv.issue_date) events.push({ date: new Date(inv.issue_date), title: `Invoice #${inv.invoice_number}`, sub: `${CURRENCY}${inv.total_amount ?? 0}`, type: "invoice", status: inv.status }); });
   (expenses || []).forEach((e: any) => { if (e.expense_date) events.push({ date: new Date(e.expense_date), title: `Expense: ${e.title}`, sub: `${CURRENCY}${e.amount}`, type: "expense" }); });
-  (documents || []).forEach((d: any) => events.push({ date: new Date(d.created_at), title: `Doc: ${d.title}`, sub: d.document_type, type: "document" }));
+  (documents || []).forEach((d: any) => events.push({ date: new Date(d.created_at), title: `Doc: ${d.name}`, sub: d.category, type: "document" }));
   events.sort((a, b) => b.date.getTime() - a.date.getTime());
   if (!events.length) return <EmptyState icon={Clock} text="No case history yet" />;
   return <div className="space-y-2">{events.map((ev, i) => (
@@ -195,16 +195,25 @@ function TabAppointments({ caseId, userId, hearings, qc }: { caseId: string; use
 
   const save = useMutation({
     mutationFn: async () => {
-      const payload = { ...form, case_id: caseId, user_id: userId, hearing_date: form.hearing_date || new Date().toISOString() };
-      if (editId) { await supabase.from("hearings").update(payload).eq("id", editId); }
-      else { await supabase.from("hearings").insert(payload); }
+      // hearings columns: title, judge, created_by (no purpose/judge_name/user_id)
+      const payload = {
+        title: form.purpose || null,
+        judge: form.judge_name || null,
+        court_name: form.court_name || null,
+        status: form.status,
+        notes: form.notes || null,
+        case_id: caseId,
+        hearing_date: form.hearing_date || new Date().toISOString(),
+      };
+      if (editId) await restUpdate("hearings", `id=eq.${editId}`, payload);
+      else await restInsert("hearings", { ...payload, created_by: userId });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-hearings", caseId] }); qc.invalidateQueries({ queryKey: ["case-detail", caseId] }); setOpen(false); setEditId(null); setForm({ hearing_date: "", court_name: "", judge_name: "", purpose: "", status: "scheduled", notes: "" }); toast.success(editId ? "Updated" : "Hearing added"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save hearing"),
   });
-  const del = useMutation({ mutationFn: async (hid: string) => { await supabase.from("hearings").delete().eq("id", hid); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-hearings", caseId] }); toast.success("Deleted"); } });
+  const del = useMutation({ mutationFn: (hid: string) => restDelete("hearings", `id=eq.${hid}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-hearings", caseId] }); toast.success("Deleted"); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete") });
 
-  const openEdit = (h: any) => { setEditId(h.id); setForm({ hearing_date: h.hearing_date?.slice(0, 16) || "", court_name: h.court_name || "", judge_name: h.judge_name || "", purpose: h.purpose || "", status: h.status || "scheduled", notes: h.notes || "" }); setOpen(true); };
+  const openEdit = (h: any) => { setEditId(h.id); setForm({ hearing_date: h.hearing_date?.slice(0, 16) || "", court_name: h.court_name || "", judge_name: h.judge || "", purpose: h.title || "", status: h.status || "scheduled", notes: h.notes || "" }); setOpen(true); };
 
   return (
     <div>
@@ -212,7 +221,7 @@ function TabAppointments({ caseId, userId, hearings, qc }: { caseId: string; use
       {hearings.length === 0 ? <EmptyState icon={Gavel} text="No hearings scheduled" /> : <div className="space-y-2">{hearings.map((h: any) => (
         <div key={h.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
           <Gavel className="w-5 h-5 text-amber-500 shrink-0" />
-          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{h.purpose || "Hearing"}</p><p className="text-xs text-muted-foreground">{h.court_name || "—"} • Judge: {h.judge_name || "—"}</p></div>
+          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{h.title || "Hearing"}</p><p className="text-xs text-muted-foreground">{h.court_name || "—"} • Judge: {h.judge || "—"}</p></div>
           <div className="text-right shrink-0"><p className="text-xs font-medium">{h.hearing_date ? format(new Date(h.hearing_date), "dd MMM yyyy") : "—"}</p><span className="text-[10px] uppercase font-bold bg-muted px-1.5 py-0.5 rounded">{h.status}</span></div>
           <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(h)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(h.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
         </div>
@@ -240,14 +249,14 @@ function TabTasks({ caseId, userId, tasks, qc }: { caseId: string; userId: strin
 
   const save = useMutation({
     mutationFn: async () => {
-      const payload = { ...form, case_id: caseId, user_id: userId, due_date: form.due_date || null };
-      if (editId) { await supabase.from("tasks").update(payload).eq("id", editId); }
-      else { await supabase.from("tasks").insert(payload); }
+      const payload = { ...form, case_id: caseId, due_date: form.due_date || null };
+      if (editId) await restUpdate("tasks", `id=eq.${editId}`, payload);
+      else await restInsert("tasks", { ...payload, created_by: userId });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-tasks", caseId] }); setOpen(false); setEditId(null); setForm({ title: "", description: "", status: "todo", priority: "medium", due_date: "" }); toast.success(editId ? "Updated" : "Task added"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save task"),
   });
-  const del = useMutation({ mutationFn: async (tid: string) => { await supabase.from("tasks").delete().eq("id", tid); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-tasks", caseId] }); toast.success("Deleted"); } });
+  const del = useMutation({ mutationFn: (tid: string) => restDelete("tasks", `id=eq.${tid}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-tasks", caseId] }); toast.success("Deleted"); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete") });
 
   const openEdit = (t: any) => { setEditId(t.id); setForm({ title: t.title || "", description: t.description || "", status: t.status || "todo", priority: t.priority || "medium", due_date: t.due_date || "" }); setOpen(true); };
 
@@ -288,16 +297,23 @@ function TabDocuments({ caseId, userId, documents, qc }: { caseId: string; userI
 
   const save = useMutation({
     mutationFn: async () => {
-      const payload = { ...form, case_id: caseId, user_id: userId };
-      if (editId) { await supabase.from("documents").update(payload).eq("id", editId); }
-      else { await supabase.from("documents").insert(payload); }
+      // documents columns: name, category, created_by
+      const payload = {
+        name: form.title,
+        description: form.description || null,
+        category: form.document_type || null,
+        file_url: form.file_url || null,
+        case_id: caseId,
+      };
+      if (editId) await restUpdate("documents", `id=eq.${editId}`, payload);
+      else await restInsert("documents", { ...payload, created_by: userId });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-documents", caseId] }); setOpen(false); setEditId(null); setForm({ title: "", description: "", document_type: "", file_url: "" }); toast.success(editId ? "Updated" : "Document added"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save document"),
   });
-  const del = useMutation({ mutationFn: async (did: string) => { await supabase.from("documents").delete().eq("id", did); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-documents", caseId] }); toast.success("Deleted"); } });
+  const del = useMutation({ mutationFn: (did: string) => restDelete("documents", `id=eq.${did}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-documents", caseId] }); toast.success("Deleted"); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete") });
 
-  const openEdit = (d: any) => { setEditId(d.id); setForm({ title: d.title || "", description: d.description || "", document_type: d.document_type || "", file_url: d.file_url || "" }); setOpen(true); };
+  const openEdit = (d: any) => { setEditId(d.id); setForm({ title: d.name || "", description: d.description || "", document_type: d.category || "", file_url: d.file_url || "" }); setOpen(true); };
 
   return (
     <div>
@@ -305,7 +321,7 @@ function TabDocuments({ caseId, userId, documents, qc }: { caseId: string; userI
       {documents.length === 0 ? <EmptyState icon={FileText} text="No documents" /> : <div className="space-y-2">{documents.map((d: any) => (
         <div key={d.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
           <FileText className="w-5 h-5 text-primary shrink-0" />
-          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{d.title}</p><p className="text-xs text-muted-foreground">{d.document_type || "General"} • {format(new Date(d.created_at), "dd MMM yyyy")}</p></div>
+          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{d.name}</p><p className="text-xs text-muted-foreground">{d.category || "General"} • {format(new Date(d.created_at), "dd MMM yyyy")}</p></div>
           {d.file_url && <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View</a>}
           <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(d)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
         </div>
@@ -334,16 +350,26 @@ function TabInvoices({ caseId, userId, invoices, qc }: { caseId: string; userId:
 
   const save = useMutation({
     mutationFn: async () => {
-      const payload = { invoice_number: form.invoice_number, amount: Number(form.amount) || 0, tax: Number(form.tax) || 0, total: Number(form.total) || Number(form.amount) || 0, status: form.status, due_date: form.due_date || null, notes: form.notes || null, case_id: caseId, user_id: userId };
-      if (editId) { await supabase.from("invoices").update(payload).eq("id", editId); }
-      else { await supabase.from("invoices").insert(payload); }
+      // invoices columns: tax_amount / total_amount / created_by
+      const payload = {
+        invoice_number: form.invoice_number,
+        amount: Number(form.amount) || 0,
+        tax_amount: Number(form.tax) || 0,
+        total_amount: Number(form.total) || Number(form.amount) || 0,
+        status: form.status,
+        due_date: form.due_date || null,
+        notes: form.notes || null,
+        case_id: caseId,
+      };
+      if (editId) await restUpdate("invoices", `id=eq.${editId}`, payload);
+      else await restInsert("invoices", { ...payload, created_by: userId });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-invoices", caseId] }); setOpen(false); setEditId(null); setForm({ invoice_number: "", amount: "", tax: "0", total: "", status: "draft", due_date: "", notes: "" }); toast.success(editId ? "Updated" : "Invoice added"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save invoice"),
   });
-  const del = useMutation({ mutationFn: async (iid: string) => { await supabase.from("invoices").delete().eq("id", iid); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-invoices", caseId] }); toast.success("Deleted"); } });
+  const del = useMutation({ mutationFn: (iid: string) => restDelete("invoices", `id=eq.${iid}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-invoices", caseId] }); toast.success("Deleted"); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete") });
 
-  const openEdit = (inv: any) => { setEditId(inv.id); setForm({ invoice_number: inv.invoice_number || "", amount: String(inv.amount || ""), tax: String(inv.tax || "0"), total: String(inv.total || ""), status: inv.status || "draft", due_date: inv.due_date || "", notes: inv.notes || "" }); setOpen(true); };
+  const openEdit = (inv: any) => { setEditId(inv.id); setForm({ invoice_number: inv.invoice_number || "", amount: String(inv.amount || ""), tax: String(inv.tax_amount || "0"), total: String(inv.total_amount || ""), status: inv.status || "draft", due_date: inv.due_date || "", notes: inv.notes || "" }); setOpen(true); };
 
   return (
     <div>
@@ -352,7 +378,7 @@ function TabInvoices({ caseId, userId, invoices, qc }: { caseId: string; userId:
         <div key={inv.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
           <Receipt className="w-5 h-5 text-rose-500 shrink-0" />
           <div className="flex-1 min-w-0"><p className="text-sm font-medium">#{inv.invoice_number}</p><p className="text-xs text-muted-foreground">{inv.due_date ? format(new Date(inv.due_date), "dd MMM yyyy") : "No due date"}</p></div>
-          <div className="text-right shrink-0"><p className="text-sm font-bold">{CURRENCY}{inv.total}</p><span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${inv.status === "paid" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"}`}>{inv.status}</span></div>
+          <div className="text-right shrink-0"><p className="text-sm font-bold">{CURRENCY}{inv.total_amount ?? 0}</p><span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${inv.status === "paid" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"}`}>{inv.status}</span></div>
           <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(inv.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
         </div>
       ))}</div>}
@@ -379,14 +405,14 @@ function TabExpenses({ caseId, userId, expenses, qc }: { caseId: string; userId:
 
   const save = useMutation({
     mutationFn: async () => {
-      const payload = { title: form.title, description: form.description || null, amount: Number(form.amount) || 0, category: form.category || null, expense_date: form.expense_date, case_id: caseId, user_id: userId };
-      if (editId) { await supabase.from("expenses").update(payload).eq("id", editId); }
-      else { await supabase.from("expenses").insert(payload); }
+      const payload = { title: form.title, description: form.description || null, amount: Number(form.amount) || 0, category: form.category || null, expense_date: form.expense_date, case_id: caseId };
+      if (editId) await restUpdate("expenses", `id=eq.${editId}`, payload);
+      else await restInsert("expenses", { ...payload, created_by: userId });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-expenses", caseId] }); setOpen(false); setEditId(null); setForm({ title: "", description: "", amount: "", category: "", expense_date: new Date().toISOString().slice(0, 10) }); toast.success(editId ? "Updated" : "Expense added"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save expense"),
   });
-  const del = useMutation({ mutationFn: async (eid: string) => { await supabase.from("expenses").delete().eq("id", eid); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-expenses", caseId] }); toast.success("Deleted"); } });
+  const del = useMutation({ mutationFn: (eid: string) => restDelete("expenses", `id=eq.${eid}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-expenses", caseId] }); toast.success("Deleted"); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete") });
 
   const openEdit = (e: any) => { setEditId(e.id); setForm({ title: e.title || "", description: e.description || "", amount: String(e.amount || ""), category: e.category || "", expense_date: e.expense_date || "" }); setOpen(true); };
 
@@ -422,15 +448,27 @@ function TabNotes({ caseId, userId, caseData, qc }: { caseId: string; userId: st
 
   const { data: logs = [] } = useQuery({
     queryKey: ["case-comms", caseId],
-    queryFn: async () => { const { data } = await supabase.from("communication_logs").select("*").eq("case_id", caseId).order("date", { ascending: false }); return data || []; },
+    queryFn: () =>
+      // communication_logs columns: subject, content, communication_date
+      restGetAll<any>(
+        `communication_logs?select=id,summary:subject,notes:content,type,date:communication_date&case_id=eq.${caseId}&order=communication_date.desc`,
+      ),
   });
 
   const save = useMutation({
-    mutationFn: async () => { await supabase.from("communication_logs").insert({ summary: form.summary, notes: form.notes || null, type: form.type, case_id: caseId, user_id: userId }); },
+    mutationFn: () =>
+      restInsert("communication_logs", {
+        subject: form.summary,
+        content: form.notes || null,
+        type: form.type,
+        communication_date: new Date().toISOString(),
+        case_id: caseId,
+        created_by: userId,
+      }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-comms", caseId] }); setOpen(false); setForm({ summary: "", notes: "", type: "other" }); toast.success("Note added"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to add note"),
   });
-  const del = useMutation({ mutationFn: async (lid: string) => { await supabase.from("communication_logs").delete().eq("id", lid); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-comms", caseId] }); toast.success("Deleted"); } });
+  const del = useMutation({ mutationFn: (lid: string) => restDelete("communication_logs", `id=eq.${lid}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-comms", caseId] }); toast.success("Deleted"); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete") });
 
   const allNotes = [...(caseData.case_notes_1 ? [{ id: "n1", summary: caseData.case_notes_1, type: "note", date: caseData.created_at, fixed: true }] : []), ...(caseData.case_notes_2 ? [{ id: "n2", summary: caseData.case_notes_2, type: "note", date: caseData.created_at, fixed: true }] : []), ...logs];
 
@@ -470,7 +508,7 @@ function TabNotify({ caseId, userId, caseData, qc }: { caseId: string; userId: s
 
   const dismiss = useMutation({
     mutationFn: async (rid: string) => {
-      await supabase.from("hearing_reminders" as any).update({ is_dismissed: true } as any).eq("id", rid);
+      await restUpdate("hearing_reminders", `id=eq.${rid}`, { is_dismissed: true });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-reminders", caseId] }); },
   });

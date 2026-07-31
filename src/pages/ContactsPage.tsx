@@ -44,7 +44,7 @@ export default function ContactsPage() {
         const { error } = await supabase.from("contacts").update(form).eq("id", editId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("contacts").insert({ ...form, user_id: user!.id });
+        const { error } = await supabase.from("contacts").insert({ ...form, created_by: user!.id });
         if (error) throw error;
       }
     },

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { usePagination } from "@/hooks/usePagination";
@@ -118,52 +118,45 @@ export default function DocumentsPage() {
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ["documents"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("documents")
-        .select("*, cases(title, case_number)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as DocumentRow[];
-    },
+    queryFn: () =>
+      // DB columns are `name` and `category`; alias them to the UI's field names
+      restGetAll<DocumentRow>(
+        "documents?select=id,title:name,description,document_type:category,file_url,case_id,created_at,cases(title,case_number)&order=created_at.desc",
+      ),
   });
 
   const { data: cases = [] } = useQuery({
-    queryKey: ["cases"],
-    queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, title, case_number");
-      return data || [];
-    },
+    queryKey: ["cases-lookup"],
+    queryFn: () => restGetAll<{ id: string; title: string; case_number: string }>("cases?select=id,title,case_number&order=created_at.desc"),
   });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = { ...form, case_id: form.case_id || null };
-      if (editId) {
-        const { error } = await supabase.from("documents").update(payload).eq("id", editId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("documents").insert({ ...payload, user_id: user!.id });
-        if (error) throw error;
-      }
+      const payload = {
+        name: form.title,
+        description: form.description || null,
+        category: form.document_type || null,
+        file_url: form.file_url || null,
+        case_id: form.case_id || null,
+      };
+      if (editId) await restUpdate("documents", `id=eq.${editId}`, payload);
+      else await restInsert("documents", { ...payload, created_by: user!.id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       closeDialog();
       toast.success(editId ? "Document updated successfully" : "Document added successfully");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save document"),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("documents").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => restDelete("documents", `id=eq.${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       toast.success("Document deleted");
     },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete document"),
   });
 
   const filtered = documents.filter(d => (d.title || "").toLowerCase().includes(search.toLowerCase()));

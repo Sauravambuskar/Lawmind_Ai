@@ -3,7 +3,8 @@ import {
   getPermissions,
   loadPermissions as loadPerms,
   setRolePermissions as setRolePerms,
-  hasAccess as checkAccess,
+  hasUserAccess as checkAccess,
+  setUserSections as setUserSecs,
   subscribeToPermissions,
   type PermissionMap,
   type SectionId,
@@ -31,9 +32,23 @@ export function usePermissions() {
     await setRolePerms(role, sections);
   }, []);
 
-  const hasAccess = useCallback((role: UserRole, sectionId: string) => {
-    return checkAccess(role, sectionId);
-  }, [permissions]);
+  /**
+   * `userSections` is the optional per-user override from profiles.sections.
+   * When omitted or empty, role permissions apply.
+   */
+  const hasAccess = useCallback(
+    (role: UserRole, sectionId: string, userSections?: string[] | null) => {
+      return checkAccess(role, sectionId, userSections);
+    },
+    [permissions],
+  );
 
-  return { permissions, setRolePermissions, hasAccess };
+  const setUserSections = useCallback(
+    async (userId: string, sections: SectionId[] | null) => {
+      await setUserSecs(userId, sections);
+    },
+    [],
+  );
+
+  return { permissions, setRolePermissions, setUserSections, hasAccess };
 }

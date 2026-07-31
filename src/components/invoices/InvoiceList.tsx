@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { usePagination } from "@/hooks/usePagination";
@@ -39,36 +39,39 @@ export function InvoiceList({ invoices, clients, cases, payments }: Props) {
     mutationFn: async () => {
       const amount = parseFloat(form.amount) || 0;
       const tax = parseFloat(form.tax) || 0;
+      // DB columns are tax_amount / total_amount, and the owner column is created_by
       const payload = {
-        invoice_number: form.invoice_number, amount, tax, total: amount + tax,
-        client_id: form.client_id || null, case_id: form.case_id || null,
-        due_date: form.due_date || null, notes: form.notes, status: form.status,
+        invoice_number: form.invoice_number,
+        amount,
+        tax_amount: tax,
+        total_amount: amount + tax,
+        client_id: form.client_id || null,
+        case_id: form.case_id || null,
+        due_date: form.due_date || null,
+        notes: form.notes,
+        status: form.status,
       };
-      if (editId) {
-        const { error } = await supabase.from("invoices").update(payload).eq("id", editId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("invoices").insert({ ...payload, user_id: user!.id });
-        if (error) throw error;
-      }
+      if (editId) await restUpdate("invoices", `id=eq.${editId}`, payload);
+      else await restInsert("invoices", { ...payload, created_by: user!.id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       closeDialog();
       toast.success(editId ? "Invoice updated" : "Invoice created");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save invoice"),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("invoices").delete().eq("id", id); if (error) throw error; },
+    mutationFn: (id: string) => restDelete("invoices", `id=eq.${id}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["invoices"] }); toast.success("Deleted"); },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete invoice"),
   });
 
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };
   const openEdit = (inv: any) => {
     setEditId(inv.id);
-    setForm({ invoice_number: inv.invoice_number, amount: String(inv.amount), tax: String(inv.tax), client_id: inv.client_id || "", case_id: inv.case_id || "", due_date: inv.due_date || "", notes: inv.notes || "", status: inv.status });
+    setForm({ invoice_number: inv.invoice_number, amount: String(inv.amount ?? ""), tax: String(inv.tax_amount ?? "0"), client_id: inv.client_id || "", case_id: inv.case_id || "", due_date: inv.due_date || "", notes: inv.notes || "", status: inv.status });
     setOpen(true);
   };
 
@@ -108,7 +111,7 @@ export function InvoiceList({ invoices, clients, cases, payments }: Props) {
             <Input placeholder="Search..." className="pl-9 w-full sm:w-64 h-9 bg-background shadow-sm" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
 
-          <Button variant="outline" size="sm" className="h-9" onClick={() => exportToCSV(filtered.map(inv => ({ invoice_number: inv.invoice_number, client: (inv as any).clients?.name || "", amount: inv.amount, tax: inv.tax, total: inv.total, status: inv.status, due_date: inv.due_date || "" })), "invoices")}>
+          <Button variant="outline" size="sm" className="h-9" onClick={() => exportToCSV(filtered.map(inv => ({ invoice_number: inv.invoice_number, client: (inv as any).clients?.name || "", amount: inv.amount, tax: inv.tax_amount, total: inv.total_amount, status: inv.status, due_date: inv.due_date || "" })), "invoices")}>
             <Download className="w-4 h-4 mr-2" /> Export
           </Button>
 
@@ -175,7 +178,7 @@ export function InvoiceList({ invoices, clients, cases, payments }: Props) {
                 <td className="py-4 px-6 font-medium text-foreground">{(inv as any).clients?.name || "—"}</td>
                 <td className="py-4 px-6 text-muted-foreground">{(inv as any).cases?.title || "—"}</td>
                 <td className="py-4 px-6 text-right text-muted-foreground">{Number(inv.amount).toLocaleString("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 })}</td>
-                <td className="py-4 px-6 text-right font-semibold text-foreground">{Number(inv.total).toLocaleString("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 })}</td>
+                <td className="py-4 px-6 text-right font-semibold text-foreground">{Number(inv.total_amount ?? 0).toLocaleString("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 })}</td>
                 <td className="py-4 px-6">
                   <Badge variant={statusColor(inv.status) as any} className="capitalize font-medium shadow-sm">
                     {inv.status}

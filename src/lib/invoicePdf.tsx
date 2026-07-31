@@ -359,7 +359,7 @@ const InvoiceDocument = ({ invoice }: { invoice: any }) => {
           
           <View style={styles.totalsRow}>
             <Text style={styles.totalsRowLabel}>Tax Amount</Text>
-            <Text style={styles.totalsRowValue}>{formatCurrency(Number(invoice.tax))}</Text>
+            <Text style={styles.totalsRowValue}>{formatCurrency(Number(invoice.tax_amount ?? 0))}</Text>
           </View>
           <View style={styles.totalsRow}>
             <Text style={styles.totalsRowLabel}>Total Discount</Text>
@@ -367,12 +367,12 @@ const InvoiceDocument = ({ invoice }: { invoice: any }) => {
           </View>
           <View style={[styles.totalsRow, { borderBottom: "none", height: 22, backgroundColor: "#f8fafc" }]}>
             <Text style={[styles.totalsRowLabel, { fontSize: 10, color: primaryText }]}>Total Due</Text>
-            <Text style={[styles.totalsRowValue, styles.bold, { fontSize: 10, color: "#2563eb" }]}>₹ {formatCurrency(Number(invoice.total))}</Text>
+            <Text style={[styles.totalsRowValue, styles.bold, { fontSize: 10, color: "#2563eb" }]}>₹ {formatCurrency(Number(invoice.total_amount ?? 0))}</Text>
           </View>
 
           {/* Words */}
           <View style={[styles.amountInWords, { borderBottom: "none", borderTop: `1px solid ${borderColor}` }]}>
-            <Text>Total amount (in words): <Text style={styles.bold}>{numberToWords(Number(invoice.total))}</Text></Text>
+            <Text>Total amount (in words): <Text style={styles.bold}>{numberToWords(Number(invoice.total_amount ?? 0))}</Text></Text>
           </View>
         </View>
 

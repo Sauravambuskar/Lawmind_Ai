@@ -61,11 +61,11 @@ export function InvoiceOverview({ invoices, expenses, payments }: Props) {
   }, [payments, cutoff]);
 
   const stats = useMemo(() => {
-    const invoiceAmount = filteredInvoices.reduce((s, i) => s + Number(i.total || 0), 0);
-    const paymentReceived = filteredPayments.reduce((s, p) => s + Number(p.amount_paid || 0), 0);
+    const invoiceAmount = filteredInvoices.reduce((s, i) => s + Number(i.total_amount || 0), 0);
+    const paymentReceived = filteredPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
     const totalExpenses = filteredExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
     const paymentDue = invoiceAmount - paymentReceived;
-    const paymentOverdue = filteredInvoices.filter(i => i.status === "overdue").reduce((s, i) => s + Number(i.total || 0), 0);
+    const paymentOverdue = filteredInvoices.filter(i => i.status === "overdue").reduce((s, i) => s + Number(i.total_amount || 0), 0);
     const collectionRate = invoiceAmount > 0 ? Math.round((paymentReceived / invoiceAmount) * 100) : 0;
     return { invoiceAmount, paymentReceived, totalExpenses, paymentDue, paymentOverdue, collectionRate };
   }, [filteredInvoices, filteredExpenses, filteredPayments]);
@@ -77,12 +77,12 @@ export function InvoiceOverview({ invoices, expenses, payments }: Props) {
       const clientId = inv.client_id || "unknown";
       if (!map[clientId]) map[clientId] = { name: clientName, cases: new Set(), invoiceAmount: 0, amountReceived: 0 };
       if (inv.case_id) map[clientId].cases.add(inv.case_id);
-      map[clientId].invoiceAmount += Number(inv.total || 0);
+      map[clientId].invoiceAmount += Number(inv.total_amount || 0);
     }
     for (const p of filteredPayments) {
       const clientId = p.invoices?.client_id;
       if (clientId && map[clientId]) {
-        map[clientId].amountReceived += Number(p.amount_paid || 0);
+        map[clientId].amountReceived += Number(p.amount || 0);
       }
     }
     return Object.values(map)

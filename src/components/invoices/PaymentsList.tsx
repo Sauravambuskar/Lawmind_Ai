@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { restInsert } from "@/lib/restClient";
 import { toast } from "sonner";
 import { usePagination } from "@/hooks/usePagination";
 import { TablePagination } from "@/components/TablePagination";
@@ -28,61 +28,59 @@ export function PaymentsList({ invoices, payments }: Props) {
   const [search, setSearch] = useState("");
   const [payDialog, setPayDialog] = useState<any>(null);
   const [form, setForm] = useState({
-    amount_paid: "",
+    amount: "",
     payment_date: new Date().toISOString().slice(0, 10),
-    method: "bank_transfer",
+    payment_method: "bank_transfer",
     reference_no: "",
     notes: "",
   });
 
   const unpaidInvoices = invoices.filter(inv => inv.status !== "paid" && inv.status !== "cancelled");
-  
-  // Calculate total received using the new payments table
-  const totalReceived = payments.reduce((s, p) => s + Number(p.amount_paid || 0), 0);
+
+  const totalReceived = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
   const fullyPaidCount = invoices.filter(inv => inv.status === "paid").length;
 
   const filteredPayments = payments.filter(p =>
     (p.invoices?.invoice_number || "").toLowerCase().includes(search.toLowerCase()) ||
     ((p.invoices?.clients as any)?.name || "").toLowerCase().includes(search.toLowerCase()) ||
-    (p.method || "").toLowerCase().includes(search.toLowerCase())
+    (p.payment_method || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const { paginatedItems, currentPage, totalPages, totalItems, startIndex, nextPage, prevPage, goToPage } = usePagination(filteredPayments);
 
   const recordPaymentMutation = useMutation({
-    mutationFn: async () => {
-      const payload = {
+    mutationFn: () =>
+      restInsert("payments", {
         invoice_id: payDialog.id,
-        amount_paid: Number(form.amount_paid),
+        client_id: payDialog.client_id || null,
+        amount: Number(form.amount),
         payment_date: form.payment_date,
-        method: form.method,
-        reference_no: form.reference_no,
-        notes: form.notes,
-        user_id: user!.id,
-      };
-      const { error } = await supabase.from("payments").insert(payload);
-      if (error) throw error;
-    },
+        payment_method: form.payment_method,
+        reference_no: form.reference_no || null,
+        notes: form.notes || null,
+        created_by: user!.id,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       setPayDialog(null);
       toast.success("Payment recorded successfully");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to record payment"),
   });
 
   const openPayDialog = (inv: any) => {
-    // Calculate remaining balance
-    const paymentsForInv = payments.filter(p => p.invoice_id === inv.id);
-    const paidSoFar = paymentsForInv.reduce((s, p) => s + Number(p.amount_paid), 0);
-    const balance = Number(inv.total) - paidSoFar;
+    // Remaining balance = invoice total minus payments already recorded
+    const paidSoFar = payments
+      .filter(p => p.invoice_id === inv.id)
+      .reduce((s, p) => s + Number(p.amount || 0), 0);
+    const balance = Number(inv.total_amount ?? 0) - paidSoFar;
 
     setPayDialog({ ...inv, balance });
     setForm({
-      amount_paid: balance > 0 ? balance.toString() : "",
+      amount: balance > 0 ? balance.toString() : "",
       payment_date: new Date().toISOString().slice(0, 10),
-      method: "bank_transfer",
+      payment_method: "bank_transfer",
       reference_no: "",
       notes: "",
     });
@@ -112,9 +110,10 @@ export function PaymentsList({ invoices, payments }: Props) {
           <h3 className="text-sm font-semibold text-foreground mb-4">Pending Invoices — Record Payment</h3>
           <div className="space-y-2">
             {unpaidInvoices.slice(0, 5).map(inv => {
-              const paymentsForInv = payments.filter(p => p.invoice_id === inv.id);
-              const paidSoFar = paymentsForInv.reduce((s, p) => s + Number(p.amount_paid), 0);
-              const balance = Number(inv.total) - paidSoFar;
+              const paidSoFar = payments
+                .filter(p => p.invoice_id === inv.id)
+                .reduce((s, p) => s + Number(p.amount || 0), 0);
+              const balance = Number(inv.total_amount ?? 0) - paidSoFar;
 
               return (
                 <div key={inv.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 border border-border">
@@ -123,7 +122,7 @@ export function PaymentsList({ invoices, payments }: Props) {
                     <span className="text-sm text-muted-foreground truncate">{(inv as any).clients?.name || "—"}</span>
                   </div>
                   <div className="flex items-center justify-between w-1/3 px-4 text-sm">
-                    <span className="text-muted-foreground">Total: {CURRENCY}{Number(inv.total).toLocaleString("en-IN")}</span>
+                    <span className="text-muted-foreground">Total: {CURRENCY}{Number(inv.total_amount ?? 0).toLocaleString("en-IN")}</span>
                     {paidSoFar > 0 && <span className="text-emerald-500 font-medium">Paid: {CURRENCY}{paidSoFar.toLocaleString("en-IN")}</span>}
                   </div>
                   <div className="flex items-center justify-end gap-3 w-1/3">
@@ -151,7 +150,7 @@ export function PaymentsList({ invoices, payments }: Props) {
             <Button variant="outline" size="sm" onClick={() => exportToCSV(filteredPayments.map(p => ({ 
               date: p.payment_date, invoice: p.invoices?.invoice_number, 
               client: (p.invoices?.clients as any)?.name || "", 
-              amount: p.amount_paid, method: p.method, ref: p.reference_no 
+              amount: p.amount, method: p.payment_method, ref: p.reference_no 
             })), "payments")}>
               <Download className="w-4 h-4 mr-2" /> Export
             </Button>
@@ -189,10 +188,10 @@ export function PaymentsList({ invoices, payments }: Props) {
                   <td className="py-3 px-4 text-sm font-mono text-primary">{p.invoices?.invoice_number}</td>
                   <td className="py-3 px-4 text-sm">{(p.invoices?.clients as any)?.name || "—"}</td>
                   <td className="py-3 px-4">
-                    <Badge variant="outline" className="capitalize text-[10px]">{p.method.replace('_', ' ')}</Badge>
+                    <Badge variant="outline" className="capitalize text-[10px]">{(p.payment_method || "—").replace(/_/g, " ")}</Badge>
                   </td>
                   <td className="py-3 px-4 text-sm text-muted-foreground">{p.reference_no || "—"}</td>
-                  <td className="py-3 px-4 text-sm text-right font-bold text-emerald-500">{CURRENCY}{Number(p.amount_paid).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                  <td className="py-3 px-4 text-sm text-right font-bold text-emerald-500">{CURRENCY}{Number(p.amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
                   <td className="py-3 px-4 text-right">
                     <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => window.print()}>Print</Button>
                   </td>
@@ -222,7 +221,7 @@ export function PaymentsList({ invoices, payments }: Props) {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>Amount Received ({CURRENCY}) *</Label>
-                <Input type="number" step="0.01" max={payDialog?.balance} value={form.amount_paid} onChange={e => setForm(f => ({ ...f, amount_paid: e.target.value }))} className="bg-muted/50 font-mono text-lg" />
+                <Input type="number" step="0.01" max={payDialog?.balance} value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} className="bg-muted/50 font-mono text-lg" />
               </div>
               <div className="grid gap-2">
                 <Label>Payment Date *</Label>
@@ -233,7 +232,7 @@ export function PaymentsList({ invoices, payments }: Props) {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>Payment Method *</Label>
-                <Select value={form.method} onValueChange={v => setForm(f => ({ ...f, method: v }))}>
+                <Select value={form.payment_method} onValueChange={v => setForm(f => ({ ...f, payment_method: v }))}>
                   <SelectTrigger className="bg-muted/50"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="bank_transfer">Bank Transfer (NEFT/RTGS)</SelectItem>
@@ -256,7 +255,7 @@ export function PaymentsList({ invoices, payments }: Props) {
               <Textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="bg-muted/50" placeholder="Any additional details..." />
             </div>
           </div>
-          <Button onClick={() => recordPaymentMutation.mutate()} disabled={!form.amount_paid || Number(form.amount_paid) <= 0 || recordPaymentMutation.isPending} className="w-full">
+          <Button onClick={() => recordPaymentMutation.mutate()} disabled={!form.amount || Number(form.amount) <= 0 || recordPaymentMutation.isPending} className="w-full">
             {recordPaymentMutation.isPending ? "Recording..." : "Record Payment"}
           </Button>
         </DialogContent>

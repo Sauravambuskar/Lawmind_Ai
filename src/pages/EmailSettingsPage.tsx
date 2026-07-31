@@ -6,15 +6,36 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { restGet, restInsert, restDelete } from "@/lib/restClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Mail, Save, Send, CheckCircle, XCircle, Clock } from "lucide-react";
 import { sendEmail, getGeneralNotification } from "@/lib/emailService";
-import { useAuth } from "@/hooks/useAuth";
+
+interface EmailSettingsRow {
+  id?: string;
+  provider?: string;
+  emailjs_service_id?: string;
+  emailjs_template_id?: string;
+  emailjs_public_key?: string;
+  smtp_host?: string;
+  smtp_port?: number | string;
+  smtp_user?: string;
+  smtp_pass?: string;
+  from_email?: string;
+  from_name?: string;
+}
+
+interface EmailLogRow {
+  id: string;
+  to_email: string;
+  subject: string;
+  status: string;
+  error_msg?: string | null;
+  created_at: string;
+}
 
 export default function EmailSettingsPage() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -36,16 +57,8 @@ export default function EmailSettingsPage() {
   const { data: settings } = useQuery({
     queryKey: ["email-settings"],
     queryFn: async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      const res = await fetch(`${supabaseUrl}/rest/v1/email_settings?limit=1`, {
-        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data[0] || null;
+      const rows = await restGet<EmailSettingsRow>("email_settings?select=*&limit=1");
+      return rows[0] || null;
     },
   });
 
@@ -53,15 +66,7 @@ export default function EmailSettingsPage() {
   const { data: logs = [] } = useQuery({
     queryKey: ["email-logs"],
     queryFn: async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      const res = await fetch(`${supabaseUrl}/rest/v1/email_logs?select=*&order=created_at.desc&limit=20`, {
-        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-      });
-      if (!res.ok) return [];
-      return await res.json();
+      return restGet<EmailLogRow>("email_logs?select=*&order=created_at.desc&limit=20");
     },
   });
 
@@ -84,29 +89,17 @@ export default function EmailSettingsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-    const session = (await supabase.auth.getSession()).data.session;
-    const authToken = session?.access_token || supabaseKey;
-
-    const payload = { ...form, smtp_port: Number(form.smtp_port), updated_at: new Date().toISOString() };
-
-    // Delete existing and insert new (upsert)
-    await fetch(`${supabaseUrl}/rest/v1/email_settings?id=not.is.null`, {
-      method: "DELETE", headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-    });
-    const res = await fetch(`${supabaseUrl}/rest/v1/email_settings`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Prefer": "return=minimal" },
-      body: JSON.stringify(payload),
-    });
-
-    setSaving(false);
-    if (res.ok) {
+    try {
+      const payload = { ...form, smtp_port: Number(form.smtp_port), updated_at: new Date().toISOString() };
+      // Single settings row: clear then insert
+      await restDelete("email_settings", "id=not.is.null");
+      await restInsert("email_settings", payload);
       queryClient.invalidateQueries({ queryKey: ["email-settings"] });
       toast.success("Email settings saved");
-    } else {
-      toast.error("Failed to save settings");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to save settings");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -203,7 +196,7 @@ export default function EmailSettingsPage() {
             <CardContent className="space-y-2 max-h-[500px] overflow-y-auto custom-scrollbar">
               {logs.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-8">No emails sent yet</p>
-              ) : logs.map((log: any) => (
+              ) : logs.map((log) => (
                 <div key={log.id} className="p-2.5 rounded-lg border border-border hover:bg-muted/20 transition-colors">
                   <div className="flex items-center gap-2 mb-1">
                     {log.status === "sent" ? <CheckCircle className="w-3 h-3 text-emerald-500" /> : <XCircle className="w-3 h-3 text-red-500" />}

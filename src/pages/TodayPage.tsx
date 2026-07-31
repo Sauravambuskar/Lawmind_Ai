@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { restGet } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useMinLoader } from "@/hooks/useMinLoader";
@@ -38,7 +38,7 @@ interface TaskRow {
 interface InvoiceRow {
   id: string;
   invoice_number: string;
-  total: number;
+  total_amount: number | string | null;
   due_date: string;
   status: string;
   clients?: { name: string } | null;
@@ -85,14 +85,10 @@ export default function TodayPage() {
   const { data: tasks = [], isLoading: loadingT } = useQuery({
     queryKey: ["today-tasks"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("tasks")
-        .select("id, title, description, status, priority, due_date, cases(title, case_number)")
-        .neq("status", "done")
-        .order("priority", { ascending: true })
-        .order("due_date", { ascending: true });
-      if (error) throw error;
-      return (data || []) as TaskRow[];
+      return restGet<TaskRow>(
+        `tasks?select=id,title,description,status,priority,due_date,cases(title,case_number)` +
+          `&status=neq.done&order=priority.asc,due_date.asc`,
+      );
     },
     refetchInterval: 5 * 60 * 1000,
   });
@@ -100,18 +96,12 @@ export default function TodayPage() {
   // Overdue invoices
   const { data: overdueInvoices = [], isLoading: loadingI } = useQuery({
     queryKey: ["today-overdue-invoices"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("invoices")
-        .select("id, invoice_number, total, due_date, status, clients(name)")
-        .lt("due_date", todayStr)
-        .neq("status", "paid")
-        .neq("status", "cancelled")
-        .order("due_date", { ascending: true })
-        .limit(10);
-      if (error) throw error;
-      return (data || []) as InvoiceRow[];
-    },
+    queryFn: () =>
+      restGet<InvoiceRow>(
+        `invoices?select=id,invoice_number,total_amount,due_date,status,clients(name)` +
+          `&due_date=lt.${todayStr}&status=neq.paid&status=neq.cancelled` +
+          `&order=due_date.asc&limit=10`,
+      ),
   });
 
   const showLoader = useMinLoader(loadingH || loadingT || loadingI);
@@ -338,7 +328,7 @@ export default function TodayPage() {
                   <p className="text-sm font-medium text-foreground">#{inv.invoice_number}</p>
                   <p className="text-xs text-muted-foreground truncate">{(inv.clients as any)?.name || "No client"} · Due {inv.due_date}</p>
                 </div>
-                <span className="text-sm font-bold text-rose-500 shrink-0">{CURRENCY}{Number(inv.total).toLocaleString("en-IN")}</span>
+                <span className="text-sm font-bold text-rose-500 shrink-0">{CURRENCY}{Number(inv.total_amount ?? 0).toLocaleString("en-IN")}</span>
               </div>
             ))}
           </div>

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
@@ -38,13 +38,12 @@ export function CommunicationLogList({ clientId, caseId }: Props) {
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["communication_logs", clientId, caseId],
-    queryFn: async () => {
-      let q = supabase.from("communication_logs").select("*").order("date", { ascending: false });
-      if (clientId) q = q.eq("client_id", clientId);
-      if (caseId) q = q.eq("case_id", caseId);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data;
+    queryFn: () => {
+      // DB columns: subject / content / communication_date
+      const filter = clientId ? `client_id=eq.${clientId}` : `case_id=eq.${caseId}`;
+      return restGetAll<any>(
+        `communication_logs?select=id,type,date:communication_date,summary:subject,notes:content&${filter}&order=communication_date.desc`,
+      );
     },
     enabled: !!clientId || !!caseId,
   });
@@ -55,37 +54,28 @@ export function CommunicationLogList({ clientId, caseId }: Props) {
         client_id: clientId || null,
         case_id: caseId || null,
         type: form.type,
-        date: new Date(form.date).toISOString(),
-        summary: form.summary,
-        notes: form.notes,
-        user_id: user!.id,
+        communication_date: new Date(form.date).toISOString(),
+        subject: form.summary,
+        content: form.notes || null,
       };
-
-      if (editId) {
-        const { error } = await supabase.from("communication_logs").update(payload).eq("id", editId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("communication_logs").insert(payload);
-        if (error) throw error;
-      }
+      if (editId) await restUpdate("communication_logs", `id=eq.${editId}`, payload);
+      else await restInsert("communication_logs", { ...payload, created_by: user!.id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["communication_logs"] });
       setOpen(false);
       toast.success(editId ? "Log updated" : "Log added");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save log"),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("communication_logs").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => restDelete("communication_logs", `id=eq.${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["communication_logs"] });
       toast.success("Log deleted");
     },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete log"),
   });
 
   const openEdit = (log: any) => {

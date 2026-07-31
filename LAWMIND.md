@@ -126,11 +126,49 @@ lawmind/
 
 ### Important Notes About the Schema
 
-1. **The `cases` table uses `created_by` NOT `user_id`** — this is critical for inserts.
-2. **RLS policies are OPEN** (authenticated users can see all data). No per-user filtering currently active.
-3. **PostgREST schema cache** — After ALTER TABLE operations, the Supabase client's type system becomes stale. Use raw `fetch()` to the REST API to bypass: `fetch(\`\${SUPABASE_URL}/rest/v1/cases?...\`)`.
-4. **PostgREST row limit** — Max 1000 rows per request. Paginate with `offset` parameter.
-5. **No foreign key between cases↔clients/advocates** — These are stored as UUIDs but the FK relationship is not enforced in PostgREST's schema cache.
+**Always use `src/lib/restClient.ts` for database access.** It attaches the logged-in
+user's JWT, throws `NotAuthenticatedError` instead of silently returning nothing,
+and `restGetAll()` paginates past PostgREST's hard 1000-row cap.
+
+**Owner column: `created_by` almost everywhere.** Only these five tables use
+`user_id`: `profiles`, `audit_logs`, `error_logs`, `case_judgments`,
+`hearing_reminders`. Everything else (`cases`, `clients`, `advocates`, `invoices`,
+`payments`, `expenses`, `documents`, `hearings`, `tasks`, `notes`, `evidence`,
+`advice`, `contacts`, `tags`, `matters`, `expense_types`, `case_templates`,
+`important_documents`, `communication_logs`) uses `created_by`.
+
+**Column names that differ from the UI field names.** The forms use friendlier
+names, so queries alias them (`select=id,title:name`) and writes map them back:
+
+| Table | UI field | Actual DB column |
+|-------|----------|------------------|
+| `invoices` | `total` | `total_amount` |
+| `invoices` | `tax` | `tax_amount` |
+| `payments` | `amount_paid` | `amount` |
+| `payments` | `method` | `payment_method` |
+| `documents` | `title` | `name` |
+| `documents` | `document_type` | `category` |
+| `hearings` | `purpose` | `title` |
+| `hearings` | `judge_name` | `judge` |
+| `matters` | `name` | `title` |
+| `communication_logs` | `summary` | `subject` |
+| `communication_logs` | `notes` | `content` |
+| `communication_logs` | `date` | `communication_date` |
+
+**Columns that do NOT exist** (don't query them): `cases.case_type`,
+`cases.matter_id`, `tasks.completed_at`, `expenses.expense_type_id` is the FK
+while `expenses.category` is a free-text label.
+
+**RLS is ON for all tables** with an `authenticated_full_access` policy: any
+signed-in user has full access to all rows; anonymous requests get zero rows.
+Per-user row filtering would be a follow-up.
+
+**Foreign keys now exist** (18 of them, all `ON DELETE SET NULL`), so PostgREST
+embedded selects like `clients(name)` and `cases(title)` work. Adding a new FK
+requires `notify pgrst, 'reload schema'` before the join resolves.
+
+**Per-user permissions:** `profiles.sections` (jsonb, nullable) overrides the
+role's section list from `role_permissions`. `null` means inherit the role.
 
 ---
 
@@ -268,11 +306,20 @@ npm run preview      # Preview production build locally
 
 ## Known Issues & Gotchas
 
-1. **PostgREST schema cache** — After adding columns via ALTER TABLE, the Supabase JS client rejects unknown columns. Solution: use raw `fetch()` for CRUD on the `cases` table.
-2. **1000 row limit** — PostgREST caps responses at 1000. Must paginate with `offset`.
-3. **`cases` table uses `created_by`** not `user_id` — unlike all other tables.
-4. **No FK relationships exposed** — `clients(name)` and `advocates(name)` joins fail via PostgREST.
+1. **Use `restClient.ts`, not `supabase.from()`** — the generated Supabase types are
+   out of sync with the live schema, so `supabase.from()` rejects valid columns.
+   `restClient` calls PostgREST directly with the user's JWT.
+2. **1000 row limit** — PostgREST caps responses at 1000. Use `restGetAll()`.
+3. **Owner column is `created_by`** on all but five tables — see the schema notes above.
+4. **UI field names differ from DB columns** on invoices, payments, documents,
+   hearings, matters and communication_logs — see the mapping table above.
 5. **Date fields** — Stored as `date` type (YYYY-MM-DD). Frontend displays as DD/MM/YYYY.
+6. **Hearing data lives in `cases.next_hearing_date`.** The `hearings` table is empty
+   (0 rows), so never report hearing counts from it alone.
+7. **Never generate `package-lock.json` inside the parent pnpm workspace** — it writes
+   local symlink paths that break the Vercel build.
+8. **After any `ALTER TABLE` or new FK**, run `notify pgrst, 'reload schema'` or
+   PostgREST will keep rejecting the change.
 
 ---
 

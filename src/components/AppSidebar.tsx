@@ -124,7 +124,7 @@ function NavItems({
     if (path === "/" || path === "/profile") return true;
     // Map path to section ID
     const sectionId = path.replace(/^\/setup\//, "").replace(/^\/staff.*/, "staff").replace(/^\//, "");
-    return hasAccess(role, sectionId);
+    return hasAccess(role, sectionId, profile?.sections);
   };
 
   const activeCls = "bg-amber-400/[0.15] text-amber-400 font-bold drop-shadow-md tracking-wide";

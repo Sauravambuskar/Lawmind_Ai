@@ -10,6 +10,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { restGet, restInsert } from "@/lib/restClient";
 
 export interface EmailConfig {
   provider: "emailjs" | "smtp";
@@ -37,17 +38,8 @@ export interface SendEmailParams {
  * Load email settings from database
  */
 export async function loadEmailConfig(): Promise<EmailConfig | null> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-  const session = (await supabase.auth.getSession()).data.session;
-  const authToken = session?.access_token || supabaseKey;
-
-  const res = await fetch(`${supabaseUrl}/rest/v1/email_settings?limit=1`, {
-    headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data[0] || null;
+  const rows = await restGet<EmailConfig>("email_settings?select=*&limit=1");
+  return rows[0] || null;
 }
 
 /**
@@ -100,43 +92,34 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
       throw new Error("SMTP requires server-side setup. Use EmailJS for now.");
     }
 
-    // Log the sent email
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-    const session = (await supabase.auth.getSession()).data.session;
-    const authToken = session?.access_token || supabaseKey;
-
-    await fetch(`${supabaseUrl}/rest/v1/email_logs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Prefer": "return=minimal" },
-      body: JSON.stringify({
-        to_email: params.to_email,
-        subject: params.subject,
-        body: params.body,
-        template: params.template || "custom",
-        status: "sent",
-        case_id: params.case_id || null,
-        client_id: params.client_id || null,
-        sent_by: session?.user?.id || null,
-      }),
-    });
-
+    await logEmail(params, "sent");
     return { success: true };
-  } catch (e: any) {
-    // Log failed email
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Failed to send email";
+    // Best-effort failure log — never let logging mask the original error
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      await fetch(`${supabaseUrl}/rest/v1/email_logs`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Prefer": "return=minimal" },
-        body: JSON.stringify({ to_email: params.to_email, subject: params.subject, body: params.body, template: params.template || "custom", status: "failed", error_msg: e.message, sent_by: (await supabase.auth.getSession()).data.session?.user?.id || null }),
-      });
-    } catch {}
-    return { success: false, error: e.message };
+      await logEmail(params, "failed", message);
+    } catch {
+      /* ignore */
+    }
+    return { success: false, error: message };
   }
+}
+
+/** Write a row to email_logs. Requires an authenticated session (RLS). */
+async function logEmail(params: SendEmailParams, status: "sent" | "failed", errorMsg?: string) {
+  const { data } = await supabase.auth.getSession();
+  await restInsert("email_logs", {
+    to_email: params.to_email,
+    subject: params.subject,
+    body: params.body,
+    template: params.template || "custom",
+    status,
+    error_msg: errorMsg || null,
+    case_id: params.case_id || null,
+    client_id: params.client_id || null,
+    sent_by: data.session?.user?.id || null,
+  });
 }
 
 /**

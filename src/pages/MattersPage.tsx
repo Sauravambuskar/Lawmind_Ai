@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { usePagination } from "@/hooks/usePagination";
@@ -28,30 +28,24 @@ export default function MattersPage() {
 
   const { data: matters = [], isLoading } = useQuery({
     queryKey: ["matters"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("matters").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    // DB column is `title`; alias it to `name` for the existing UI
+    queryFn: () => restGetAll<any>("matters?select=id,name:title,description,status,created_at&order=created_at.desc"),
   });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (editId) {
-        const { error } = await supabase.from("matters").update(form).eq("id", editId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("matters").insert({ ...form, user_id: user!.id });
-        if (error) throw error;
-      }
+      const payload = { title: form.name, description: form.description || null, status: form.status };
+      if (editId) await restUpdate("matters", `id=eq.${editId}`, payload);
+      else await restInsert("matters", { ...payload, created_by: user!.id });
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["matters"] }); closeDialog(); toast.success(editId ? "Matter updated successfully" : "Matter added successfully"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save matter"),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("matters").delete().eq("id", id); if (error) throw error; },
+    mutationFn: (id: string) => restDelete("matters", `id=eq.${id}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["matters"] }); toast.success("Matter deleted"); },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete matter"),
   });
 
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };

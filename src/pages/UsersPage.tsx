@@ -4,6 +4,7 @@ import { Search, Shield, Users, UserCheck, Scale, UserCog, ChevronDown, Pencil, 
 import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { restGetAll, restInsert, restUpdate } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
 import type { UserProfile, UserRole } from "@/hooks/auth.types";
 import { useRole, getRoleLabel, getRoleBadge, getRoleDot } from "@/hooks/useRole";
@@ -73,12 +74,13 @@ function AddUserModal({ onSuccess }: { onSuccess: () => void }) {
 
       // Create profile for new user
       if (signUpData?.user) {
-        await supabase.from("profiles").insert({
+        await restInsert("profiles", {
           user_id: signUpData.user.id,
-          email: email,
+          email,
           full_name: fullName,
-          role: role,
+          role,
           status: "active",
+          sections: selectedSections,
         });
       }
 
@@ -87,8 +89,8 @@ function AddUserModal({ onSuccess }: { onSuccess: () => void }) {
       onSuccess();
       setEmail(""); setPassword(""); setFullName(""); setRole("agent");
       setSelectedSections(DEFAULT_PERMISSIONS.agent as SectionId[]);
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to create member");
     } finally {
       setLoading(false);
     }
@@ -177,70 +179,46 @@ export default function UsersPage() {
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users-profiles"],
-    queryFn: async () => {
-      // Fetch all users from Supabase Auth (via service-role-like access)
-      // Then match with profiles table
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
+    queryFn: async (): Promise<UserProfile[]> => {
+      const profiles = await restGetAll<UserProfile>("profiles?select=*&order=created_at.desc");
+      if (profiles.length > 0) return profiles;
 
-      // Get profiles
-      const { data: profiles } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-      
-      // If profiles exist, return them
-      if (profiles && profiles.length > 0) {
-        return profiles as UserProfile[];
-      }
+      // First-run fallback: seed a profile for the signed-in user so the page
+      // isn't empty on a fresh database.
+      const { data } = await supabase.auth.getSession();
+      const authUser = data.session?.user;
+      if (!authUser) return [];
 
-      // Fallback: if no profiles, create one for current user
-      if (session?.user) {
-        const { data: existingProfile } = await supabase.from("profiles").select("*").eq("user_id", session.user.id).single();
-        if (!existingProfile) {
-          await supabase.from("profiles").insert({
-            user_id: session.user.id,
-            email: session.user.email,
-            full_name: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "User",
-            role: "super_admin",
-            status: "active",
-          });
-          const { data: newProfiles } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-          return (newProfiles || []) as UserProfile[];
-        }
-      }
-
-      return (profiles || []) as UserProfile[];
+      await restInsert("profiles", {
+        user_id: authUser.id,
+        email: authUser.email,
+        full_name: authUser.user_metadata?.full_name || authUser.email?.split("@")[0] || "User",
+        role: "super_admin",
+        status: "active",
+      });
+      return restGetAll<UserProfile>("profiles?select=*&order=created_at.desc");
     },
+    retry: false,
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: UserRole }) => {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ role })
-        .eq("user_id", userId);
-      if (error) throw error;
-    },
+    mutationFn: ({ userId, role }: { userId: string; role: UserRole }) =>
+      restUpdate("profiles", `user_id=eq.${userId}`, { role }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users-profiles"] });
       toast.success("Role updated");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to update role"),
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ userId, status }: { userId: string; status: 'active' | 'inactive' }) => {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ status })
-        .eq("user_id", userId);
-      if (error) throw error;
-    },
+    mutationFn: ({ userId, status }: { userId: string; status: 'active' | 'inactive' }) =>
+      restUpdate("profiles", `user_id=eq.${userId}`, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users-profiles"] });
       toast.success("Status updated");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to update status"),
   });
 
   if (!isAdminOrAbove) {

@@ -46,7 +46,7 @@ export default function NotesPage() {
         const { error } = await supabase.from("notes").update(payload).eq("id", editId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("notes").insert({ ...payload, user_id: user!.id });
+        const { error } = await supabase.from("notes").insert({ ...payload, created_by: user!.id });
         if (error) throw error;
       }
     },

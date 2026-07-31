@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Upload, FileUp, CheckCircle, AlertCircle, XCircle, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { restInsert } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -287,37 +287,17 @@ export function CaseFileImport() {
       return normalized;
     });
 
-    // Batch insert (Supabase supports up to 1000 rows per insert)
-    // Use raw fetch to bypass PostgREST schema cache issues after ALTER TABLE
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-    const session = (await supabase.auth.getSession()).data.session;
-    const authToken = session?.access_token || supabaseKey;
-
+    // Batch insert. Duplicates on case_number are skipped by the unique index.
     const batchSize = 500;
     for (let i = 0; i < normalizedRows.length; i += batchSize) {
       const batch = normalizedRows.slice(i, i + batchSize);
       try {
-        const res = await fetch(`${supabaseUrl}/rest/v1/cases`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": supabaseKey,
-            "Authorization": `Bearer ${authToken}`,
-            "Prefer": "return=minimal,resolution=ignore-duplicates",
-          },
-          body: JSON.stringify(batch),
-        });
-        if (!res.ok) {
-          const errBody = await res.json().catch(() => ({ message: res.statusText }));
-          failed += batch.length;
-          errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${errBody.message || res.statusText}`);
-        } else {
-          success += batch.length;
-        }
-      } catch (e: any) {
+        await restInsert("cases", batch, { ignoreDuplicates: true });
+        success += batch.length;
+      } catch (e: unknown) {
         failed += batch.length;
-        errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${e.message || "Network error"}`);
+        const msg = e instanceof Error ? e.message : "Network error";
+        errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${msg}`);
       }
     }
 

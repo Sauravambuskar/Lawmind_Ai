@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { restGetAll, restInsert } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { sendAIMessage, PROVIDER_INFO } from "@/lib/ai-providers";
@@ -97,11 +97,9 @@ export default function NoticeMakerPage() {
 
   // Fetch cases to link notices
   const { data: cases = [] } = useQuery({
-    queryKey: ["cases"],
+    queryKey: ["cases-lookup"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("cases").select("id, title, case_number");
-      if (error) throw error;
-      return data || [];
+      return restGetAll<{ id: string; title: string; case_number: string }>("cases?select=id,title,case_number&order=created_at.desc");
     },
   });
 
@@ -396,25 +394,21 @@ Response Format:
   // Save to supabase document center
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = {
-        title: `Notice: ${formData.clientName} vs ${formData.recipientName.split(",")[0]}`,
+      // documents uses name/category/created_by
+      await restInsert("documents", {
+        name: `Notice: ${formData.clientName} vs ${formData.recipientName.split(",")[0]}`,
         description: `Ref: ${formData.refNo}. Outstanding: Rs. ${formData.outstandingAmount} @ ${formData.interestRate}. Notice Fee: Rs. ${formData.noticeCharges}. Period: ${formData.noticePeriod}. Info: ${formData.subject.slice(0, 100)}...`,
-        document_type: "Notice",
+        category: "Notice",
         case_id: caseLink || null,
-        file_url: null
-      };
-
-      const { error } = await supabase.from("documents").insert({
-        ...payload,
-        user_id: user!.id
+        file_url: null,
+        created_by: user!.id,
       });
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       toast.success("Legal Notice successfully logged to Document Center!");
     },
-    onError: (e: Error) => toast.error(`Database Error: ${e.message}`)
+    onError: (e: unknown) => toast.error(`Database Error: ${e instanceof Error ? e.message : "unknown"}`)
   });
 
   // Browser Print handler

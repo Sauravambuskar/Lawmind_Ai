@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AITextarea } from "@/components/AITextarea";
-import { supabase } from "@/integrations/supabase/client";
+import { restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { usePagination } from "@/hooks/usePagination";
@@ -72,32 +72,22 @@ export default function TasksPage() {
   // Fetch tasks with joined case + assignee profile
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["tasks"],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("tasks")
-        .select("*, cases(title, case_number)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data || []) as TaskRow[];
-    },
+    queryFn: () => restGetAll<TaskRow>("tasks?select=*,cases(title,case_number)&order=created_at.desc"),
   });
 
   // Fetch team members for assignment dropdown
   const { data: teamMembers = [] } = useQuery({
     queryKey: ["team-members"],
-    queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("user_id, full_name, role").eq("status", "active").order("full_name");
-      return data || [];
-    },
+    queryFn: () =>
+      restGetAll<{ user_id: string; full_name: string | null; role: string }>(
+        "profiles?select=user_id,full_name,role&status=eq.active&order=full_name.asc",
+      ),
   });
 
   // Fetch cases for linking
   const { data: cases = [] } = useQuery({
-    queryKey: ["cases"],
-    queryFn: async () => {
-      const { data } = await supabase.from("cases").select("id, title, case_number");
-      return data || [];
-    },
+    queryKey: ["cases-lookup"],
+    queryFn: () => restGetAll<any>("cases?select=id,title,case_number&order=created_at.desc"),
   });
 
   const saveMutation = useMutation({
@@ -110,50 +100,34 @@ export default function TasksPage() {
         due_date: form.due_date || null,
         case_id: form.case_id || null,
         assigned_to: form.assigned_to || null,
-        completed_at: form.status === "done" ? new Date().toISOString() : null,
       };
-      if (editId) {
-        const { error } = await (supabase as any).from("tasks").update(payload).eq("id", editId);
-        if (error) throw error;
-      } else {
-        const { error } = await (supabase as any).from("tasks").insert({
-          ...payload,
-          user_id: user!.id,
-          created_by: user!.id,
-        });
-        if (error) throw error;
-      }
+      if (editId) await restUpdate("tasks", `id=eq.${editId}`, payload);
+      else await restInsert("tasks", { ...payload, created_by: user!.id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       closeDialog();
       toast.success(editId ? "Task updated" : "Task created");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save task"),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await (supabase as any).from("tasks").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => restDelete("tasks", `id=eq.${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       toast.success("Task deleted");
     },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete task"),
   });
 
   const quickStatusChange = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: TaskStatus }) => {
-      const payload: Record<string, unknown> = { status };
-      if (status === "done") payload.completed_at = new Date().toISOString();
-      else payload.completed_at = null;
-      const { error } = await (supabase as any).from("tasks").update(payload).eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: ({ id, status }: { id: string; status: TaskStatus }) =>
+      restUpdate("tasks", `id=eq.${id}`, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to update status"),
   });
 
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };

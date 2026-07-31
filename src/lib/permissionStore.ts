@@ -1,4 +1,4 @@
-import { restGet, restInsert, restDelete } from "@/lib/restClient";
+import { restGet, restInsert, restDelete, restUpdate } from "@/lib/restClient";
 import type { UserRole } from "@/hooks/auth.types";
 
 // ── All app sections that can be controlled ──
@@ -109,4 +109,26 @@ export function hasAccess(role: UserRole, sectionId: string): boolean {
   const perms = _permissions[role];
   if (!perms) return false;
   return perms.includes(sectionId as SectionId);
+}
+
+/**
+ * Check access for a specific user. A per-user `sections` override (set when
+ * the member was created) wins; otherwise fall back to role permissions.
+ * Super admins always have full access.
+ */
+export function hasUserAccess(
+  role: UserRole,
+  sectionId: string,
+  userSections?: string[] | null,
+): boolean {
+  if (role === "super_admin") return true;
+  if (Array.isArray(userSections) && userSections.length > 0) {
+    return userSections.includes(sectionId);
+  }
+  return hasAccess(role, sectionId);
+}
+
+/** Update a single user's section override. Pass null to revert to role defaults. */
+export async function setUserSections(userId: string, sections: SectionId[] | null): Promise<void> {
+  await restUpdate("profiles", `user_id=eq.${userId}`, { sections });
 }

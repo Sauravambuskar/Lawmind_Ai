@@ -3,7 +3,7 @@ import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import { restGetAll } from "@/lib/restClient";
 import { PageLoader } from "@/components/PageLoader";
 import { InvoiceOverview } from "@/components/invoices/InvoiceOverview";
 import { InvoiceList } from "@/components/invoices/InvoiceList";
@@ -16,39 +16,29 @@ export default function InvoicesPage() {
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ["invoices"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("invoices").select("*, clients(name), cases(title)").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => restGetAll("invoices?select=*,clients(name),cases(title)&order=created_at.desc"),
   });
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients"],
-    queryFn: async () => { const { data } = await supabase.from("clients").select("id, name"); return data || []; },
+    queryKey: ["clients-lookup"],
+    queryFn: () => restGetAll("clients?select=id,name&order=name.asc"),
   });
 
+  // Lookup list only — a distinct key from the Cases page cache
   const { data: cases = [] } = useQuery({
-    queryKey: ["cases"],
-    queryFn: async () => { const { data } = await supabase.from("cases").select("id, title"); return data || []; },
+    queryKey: ["cases-lookup"],
+    queryFn: () => restGetAll("cases?select=id,title&order=created_at.desc"),
   });
 
   const { data: expenses = [] } = useQuery({
     queryKey: ["expenses"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("expenses").select("*").order("expense_date", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => restGetAll("expenses?select=*&order=expense_date.desc"),
   });
 
   const { data: payments = [] } = useQuery({
     queryKey: ["payments"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("payments").select("*, invoices(invoice_number, total, clients(name))").order("payment_date", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () =>
+      restGetAll("payments?select=*,invoices(invoice_number,total_amount,clients(name))&order=payment_date.desc"),
   });
 
   const showLoader = useMinLoader(isLoading);

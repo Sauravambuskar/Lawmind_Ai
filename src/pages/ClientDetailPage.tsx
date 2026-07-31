@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { restGetAll } from "@/lib/restClient";
 import { PageHeader } from "@/components/PageHeader";
 import { PageLoader } from "@/components/PageLoader";
 import { useMinLoader } from "@/hooks/useMinLoader";
@@ -101,9 +102,9 @@ export default function ClientDetailPage() {
     queryKey: ["client-documents", caseIds],
     queryFn: async () => {
       if (caseIds.length === 0) return [];
-      const { data, error } = await supabase.from("documents").select("*, cases(title)").in("case_id", caseIds).order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
+      return restGetAll<any>(
+        `documents?select=id,title:name,document_type:category,created_at,cases(title)&case_id=in.(${caseIds.join(",")})&order=created_at.desc`,
+      );
     },
     enabled: caseIds.length > 0,
   });
@@ -129,8 +130,8 @@ export default function ClientDetailPage() {
     adjourned: "bg-orange-500/10 text-orange-600",
   };
 
-  const totalInvoiced = invoices.reduce((s, inv) => s + Number(inv.total || 0), 0);
-  const totalPaid = invoices.filter(i => i.status === "paid").reduce((s, inv) => s + Number(inv.total || 0), 0);
+  const totalInvoiced = invoices.reduce((s, inv) => s + Number(inv.total_amount || 0), 0);
+  const totalPaid = invoices.filter(i => i.status === "paid").reduce((s, inv) => s + Number(inv.total_amount || 0), 0);
   const totalOutstanding = totalInvoiced - totalPaid;
 
   return (
@@ -316,8 +317,8 @@ export default function ClientDetailPage() {
                       <tr key={inv.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                         <td className="py-3 px-4 text-sm font-mono">{inv.invoice_number}</td>
                         <td className="py-3 px-4 text-sm">₹{Number(inv.amount).toLocaleString()}</td>
-                        <td className="py-3 px-4 text-sm">₹{Number(inv.tax).toLocaleString()}</td>
-                        <td className="py-3 px-4 text-sm font-medium">₹{Number(inv.total).toLocaleString()}</td>
+                        <td className="py-3 px-4 text-sm">₹{Number(inv.tax_amount || 0).toLocaleString()}</td>
+                        <td className="py-3 px-4 text-sm font-medium">₹{Number(inv.total_amount || 0).toLocaleString()}</td>
                         <td className="py-3 px-4 text-sm">{inv.due_date ? format(new Date(inv.due_date), "MMM dd, yyyy") : "—"}</td>
                         <td className="py-3 px-4">
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[inv.status] || "bg-muted text-muted-foreground"}`}>

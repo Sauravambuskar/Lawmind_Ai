@@ -45,7 +45,7 @@ export function ExpensesList({ expenses, cases }: Props) {
         const { error } = await supabase.from("expenses").update(payload).eq("id", editId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("expenses").insert({ ...payload, user_id: user!.id });
+        const { error } = await supabase.from("expenses").insert({ ...payload, created_by: user!.id });
         if (error) throw error;
       }
     },

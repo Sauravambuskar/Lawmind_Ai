@@ -52,7 +52,7 @@ export default function ClientsPage() {
         const { error } = await supabase.from("clients").update(form).eq("id", editId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("clients").insert({ ...form, user_id: user!.id });
+        const { error } = await supabase.from("clients").insert({ ...form, created_by: user!.id });
         if (error) throw error;
       }
     },
