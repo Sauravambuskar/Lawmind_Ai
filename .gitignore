@@ -3,3 +3,4 @@ dist
 .tsbuildinfo
 *.local
 .replit-artifact
+.vercel
