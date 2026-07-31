@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { CASE_STATUS_CONFIG, CASE_STATUSES, type CaseStatus, CURRENCY } from "@/lib/constants";
 import { CloudinaryUpload } from "@/components/CloudinaryUpload";
+import { restGet, restGetOne, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { sendAIMessageWithFailover } from "@/lib/ai-providers";
 
@@ -47,17 +48,7 @@ export default function CaseDetailPage() {
 
   const { data: caseData, isLoading } = useQuery({
     queryKey: ["case-detail", id],
-    queryFn: async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      const res = await fetch(`${supabaseUrl}/rest/v1/cases?id=eq.${id}&select=*`, {
-        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Accept": "application/vnd.pgrst.object+json" },
-      });
-      if (!res.ok) throw new Error("Failed to fetch case");
-      return await res.json();
-    },
+    queryFn: () => restGetOne<any>(`cases?id=eq.${id}&select=*`),
     enabled: !!id,
   });
   const { data: hearings = [] } = useQuery({ queryKey: ["case-hearings", id], queryFn: async () => { const { data } = await supabase.from("hearings").select("*").eq("case_id", id).order("hearing_date", { ascending: false }); return data || []; }, enabled: !!id });
@@ -140,16 +131,7 @@ function StatusChanger({ caseId, currentStatus, sConf, queryClient }: { caseId: 
     if (newStatus === currentStatus) return;
     setChanging(true);
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      const res = await fetch(`${supabaseUrl}/rest/v1/cases?id=eq.${caseId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!res.ok) throw new Error("Failed to update status");
+      await restUpdate("cases", `id=eq.${caseId}`, { status: newStatus });
       queryClient.invalidateQueries({ queryKey: ["case-detail", caseId] });
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       toast.success(`Status changed to ${newStatus}`);
@@ -483,17 +465,7 @@ function TabNotes({ caseId, userId, caseData, qc }: { caseId: string; userId: st
 function TabNotify({ caseId, userId, caseData, qc }: { caseId: string; userId: string; caseData: any; qc: any }) {
   const { data: reminders = [] } = useQuery({
     queryKey: ["case-reminders", caseId],
-    queryFn: async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      const res = await fetch(`${supabaseUrl}/rest/v1/hearing_reminders?case_id=eq.${caseId}&order=hearing_date.asc`, {
-        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-      });
-      if (!res.ok) return [];
-      return await res.json();
-    },
+    queryFn: () => restGet<any>(`hearing_reminders?case_id=eq.${caseId}&order=hearing_date.asc`),
   });
 
   const dismiss = useMutation({
@@ -507,10 +479,6 @@ function TabNotify({ caseId, userId, caseData, qc }: { caseId: string; userId: s
   const createReminder = useMutation({
     mutationFn: async () => {
       if (!caseData.next_hearing_date) throw new Error("No next hearing date set on this case");
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
       const payload = [{
         case_id: caseId,
         case_number: caseData.case_number,
@@ -528,12 +496,7 @@ function TabNotify({ caseId, userId, caseData, qc }: { caseId: string; userId: s
         is_dismissed: false,
         user_id: userId,
       }];
-      const res = await fetch(`${supabaseUrl}/rest/v1/hearing_reminders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Prefer": "return=minimal" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.message || "Failed"); }
+      await restInsert("hearing_reminders", payload);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-reminders", caseId] }); toast.success("Reminders created for next hearing date"); },
     onError: (e: any) => toast.error(e.message),
@@ -616,43 +579,24 @@ function TabJudgments({ caseId, userId, qc }: { caseId: string; userId: string; 
 
   const { data: judgments = [] } = useQuery({
     queryKey: ["case-judgments", caseId],
-    queryFn: async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      const res = await fetch(`${supabaseUrl}/rest/v1/case_judgments?case_id=eq.${caseId}&order=created_at.desc`, {
-        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-      });
-      if (!res.ok) return [];
-      return await res.json();
-    },
+    queryFn: () => restGet<any>(`case_judgments?case_id=eq.${caseId}&order=created_at.desc`),
   });
 
   const save = useMutation({
     mutationFn: async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
       const payload = { ...form, case_id: caseId, user_id: userId };
-      const url = editId ? `${supabaseUrl}/rest/v1/case_judgments?id=eq.${editId}` : `${supabaseUrl}/rest/v1/case_judgments`;
-      const method = editId ? "PATCH" : "POST";
-      const res = await fetch(url, { method, headers: { "Content-Type": "application/json", "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Prefer": "return=minimal" }, body: JSON.stringify(payload) });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.message || "Failed"); }
+      if (editId) {
+        await restUpdate("case_judgments", `id=eq.${editId}`, payload);
+      } else {
+        await restInsert("case_judgments", payload);
+      }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-judgments", caseId] }); setOpen(false); setEditId(null); setForm({ title: "", citation: "", court: "", year: "", summary: "", url: "", relevance: "" }); toast.success(editId ? "Updated" : "Judgment linked"); },
     onError: (e: any) => toast.error(e.message),
   });
 
   const del = useMutation({
-    mutationFn: async (jid: string) => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      await fetch(`${supabaseUrl}/rest/v1/case_judgments?id=eq.${jid}`, { method: "DELETE", headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` } });
-    },
+    mutationFn: (jid: string) => restDelete("case_judgments", `id=eq.${jid}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-judgments", caseId] }); toast.success("Removed"); },
   });
 

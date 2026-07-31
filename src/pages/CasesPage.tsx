@@ -21,6 +21,7 @@ import { PageLoader } from "@/components/PageLoader";
 import { writeAuditLog } from "@/lib/auditLog";
 import { logCaughtError } from "@/lib/errorLog";
 import { CASE_STATUSES, CASE_STATUS_FILTER, CASE_STATUS_CONFIG, type CaseStatus } from "@/lib/constants";
+import { restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 
 type CaseRow = {
   id: string;
@@ -72,28 +73,11 @@ export default function CasesPage() {
   const [form, setForm] = useState(emptyForm);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  const CASE_COLUMNS = "id,case_number,title,status,court_name,court_type,case_stage,stage,case_side,cnr_number,file_number,filing_date,next_hearing_date,last_hearing_date,case_imported_date,case_tags,disposed_date,document_size,fir_number,police_station,case_notes_1,case_notes_2,description,client_id,advocate_id,created_at";
+
   const { data: cases = [], isLoading } = useQuery({
     queryKey: ["cases"],
-    queryFn: async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      const headers = { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` };
-      
-      // Fetch all cases in batches (PostgREST limits to 1000 per request)
-      const all: CaseRow[] = [];
-      let offset = 0;
-      while (true) {
-        const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=id,case_number,title,status,court_name,court_type,case_stage,stage,case_side,cnr_number,file_number,filing_date,next_hearing_date,last_hearing_date,case_imported_date,case_tags,disposed_date,document_size,fir_number,police_station,case_notes_1,case_notes_2,description,client_id,advocate_id,created_at&order=created_at.desc&offset=${offset}&limit=1000`, { headers });
-        if (!res.ok) break;
-        const batch = await res.json();
-        all.push(...batch);
-        if (batch.length < 1000) break;
-        offset += 1000;
-      }
-      return all;
-    },
+    queryFn: () => restGetAll<CaseRow>(`cases?select=${CASE_COLUMNS}&order=created_at.desc`),
   });
 
   const { data: clients = [] } = useQuery({
@@ -135,24 +119,12 @@ export default function CasesPage() {
       delete payload.template_id;
       delete payload.matter_id;
 
-      // Use raw fetch to bypass PostgREST schema cache issues
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      const headers = { "Content-Type": "application/json", "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Prefer": "return=representation" };
-
       if (editId) {
-        const res = await fetch(`${supabaseUrl}/rest/v1/cases?id=eq.${editId}`, { method: "PATCH", headers, body: JSON.stringify(payload) });
-        if (!res.ok) { const err = await res.json().catch(() => ({ message: res.statusText })); throw new Error(err.message || "Update failed"); }
+        await restUpdate("cases", `id=eq.${editId}`, payload);
         await writeAuditLog({ user_id: user!.id, action: "update", table_name: "cases", record_id: editId, new_data: payload });
       } else {
-        const insertPayload = { ...payload, created_by: user!.id };
-        const res = await fetch(`${supabaseUrl}/rest/v1/cases`, { method: "POST", headers, body: JSON.stringify(insertPayload) });
-        if (!res.ok) { const err = await res.json().catch(() => ({ message: res.statusText })); throw new Error(err.message || "Insert failed"); }
-        const data = await res.json();
-        const newId = Array.isArray(data) ? data[0]?.id : data?.id;
-        await writeAuditLog({ user_id: user!.id, action: "insert", table_name: "cases", record_id: newId, new_data: payload });
+        const created = await restInsert<{ id: string }>("cases", { ...payload, created_by: user!.id }, { returning: true });
+        await writeAuditLog({ user_id: user!.id, action: "insert", table_name: "cases", record_id: created[0]?.id, new_data: payload });
       }
     },
     onSuccess: () => {
@@ -170,12 +142,7 @@ export default function CasesPage() {
   // ── Delete single (optimistic) ──────────────────────────────────────────
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      const res = await fetch(`${supabaseUrl}/rest/v1/cases?id=eq.${id}`, { method: "DELETE", headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` } });
-      if (!res.ok) { const err = await res.json().catch(() => ({ message: "Delete failed" })); throw new Error(err.message); }
+      await restDelete("cases", `id=eq.${id}`);
       await writeAuditLog({ user_id: user!.id, action: "delete", table_name: "cases", record_id: id });
     },
     onMutate: async (id) => {
@@ -199,13 +166,8 @@ export default function CasesPage() {
   // ── Bulk delete (optimistic) ────────────────────────────────────────────
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
       const idsParam = ids.map(i => `"${i}"`).join(",");
-      const res = await fetch(`${supabaseUrl}/rest/v1/cases?id=in.(${idsParam})`, { method: "DELETE", headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` } });
-      if (!res.ok) { const err = await res.json().catch(() => ({ message: "Bulk delete failed" })); throw new Error(err.message); }
+      await restDelete("cases", `id=in.(${idsParam})`);
       await Promise.all(ids.map(id => writeAuditLog({ user_id: user!.id, action: "delete", table_name: "cases", record_id: id })));
     },
     onMutate: async (ids) => {

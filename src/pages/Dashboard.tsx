@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { restGetAll } from "@/lib/restClient";
 import { CURRENCY, LOCALE } from "@/lib/constants";
 
 const LEGAL_TIPS = [
@@ -36,26 +37,7 @@ export default function Dashboard() {
   // ── Real data from Supabase ─────────────────────────────────────────────
   const { data: allCases = [] } = useQuery({
     queryKey: ["dashboard-cases"],
-    queryFn: async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      const headers = { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Prefer": "count=exact" };
-      
-      // Fetch all cases in batches of 1000 (PostgREST server limit)
-      const all: any[] = [];
-      let offset = 0;
-      while (true) {
-        const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=id,status,case_stage,court_type,created_at,next_hearing_date,title&order=created_at.desc&offset=${offset}&limit=1000`, { headers });
-        if (!res.ok) break;
-        const batch = await res.json();
-        all.push(...batch);
-        if (batch.length < 1000) break;
-        offset += 1000;
-      }
-      return all;
-    },
+    queryFn: () => restGetAll<any>("cases?select=id,status,case_stage,court_type,created_at,next_hearing_date,title&order=created_at.desc"),
   });
 
   const { data: clientsList = [] } = useQuery({

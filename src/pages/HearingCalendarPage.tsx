@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { restGet, restGetAll } from "@/lib/restClient";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -14,26 +14,11 @@ export default function HearingCalendarPage() {
   const { data: hearings = [] } = useQuery({
     queryKey: ["calendar-hearings"],
     queryFn: async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      const headers = { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` };
-
-      // 1. Fetch cases with next_hearing_date
-      const caseHearings: any[] = [];
-      let offset = 0;
-      while (true) {
-        const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=id,case_number,title,next_hearing_date,court_name,case_stage&next_hearing_date=not.is.null&order=next_hearing_date.asc&offset=${offset}&limit=1000`, { headers });
-        if (!res.ok) break;
-        const batch = await res.json();
-        caseHearings.push(...batch);
-        if (batch.length < 1000) break;
-        offset += 1000;
-      }
+      // 1. Fetch cases with next_hearing_date (paginated past PostgREST's 1000 cap)
+      const caseHearings = await restGetAll<any>("cases?select=id,case_number,title,next_hearing_date,court_name,case_stage&next_hearing_date=not.is.null&order=next_hearing_date.asc");
 
       // 2. Fetch hearings table entries
-      const { data: hearingsData } = await supabase.from("hearings").select("id, case_id, hearing_date, court_name, purpose, status").order("hearing_date", { ascending: true });
+      const hearingsData = await restGet<any>("hearings?select=id,case_id,hearing_date,court_name,purpose,status&order=hearing_date.asc").catch(() => []);
 
       // 3. Merge both sources (avoid duplicates by using a map keyed by date+case)
       const all: any[] = [];

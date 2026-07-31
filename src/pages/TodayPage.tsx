@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { restGet } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { PageHeader } from "@/components/PageHeader";
@@ -65,15 +66,7 @@ export default function TodayPage() {
   const { data: hearings = [], isLoading: loadingH } = useQuery({
     queryKey: ["today-hearings"],
     queryFn: async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-      const session = (await supabase.auth.getSession()).data.session;
-      const authToken = session?.access_token || supabaseKey;
-      const res = await fetch(`${supabaseUrl}/rest/v1/cases?select=id,case_number,title,next_hearing_date,court_name,case_stage&next_hearing_date=gte.${todayStr}&next_hearing_date=lte.${weekEnd}&order=next_hearing_date.asc&limit=100`, {
-        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-      });
-      if (!res.ok) return [];
-      const cases = await res.json();
+      const cases = await restGet<any>(`cases?select=id,case_number,title,next_hearing_date,court_name,case_stage&next_hearing_date=gte.${todayStr}&next_hearing_date=lte.${weekEnd}&order=next_hearing_date.asc&limit=100`);
       // Map to HearingRow format
       return cases.map((c: any) => ({
         id: c.id,

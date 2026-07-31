@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { restGet, restInsert, restDelete } from "@/lib/restClient";
 import type { UserRole } from "@/hooks/auth.types";
 
 // ── All app sections that can be controlled ──
@@ -71,29 +71,18 @@ export async function loadPermissions(): Promise<void> {
   _loading = true;
 
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-    const session = (await supabase.auth.getSession()).data.session;
-    const authToken = session?.access_token || supabaseKey;
-
-    const res = await fetch(`${supabaseUrl}/rest/v1/role_permissions?select=*`, {
-      headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        const perms = { ...DEFAULT_PERMISSIONS };
-        data.forEach((row: any) => {
-          if (row.role && Array.isArray(row.sections)) {
-            perms[row.role as UserRole] = row.sections;
-          }
-        });
-        _permissions = perms;
-      }
+    const data = await restGet<{ role: UserRole; sections: SectionId[] }>("role_permissions?select=*");
+    if (Array.isArray(data) && data.length > 0) {
+      const perms = { ...DEFAULT_PERMISSIONS };
+      data.forEach((row) => {
+        if (row.role && Array.isArray(row.sections)) {
+          perms[row.role] = row.sections;
+        }
+      });
+      _permissions = perms;
     }
   } catch {
-    // Table may not exist — keep defaults
+    // Not logged in yet, or table missing — keep safe defaults
   }
 
   _loaded = true;
@@ -107,18 +96,8 @@ export async function setRolePermissions(role: UserRole, sections: SectionId[]):
   notify();
 
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-    const session = (await supabase.auth.getSession()).data.session;
-    const authToken = session?.access_token || supabaseKey;
-    const headers = { "Content-Type": "application/json", "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` };
-
-    await fetch(`${supabaseUrl}/rest/v1/role_permissions?role=eq.${role}`, { method: "DELETE", headers });
-    await fetch(`${supabaseUrl}/rest/v1/role_permissions`, {
-      method: "POST",
-      headers: { ...headers, "Prefer": "return=minimal" },
-      body: JSON.stringify({ role, sections }),
-    });
+    await restDelete("role_permissions", `role=eq.${role}`);
+    await restInsert("role_permissions", { role, sections });
   } catch {
     // Silent — local state still applied
   }

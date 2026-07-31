@@ -1,39 +1,23 @@
-import { supabase } from "@/integrations/supabase/client";
+import { restGet, restCount } from "@/lib/restClient";
 
-/** Helper: raw fetch from Supabase REST API (bypasses schema cache) */
+/** Fetch rows for AI context; returns [] on any failure so the AI still answers. */
 async function fetchFromRest(path: string): Promise<any[]> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-  const session = (await supabase.auth.getSession()).data.session;
-  const authToken = session?.access_token || supabaseKey;
-  const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
-    headers: { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}` },
-  });
-  if (!res.ok) return [];
-  return await res.json();
+  try {
+    return await restGet<any>(path);
+  } catch {
+    return [];
+  }
 }
 
 /** Fetch summary counts */
 async function fetchSummaryStats(): Promise<string> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-  const session = (await supabase.auth.getSession()).data.session;
-  const authToken = session?.access_token || supabaseKey;
-  const headers = { "apikey": supabaseKey, "Authorization": `Bearer ${authToken}`, "Prefer": "count=exact" };
-
-  // Get case counts by status
-  const casesRes = await fetch(`${supabaseUrl}/rest/v1/cases?select=id&limit=1`, { headers });
-  const totalCases = (casesRes.headers.get("content-range") || "*/0").split("/")[1];
-
-  const pendingRes = await fetch(`${supabaseUrl}/rest/v1/cases?select=id&status=eq.pending&limit=1`, { headers });
-  const pendingCases = (pendingRes.headers.get("content-range") || "*/0").split("/")[1];
-
-  const disposedRes = await fetch(`${supabaseUrl}/rest/v1/cases?select=id&status=eq.disposed&limit=1`, { headers });
-  const disposedCases = (disposedRes.headers.get("content-range") || "*/0").split("/")[1];
-
   const today = new Date().toISOString().split("T")[0];
-  const upcomingRes = await fetch(`${supabaseUrl}/rest/v1/cases?select=id&next_hearing_date=gte.${today}&limit=1`, { headers });
-  const upcomingHearings = (upcomingRes.headers.get("content-range") || "*/0").split("/")[1];
+  const [totalCases, pendingCases, disposedCases, upcomingHearings] = await Promise.all([
+    restCount("cases"),
+    restCount("cases", "status=eq.pending"),
+    restCount("cases", "status=eq.disposed"),
+    restCount("cases", `next_hearing_date=gte.${today}`),
+  ]);
 
   return `- Total Cases: ${totalCases}
 - Pending Cases: ${pendingCases}
