@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Scale, Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Scale, Mail, Lock, User, ArrowRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
+import { APP_VERSION, APP_SECURITY_BADGE } from "@/lib/constants";
 type AuthMode = "login" | "signup" | "forgot";
 
 export default function AuthPage() {
@@ -194,6 +195,14 @@ export default function AuthPage() {
               </div>
             </CardContent>
           </Card>
+
+          <div className="mt-8 flex flex-col items-center gap-1 text-center">
+            <p className="text-[11px] text-muted-foreground">App Version: {APP_VERSION}</p>
+            <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <ShieldCheck className="w-3 h-3 text-emerald-600" />
+              {APP_SECURITY_BADGE}
+            </p>
+          </div>
         </div>
       </div>
     </div>

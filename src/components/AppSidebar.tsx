@@ -10,6 +10,7 @@ import {
   Settings2, BarChart3, User, X, BriefcaseBusiness, Bot,
   ListTodo, Sunrise, FolderOpen, FileSignature, Shield,
 } from "lucide-react";
+import { APP_VERSION } from "@/lib/constants";
 
 const AIAgentIcon = ({ className, strokeWidth, ...props }: { className?: string; strokeWidth?: number }) => (
   <img 
@@ -235,6 +236,7 @@ function SidebarFooter({ collapsed }: { collapsed?: boolean }) {
               <span className={`w-1 h-1 rounded-full ${getRoleDot(role)}`} />
               {getRoleLabel(role)}
             </span>
+            <p className="text-[9px] text-slate-500 mt-1.5 leading-none">v{APP_VERSION}</p>
           </div>
         </>
       )}
