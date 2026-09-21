@@ -1,4 +1,4 @@
-﻿{
+{
   "functions": {
     "api/**/*.ts": {
       "memory": 1024,
