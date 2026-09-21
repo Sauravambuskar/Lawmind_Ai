@@ -1,0 +1,17 @@
+# Dependencies — never commit these; committed node_modules breaks the
+# Vercel build because the .bin shims lose their executable bit.
+node_modules/
+
+# Build output
+dist/
+.vercel/
+
+# Environment files
+.env.local
+.env.*.local
+
+# Logs & OS/editor noise
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
