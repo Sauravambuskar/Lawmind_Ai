@@ -1,1 +1,0 @@
-import{t as r}from"./index-Y-QuJU_g.js";function f(e,s){const n=r(e.start),o=r(e.end);let a=+n>+o;const u=a?+n:+o,t=a?o:n;t.setHours(0,0,0,0);let D=1;const c=[];for(;+t<=u;)c.push(r(t)),t.setDate(t.getDate()+D),t.setHours(0,0,0,0);return a?c.reverse():c}function i(e){const s=r(e);return s.setDate(1),s.setHours(0,0,0,0),s}export{f as e,i as s};

@@ -1,1 +1,0 @@
-import{k as s}from"./index-Y-QuJU_g.js";function a(e,t=0){const[o,r]=s.useState(e);return s.useEffect(()=>{if(e){r(!0);return}if(t<=0){r(!1);return}const u=setTimeout(()=>r(!1),t);return()=>clearTimeout(u)},[e,t]),o}export{a as u};
