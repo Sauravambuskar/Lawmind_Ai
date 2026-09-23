@@ -1,8 +1,8 @@
-﻿// LawMind AI ΓÇö Service Worker for PWA (Offline caching)
+// LawMind AI — Service Worker for PWA (Offline caching)
 const CACHE_NAME = "lawmind-v1";
 const STATIC_ASSETS = ["/", "/index.html"];
 
-// Install ΓÇö cache static shell
+// Install — cache static shell
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
@@ -10,7 +10,7 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Activate ΓÇö clean old caches
+// Activate — clean old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -20,7 +20,7 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch ΓÇö network first, fallback to cache
+// Fetch — network first, fallback to cache
 self.addEventListener("fetch", (event) => {
   // Skip non-GET and API calls
   if (event.request.method !== "GET") return;

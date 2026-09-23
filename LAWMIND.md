@@ -1,4 +1,4 @@
-﻿# LawMind AI ΓÇö Complete Developer & AI Agent Guide
+# LawMind AI — Complete Developer & AI Agent Guide
 
 ## What Is This Product
 
@@ -41,67 +41,67 @@ These are in `.env` at the project root. For Vercel, set them in the dashboard u
 
 ```
 lawmind/
-Γö£ΓöÇΓöÇ public/                  # Static assets, court document templates (docx)
-Γöé   ΓööΓöÇΓöÇ impdocs/             # Important document templates (Warrant, Summon, etc.)
-Γö£ΓöÇΓöÇ migrations/              # SQL migration files for Supabase
-Γö£ΓöÇΓöÇ src/
-Γöé   Γö£ΓöÇΓöÇ App.tsx              # Main router with all routes
-Γöé   Γö£ΓöÇΓöÇ main.tsx             # Entry point
-Γöé   Γö£ΓöÇΓöÇ index.css            # Global styles + CSS variables
-Γöé   Γö£ΓöÇΓöÇ components/
-Γöé   Γöé   Γö£ΓöÇΓöÇ ui/              # shadcn/ui primitives (button, input, dialog, etc.)
-Γöé   Γöé   Γö£ΓöÇΓöÇ AppLayout.tsx    # Main layout wrapper with sidebar
-Γöé   Γöé   Γö£ΓöÇΓöÇ AppSidebar.tsx   # Navigation sidebar with all menu items
-Γöé   Γöé   Γö£ΓöÇΓöÇ AppHeader.tsx    # Top header with search + user actions
-Γöé   Γöé   Γö£ΓöÇΓöÇ CaseFileImport.tsx # CSV import for cases (maps 22 columns)
-Γöé   Γöé   Γö£ΓöÇΓöÇ CSVImport.tsx    # Generic CSV import component
-Γöé   Γöé   Γö£ΓöÇΓöÇ DeleteConfirm.tsx # Confirmation dialog for deletions
-Γöé   Γöé   Γö£ΓöÇΓöÇ PageHeader.tsx   # Breadcrumb + title component
-Γöé   Γöé   Γö£ΓöÇΓöÇ PageLoader.tsx   # Loading spinner
-Γöé   Γöé   Γö£ΓöÇΓöÇ TablePagination.tsx # Pagination controls
-Γöé   Γöé   ΓööΓöÇΓöÇ ...
-Γöé   Γö£ΓöÇΓöÇ pages/
-Γöé   Γöé   Γö£ΓöÇΓöÇ Dashboard.tsx    # Main dashboard with real data charts
-Γöé   Γöé   Γö£ΓöÇΓöÇ CasesPage.tsx    # Case list with CRUD, import, export, filters
-Γöé   Γöé   Γö£ΓöÇΓöÇ CaseDetailPage.tsx # Case detail with 10 tabs (hearings, tasks, etc.)
-Γöé   Γöé   Γö£ΓöÇΓöÇ ClientsPage.tsx  # Client management
-Γöé   Γöé   Γö£ΓöÇΓöÇ HearingsPage.tsx # Hearings management
-Γöé   Γöé   Γö£ΓöÇΓöÇ TasksPage.tsx    # Task management
-Γöé   Γöé   Γö£ΓöÇΓöÇ InvoicesPage.tsx # Invoice management
-Γöé   Γöé   Γö£ΓöÇΓöÇ ExpensesPage.tsx # Expense tracking
-Γöé   Γöé   Γö£ΓöÇΓöÇ DocumentsPage.tsx # Document management
-Γöé   Γöé   Γö£ΓöÇΓöÇ QuickDocsPage.tsx # Court document generation (templates)
-Γöé   Γöé   Γö£ΓöÇΓöÇ NoticeMakerPage.tsx # Legal notice builder
-Γöé   Γöé   Γö£ΓöÇΓöÇ ImpDocsPage.tsx  # Important document viewer
-Γöé   Γöé   Γö£ΓöÇΓöÇ AdvocatesPage.tsx # Advocate directory
-Γöé   Γöé   Γö£ΓöÇΓöÇ ContactsPage.tsx # Contacts
-Γöé   Γöé   Γö£ΓöÇΓöÇ AuthPage.tsx     # Login/signup
-Γöé   Γöé   Γö£ΓöÇΓöÇ ProfilePage.tsx  # User profile
-Γöé   Γöé   ΓööΓöÇΓöÇ ...
-Γöé   Γö£ΓöÇΓöÇ hooks/
-Γöé   Γöé   Γö£ΓöÇΓöÇ useAuth.tsx      # Auth context + user session
-Γöé   Γöé   Γö£ΓöÇΓöÇ AuthContext.tsx  # Auth provider
-Γöé   Γöé   Γö£ΓöÇΓöÇ usePagination.ts # Client-side pagination helper
-Γöé   Γöé   Γö£ΓöÇΓöÇ useMinLoader.ts  # Minimum loader display time
-Γöé   Γöé   Γö£ΓöÇΓöÇ useRole.ts       # User role detection
-Γöé   Γöé   ΓööΓöÇΓöÇ useTheme.tsx     # Dark/light theme
-Γöé   Γö£ΓöÇΓöÇ integrations/
-Γöé   Γöé   ΓööΓöÇΓöÇ supabase/
-Γöé   Γöé       Γö£ΓöÇΓöÇ client.ts    # Supabase client initialization
-Γöé   Γöé       ΓööΓöÇΓöÇ types.ts     # Generated TypeScript types for all tables
-Γöé   ΓööΓöÇΓöÇ lib/
-Γöé       Γö£ΓöÇΓöÇ constants.ts     # Case statuses, currencies, config values
-Γöé       Γö£ΓöÇΓöÇ auditLog.ts      # Audit log writer (best-effort)
-Γöé       Γö£ΓöÇΓöÇ errorLog.ts      # Error logging utility
-Γöé       Γö£ΓöÇΓöÇ export.ts        # CSV export utility
-Γöé       Γö£ΓöÇΓöÇ utils.ts         # cn() and common utils
-Γöé       ΓööΓöÇΓöÇ storage.ts       # Supabase storage helpers
-Γö£ΓöÇΓöÇ vercel.json              # Vercel deployment config (SPA rewrites)
-Γö£ΓöÇΓöÇ vite.config.ts           # Vite config (React plugin, path aliases)
-Γö£ΓöÇΓöÇ tailwind.config.ts       # Tailwind config with custom theme
-Γö£ΓöÇΓöÇ tsconfig.json            # TypeScript config
-Γö£ΓöÇΓöÇ package.json             # Dependencies and scripts
-ΓööΓöÇΓöÇ .env                     # Environment variables
+├── public/                  # Static assets, court document templates (docx)
+│   └── impdocs/             # Important document templates (Warrant, Summon, etc.)
+├── migrations/              # SQL migration files for Supabase
+├── src/
+│   ├── App.tsx              # Main router with all routes
+│   ├── main.tsx             # Entry point
+│   ├── index.css            # Global styles + CSS variables
+│   ├── components/
+│   │   ├── ui/              # shadcn/ui primitives (button, input, dialog, etc.)
+│   │   ├── AppLayout.tsx    # Main layout wrapper with sidebar
+│   │   ├── AppSidebar.tsx   # Navigation sidebar with all menu items
+│   │   ├── AppHeader.tsx    # Top header with search + user actions
+│   │   ├── CaseFileImport.tsx # CSV import for cases (maps 22 columns)
+│   │   ├── CSVImport.tsx    # Generic CSV import component
+│   │   ├── DeleteConfirm.tsx # Confirmation dialog for deletions
+│   │   ├── PageHeader.tsx   # Breadcrumb + title component
+│   │   ├── PageLoader.tsx   # Loading spinner
+│   │   ├── TablePagination.tsx # Pagination controls
+│   │   └── ...
+│   ├── pages/
+│   │   ├── Dashboard.tsx    # Main dashboard with real data charts
+│   │   ├── CasesPage.tsx    # Case list with CRUD, import, export, filters
+│   │   ├── CaseDetailPage.tsx # Case detail with 10 tabs (hearings, tasks, etc.)
+│   │   ├── ClientsPage.tsx  # Client management
+│   │   ├── HearingsPage.tsx # Hearings management
+│   │   ├── TasksPage.tsx    # Task management
+│   │   ├── InvoicesPage.tsx # Invoice management
+│   │   ├── ExpensesPage.tsx # Expense tracking
+│   │   ├── DocumentsPage.tsx # Document management
+│   │   ├── QuickDocsPage.tsx # Court document generation (templates)
+│   │   ├── NoticeMakerPage.tsx # Legal notice builder
+│   │   ├── ImpDocsPage.tsx  # Important document viewer
+│   │   ├── AdvocatesPage.tsx # Advocate directory
+│   │   ├── ContactsPage.tsx # Contacts
+│   │   ├── AuthPage.tsx     # Login/signup
+│   │   ├── ProfilePage.tsx  # User profile
+│   │   └── ...
+│   ├── hooks/
+│   │   ├── useAuth.tsx      # Auth context + user session
+│   │   ├── AuthContext.tsx  # Auth provider
+│   │   ├── usePagination.ts # Client-side pagination helper
+│   │   ├── useMinLoader.ts  # Minimum loader display time
+│   │   ├── useRole.ts       # User role detection
+│   │   └── useTheme.tsx     # Dark/light theme
+│   ├── integrations/
+│   │   └── supabase/
+│   │       ├── client.ts    # Supabase client initialization
+│   │       └── types.ts     # Generated TypeScript types for all tables
+│   └── lib/
+│       ├── constants.ts     # Case statuses, currencies, config values
+│       ├── auditLog.ts      # Audit log writer (best-effort)
+│       ├── errorLog.ts      # Error logging utility
+│       ├── export.ts        # CSV export utility
+│       ├── utils.ts         # cn() and common utils
+│       └── storage.ts       # Supabase storage helpers
+├── vercel.json              # Vercel deployment config (SPA rewrites)
+├── vite.config.ts           # Vite config (React plugin, path aliases)
+├── tailwind.config.ts       # Tailwind config with custom theme
+├── tsconfig.json            # TypeScript config
+├── package.json             # Dependencies and scripts
+└── .env                     # Environment variables
 ```
 
 ---
@@ -220,13 +220,13 @@ Each tab has full CRUD (Add/Edit/Delete):
 | Case History | (combined view) | Read-only timeline |
 | Case Documents | `documents` | Add, Edit, Delete |
 | Notes | `communication_logs` | Add, Delete |
-| Notify to Clients | ΓÇö | Placeholder (coming soon) |
-| Related Judgments | ΓÇö | Placeholder (coming soon) |
+| Notify to Clients | — | Placeholder (coming soon) |
+| Related Judgments | — | Placeholder (coming soon) |
 | Tasks | `tasks` | Add, Edit, Delete |
 | Appointments | `hearings` | Add, Edit, Delete |
 | Invoice | `invoices` | Add, Edit, Delete |
 | Expenses | `expenses` | Add, Edit, Delete |
-| Time Entries | ΓÇö | Placeholder (coming soon) |
+| Time Entries | — | Placeholder (coming soon) |
 
 ---
 
@@ -295,28 +295,28 @@ npm run preview      # Preview production build locally
 
 ## Deployment (Vercel)
 
-1. Push to `main` branch ΓåÆ auto-deploys
+1. Push to `main` branch → auto-deploys
 2. Framework: Vite
 3. Build command: `npm run build`
 4. Output directory: `dist`
 5. Environment variables set in Vercel dashboard
-6. `vercel.json` handles SPA routing (all paths ΓåÆ index.html)
+6. `vercel.json` handles SPA routing (all paths → index.html)
 
 ---
 
 ## Known Issues & Gotchas
 
-1. **Use `restClient.ts`, not `supabase.from()`** ΓÇö the generated Supabase types are
+1. **Use `restClient.ts`, not `supabase.from()`** — the generated Supabase types are
    out of sync with the live schema, so `supabase.from()` rejects valid columns.
    `restClient` calls PostgREST directly with the user's JWT.
-2. **1000 row limit** ΓÇö PostgREST caps responses at 1000. Use `restGetAll()`.
-3. **Owner column is `created_by`** on all but five tables ΓÇö see the schema notes above.
+2. **1000 row limit** — PostgREST caps responses at 1000. Use `restGetAll()`.
+3. **Owner column is `created_by`** on all but five tables — see the schema notes above.
 4. **UI field names differ from DB columns** on invoices, payments, documents,
-   hearings, matters and communication_logs ΓÇö see the mapping table above.
-5. **Date fields** ΓÇö Stored as `date` type (YYYY-MM-DD). Frontend displays as DD/MM/YYYY.
+   hearings, matters and communication_logs — see the mapping table above.
+5. **Date fields** — Stored as `date` type (YYYY-MM-DD). Frontend displays as DD/MM/YYYY.
 6. **Hearing data lives in `cases.next_hearing_date`.** The `hearings` table is empty
    (0 rows), so never report hearing counts from it alone.
-7. **Never generate `package-lock.json` inside the parent pnpm workspace** ΓÇö it writes
+7. **Never generate `package-lock.json` inside the parent pnpm workspace** — it writes
    local symlink paths that break the Vercel build.
 8. **After any `ALTER TABLE` or new FK**, run `notify pgrst, 'reload schema'` or
    PostgREST will keep rejecting the change.
@@ -336,7 +336,7 @@ Instead of using Supabase Storage (1 GB free limit), we use **Cloudinary** for f
 
 ### Setup Steps:
 1. Go to https://cloudinary.com and create a free account
-2. Go to **Settings ΓåÆ Upload ΓåÆ Upload Presets**
+2. Go to **Settings → Upload → Upload Presets**
 3. Click **Add Upload Preset**
 4. Set "Signing Mode" to **Unsigned**
 5. Name it `lawmind_docs` (or anything)
@@ -348,7 +348,7 @@ Instead of using Supabase Storage (1 GB free limit), we use **Cloudinary** for f
    ```
 
 ### How It Works:
-- Files upload directly from browser ΓåÆ Cloudinary (no server needed)
+- Files upload directly from browser → Cloudinary (no server needed)
 - Cloudinary returns a permanent URL
 - URL is stored in Supabase `documents.file_url` column
 - Zero Supabase storage used for files

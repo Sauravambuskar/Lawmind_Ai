@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=EB+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=EB+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -36,7 +36,7 @@
 
     --radius: 0.5rem;
 
-    /* Sidebar ΓÇö deep legal navy */
+    /* Sidebar — deep legal navy */
     --sidebar-background: 222 42% 12%;
     --sidebar-foreground: 210 18% 73%;
     --sidebar-primary: 42 58% 52%;
@@ -103,7 +103,7 @@
     color: hsl(var(--foreground));
   }
 
-  /* ΓöÇΓöÇ Headings ΓÇö EB Garamond (legal serif) ΓöÇΓöÇ */
+  /* ── Headings — EB Garamond (legal serif) ── */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'EB Garamond', Georgia, serif;
     font-weight: 600;
@@ -115,10 +115,10 @@
   h2 { font-size: 1.5rem; font-weight: 600; }
   h3 { font-size: 1.15rem; font-weight: 600; }
 
-  /* ΓöÇΓöÇ Body text ΓÇö Inter ΓöÇΓöÇ */
+  /* ── Body text — Inter ── */
   p { font-weight: 400; line-height: 1.65; }
 
-  /* ΓöÇΓöÇ Table ΓöÇΓöÇ */
+  /* ── Table ── */
   th {
     font-family: 'Inter', sans-serif;
     font-weight: 700;
@@ -132,7 +132,7 @@
     font-size: 0.875rem;
   }
 
-  /* ΓöÇΓöÇ Form elements ΓöÇΓöÇ */
+  /* ── Form elements ── */
   label {
     font-weight: 600;
     font-size: 0.8rem;
@@ -143,31 +143,31 @@
     font-size: 0.875rem;
   }
 
-  /* ΓöÇΓöÇ Buttons ΓÇö always 600 ΓöÇΓöÇ */
+  /* ── Buttons — always 600 ── */
   button {
     font-weight: 600;
     letter-spacing: 0.005em;
   }
 
-  /* ΓöÇΓöÇ Small / badges ΓöÇΓöÇ */
+  /* ── Small / badges ── */
   small {
     font-weight: 500;
   }
 
-  /* ΓöÇΓöÇ Strong / bold always uses 700 ΓöÇΓöÇ */
+  /* ── Strong / bold always uses 700 ── */
   strong, b {
     font-weight: 700;
   }
 }
 
-/* ΓöÇΓöÇ Sidebar ΓöÇΓöÇ */
+/* ── Sidebar ── */
 .sidebar-item {
   font-size: 0.875rem;
   font-weight: 500;
   letter-spacing: 0.005em;
 }
 
-/* ΓöÇΓöÇ Card hover lift ΓöÇΓöÇ */
+/* ── Card hover lift ── */
 .hover-lift {
   transition: box-shadow 0.18s ease, transform 0.14s ease;
 }
@@ -176,13 +176,13 @@
   transform: translateY(-1px);
 }
 
-/* ΓöÇΓöÇ Refined table rows ΓöÇΓöÇ */
+/* ── Refined table rows ── */
 tbody tr {
   border-bottom-width: 1px;
   border-color: hsl(var(--border) / 0.65);
 }
 
-/* ΓöÇΓöÇ Page title ΓöÇΓöÇ */
+/* ── Page title ── */
 .page-title {
   font-family: 'EB Garamond', Georgia, serif;
   font-weight: 700;
@@ -191,7 +191,7 @@ tbody tr {
   color: hsl(var(--foreground));
 }
 
-/* ΓöÇΓöÇ Badge / Tag text ΓöÇΓöÇ */
+/* ── Badge / Tag text ── */
 .badge-text {
   font-family: 'Inter', sans-serif;
   font-weight: 700;
@@ -200,12 +200,12 @@ tbody tr {
   text-transform: uppercase;
 }
 
-/* ΓöÇΓöÇ Status badges always bold ΓöÇΓöÇ */
+/* ── Status badges always bold ── */
 [class*="uppercase"][class*="tracking-wider"] {
   font-weight: 700;
 }
 
-/* ΓöÇΓöÇ Custom scrollbar ΓöÇΓöÇ */
+/* ── Custom scrollbar ── */
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: hsl(222 32% 20%) transparent;
@@ -215,7 +215,7 @@ tbody tr {
 .custom-scrollbar::-webkit-scrollbar-thumb { background: hsl(222 32% 22%); border-radius: 2px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: hsl(222 28% 30%); }
 
-/* ΓöÇΓöÇ Voice animations ΓöÇΓöÇ */
+/* ── Voice animations ── */
 @keyframes voice-bar {
   0%, 100% { transform: scaleY(0.25); opacity: 0.5; }
   50%       { transform: scaleY(1);    opacity: 1;   }

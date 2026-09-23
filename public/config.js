@@ -1,5 +1,5 @@
-﻿// ============================================================
-// LAWMIND ΓÇö RUNTIME CONFIG (MySQL/PHP backend)
+// ============================================================
+// LAWMIND — RUNTIME CONFIG (MySQL/PHP backend)
 // ============================================================
 // apiUrl    = where the PHP API lives. Usually "/api" if you uploaded
 //             the api/ folder to the same Hostinger public_html as the app.
