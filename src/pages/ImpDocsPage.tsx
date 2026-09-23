@@ -1,4 +1,4 @@
-﻿import { FileDown, Search, FolderOpen, Eye, Edit3, Loader2, Printer, Save, Plus, FileText, X, AlertCircle } from "lucide-react";
+import { FileDown, Search, FolderOpen, Eye, Edit3, Loader2, Printer, Save, Plus, FileText, X, AlertCircle } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,13 @@ import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CloudinaryUpload } from "@/components/CloudinaryUpload";
+import { getSignedFileUrl } from "@/lib/storage";
+
+async function resolveDocUrl(filename: string): Promise<string | null> {
+  if (/^https?:\/\//.test(filename)) return filename;
+  if (filename.includes("/")) return getSignedFileUrl(filename);
+  return `/impdocs/${encodeURIComponent(filename)}`;
+}
 
 const FALLBACK_DOCS = [
   { name: "Adjournment Application", filename: "I am sharing 'Adjournment application' with you.docx", type: "DOCX" },
@@ -55,14 +62,23 @@ const ImpDocsPage = () => {
         console.warn("Using local fallback.");
         return FALLBACK_DOCS;
       }
-      return data.length > 0 ? data : FALLBACK_DOCS;
+      if (data.length === 0) return FALLBACK_DOCS;
+      return data.map((d: any) => ({
+        ...d,
+        filename: d.file_url ?? "",
+        type: (d.file_type ?? "").toUpperCase(),
+      }));
     },
     retry: false,
   });
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
-      const { error } = await supabase.from("important_documents").insert(payload);
+      const { error } = await supabase.from("important_documents").insert({
+        name: payload.name,
+        file_url: payload.filename,
+        file_type: payload.type,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -81,15 +97,12 @@ const ImpDocsPage = () => {
   );
 
   const handleDownload = async (doc: any) => {
-    let url = "";
-    if (doc.filename.includes("/")) {
-      // It's a storage path
-      url = await getSignedFileUrl(doc.filename);
-    } else {
-      // It's a local file
-      url = `/impdocs/${encodeURIComponent(doc.filename)}`;
+    const url = await resolveDocUrl(doc.filename);
+    if (!url) {
+      toast.error("Could not access this document");
+      return;
     }
-    
+
     const link = document.createElement("a");
     link.href = url;
     link.download = doc.name;
@@ -107,12 +120,8 @@ const ImpDocsPage = () => {
     setProcLoading(true);
 
     try {
-      let fileUrl = "";
-      if (doc.filename.includes("/")) {
-        fileUrl = await getSignedFileUrl(doc.filename);
-      } else {
-        fileUrl = `/impdocs/${encodeURIComponent(doc.filename)}`;
-      }
+      const fileUrl = await resolveDocUrl(doc.filename);
+      if (!fileUrl) throw new Error("Could not access this document");
 
       const type = doc.type.toUpperCase();
 

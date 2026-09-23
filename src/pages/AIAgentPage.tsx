@@ -707,7 +707,7 @@ function ChatInput({
 }: {
   inputRef: React.RefObject<HTMLTextAreaElement>;
   input: string;
-  setInput: (v: string) => void;
+  setInput: React.Dispatch<React.SetStateAction<string>>;
   loading: boolean;
   onKeyDown: (e: React.KeyboardEvent) => void;
 }) {
