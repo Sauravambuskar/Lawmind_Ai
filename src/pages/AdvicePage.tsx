@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Pencil, Download } from "lucide-react";
@@ -164,8 +164,8 @@ export default function AdvicePage() {
                       {a.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{a.description}</p>}
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-sm">{(a as any).clients?.name || "ΓÇö"}</td>
-                  <td className="py-3 px-4 text-sm">{(a as any).cases?.title || "ΓÇö"}</td>
+                  <td className="py-3 px-4 text-sm">{(a as any).clients?.name || "—"}</td>
+                  <td className="py-3 px-4 text-sm">{(a as any).cases?.title || "—"}</td>
                   <td className="py-3 px-4 text-sm">{format(new Date(a.advice_date), "MMM dd, yyyy")}</td>
                   <td className="py-3 px-4"><Badge variant={statusVariant(a.status)}>{a.status}</Badge></td>
                   <td className="py-3 px-4 text-center">

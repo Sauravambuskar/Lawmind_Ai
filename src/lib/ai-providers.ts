@@ -1,4 +1,4 @@
-﻿import {
+import {
   configId,
   cooldownRemaining,
   classifyFailure,
@@ -51,20 +51,20 @@ export const PROVIDER_INFO: Record<AIProvider, {
     baseUrl: 'https://api.groq.com/openai/v1',
     models: [
       // Standard text models (active as of Sep 2026)
-      { id: 'llama-3.3-70b-versatile',                  name: 'Llama 3.3 70B Versatile ΓÇö 131K Γ£à' },
-      { id: 'llama-3.1-8b-instant',                     name: 'Llama 3.1 8B Instant ΓÇö 131K (Fast)' },
-      { id: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout 17B ΓÇö 131K (New)' },
-      { id: 'openai/gpt-oss-120b',                      name: 'GPT-OSS 120B ΓÇö 131K' },
-      { id: 'openai/gpt-oss-20b',                       name: 'GPT-OSS 20B ΓÇö 131K (Budget)' },
-      { id: 'moonshotai/kimi-k2-instruct-0905',         name: 'Kimi K2 Instruct ΓÇö 131K (New)' },
-      { id: 'qwen/qwen3.8-27b',                         name: 'Qwen 3.8 27B ΓÇö 131K' },
-      { id: 'qwen/qwen3.6-27b',                         name: 'Qwen 3.6 27B ΓÇö 131K' },
+      { id: 'llama-3.3-70b-versatile',                  name: 'Llama 3.3 70B Versatile — 131K ✅' },
+      { id: 'llama-3.1-8b-instant',                     name: 'Llama 3.1 8B Instant — 131K (Fast)' },
+      { id: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout 17B — 131K (New)' },
+      { id: 'openai/gpt-oss-120b',                      name: 'GPT-OSS 120B — 131K' },
+      { id: 'openai/gpt-oss-20b',                       name: 'GPT-OSS 20B — 131K (Budget)' },
+      { id: 'moonshotai/kimi-k2-instruct-0905',         name: 'Kimi K2 Instruct — 131K (New)' },
+      { id: 'qwen/qwen3.8-27b',                         name: 'Qwen 3.8 27B — 131K' },
+      { id: 'qwen/qwen3.6-27b',                         name: 'Qwen 3.6 27B — 131K' },
       // Agentic / compound (uses tools, web search)
-      { id: 'compound-beta',                            name: 'Groq Compound Beta ΓÇö Agentic+Search' },
-      { id: 'compound-beta-mini',                       name: 'Groq Compound Beta Mini ΓÇö Agentic' },
+      { id: 'compound-beta',                            name: 'Groq Compound Beta — Agentic+Search' },
+      { id: 'compound-beta-mini',                       name: 'Groq Compound Beta Mini — Agentic' },
     ],
     color: '#f55036',
-    description: 'Ultra-fast inference ΓÇö Llama 3.3 70B recommended for legal Q&A',
+    description: 'Ultra-fast inference — Llama 3.3 70B recommended for legal Q&A',
   },
   openai: {
     label: 'OpenAI',
@@ -85,7 +85,7 @@ export const PROVIDER_INFO: Record<AIProvider, {
     label: 'Google Gemini',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     models: [
-      { id: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash Γ£à' },
+      { id: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash ✅' },
       { id: 'gemini-2.5-pro',        name: 'Gemini 2.5 Pro' },
       { id: 'gemini-2.0-flash',      name: 'Gemini 2.0 Flash' },
       { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite (Fast)' },
@@ -93,7 +93,7 @@ export const PROVIDER_INFO: Record<AIProvider, {
       { id: 'gemini-1.5-pro',        name: 'Gemini 1.5 Pro' },
     ],
     color: '#4285f4',
-    description: 'Google multimodal AI ΓÇö Gemini 2.5 Flash recommended',
+    description: 'Google multimodal AI — Gemini 2.5 Flash recommended',
   },
   openrouter: {
     label: 'OpenRouter',
@@ -115,7 +115,7 @@ export const PROVIDER_INFO: Record<AIProvider, {
       { id: 'meta-llama/llama-3.3-70b-instruct',       name: 'Llama 3.3 70B' },
     ],
     color: '#6366f1',
-    description: 'Access 400+ models ΓÇö includes free tier, no credit card for free models',
+    description: 'Access 400+ models — includes free tier, no credit card for free models',
   },
   custom: {
     label: 'Custom',
@@ -180,7 +180,7 @@ async function fetchWithTimeout(
   try {
     return await fetch(url, { ...init, signal: ctrl.signal });
   } catch (err: unknown) {
-    // Caller cancelled ΓÇö propagate as-is so callers can tell it apart.
+    // Caller cancelled — propagate as-is so callers can tell it apart.
     if (signal?.aborted) throw err;
     if (err instanceof DOMException && err.name === 'AbortError') {
       throw new AIError(`Request timed out after ${Math.round(timeoutMs / 1000)}s`);
@@ -295,7 +295,7 @@ export async function sendAIMessage(
   if (config.provider === 'gemini') {
     return sendGeminiMessage(config, messages, opts);
   }
-  // groq, openai, openrouter, custom ΓÇö all OpenAI-compatible
+  // groq, openai, openrouter, custom — all OpenAI-compatible
   return sendOpenAICompatible(config, messages, opts);
 }
 
@@ -331,8 +331,8 @@ const TRANSIENT: FailureKind[] = ['server', 'timeout', 'network'];
 /**
  * Round-robin each provider's own keys while keeping provider priority.
  *
- * Groups stay in their original order ΓÇö the active provider is still tried
- * before the others ΓÇö but which of that provider's keys goes first advances
+ * Groups stay in their original order — the active provider is still tried
+ * before the others — but which of that provider's keys goes first advances
  * on every request. Six Groq keys then share the load six ways instead of
  * key #1 absorbing all of it and the rest idling as cold spares.
  */
@@ -367,7 +367,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  *   2. Try it. On a transient blip, retry once after a short backoff.
  *   3. On failure, put it in cooldown (honouring Retry-After) and move on.
  *
- * If every config is cooling down we do not give up ΓÇö the one that recovers
+ * If every config is cooling down we do not give up — the one that recovers
  * soonest is tried anyway, since a cooldown is an estimate, not a fact.
  */
 export async function sendAIMessageWithFailover(
@@ -384,7 +384,7 @@ export async function sendAIMessageWithFailover(
   const attempts: FailoverAttempt[] = [];
 
   const ready = usable.filter((c) => cooldownRemaining(configId(c)) === 0);
-  // Everything is sidelined ΓÇö fall back to whichever recovers soonest.
+  // Everything is sidelined — fall back to whichever recovers soonest.
   const queue =
     ready.length > 0
       ? rotateWithinProviders(ready, nextRotation())
@@ -408,7 +408,7 @@ export async function sendAIMessageWithFailover(
             : undefined,
         };
       } catch (error: unknown) {
-        // Caller cancelled ΓÇö not a provider failure, don't burn the chain.
+        // Caller cancelled — not a provider failure, don't burn the chain.
         if (opts.signal?.aborted) throw error;
 
         const message = error instanceof Error ? error.message : 'Unknown error';
@@ -439,9 +439,9 @@ export async function sendAIMessageWithFailover(
     }
   }
 
-  // Everything in the chain failed ΓÇö report it in a form a human can act on.
+  // Everything in the chain failed — report it in a form a human can act on.
   const detail = attempts
-    .map((a) => `  ΓÇó ${a.name} (${a.model}) ΓÇö ${FAILURE_LABEL[a.kind]}: ${a.message}`)
+    .map((a) => `  • ${a.name} (${a.model}) — ${FAILURE_LABEL[a.kind]}: ${a.message}`)
     .join('\n');
 
   const soonest = usable
@@ -471,7 +471,7 @@ export async function testConnection(config: AIProviderConfig): Promise<string |
       ],
       { timeoutMs: 20_000 },
     );
-    // A passing test proves the key works ΓÇö lift any cooldown it was under.
+    // A passing test proves the key works — lift any cooldown it was under.
     markSuccess(configId(config));
     return result.content.length > 0 ? null : 'Empty response from API';
   } catch (err: unknown) {

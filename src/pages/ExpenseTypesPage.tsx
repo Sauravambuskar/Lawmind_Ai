@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Pencil } from "lucide-react";
@@ -104,7 +104,7 @@ export default function ExpenseTypesPage() {
                 <tr key={t.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                   <td className="py-3 px-4 text-sm">{startIndex + i + 1}</td>
                   <td className="py-3 px-4 text-sm font-medium">{t.name}</td>
-                  <td className="py-3 px-4 text-sm">{t.description || "ΓÇö"}</td>
+                  <td className="py-3 px-4 text-sm">{t.description || "—"}</td>
                   <td className="py-3 px-4 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="w-4 h-4 text-primary" /></Button>

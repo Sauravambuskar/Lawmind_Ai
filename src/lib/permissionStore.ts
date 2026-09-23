@@ -1,7 +1,7 @@
-﻿import { restGet, restInsert, restDelete, restUpdate } from "@/lib/restClient";
+import { restGet, restInsert, restDelete, restUpdate } from "@/lib/restClient";
 import type { UserRole } from "@/hooks/auth.types";
 
-// ΓöÇΓöÇ All app sections that can be controlled ΓöÇΓöÇ
+// ── All app sections that can be controlled ──
 export const APP_SECTIONS = [
   { id: "dashboard", label: "Dashboard", group: "Home" },
   { id: "today", label: "Today's Diary", group: "Home" },
@@ -46,7 +46,7 @@ export const DEFAULT_PERMISSIONS: PermissionMap = {
   lawyer: ["dashboard", "today", "clients", "advocates", "cases", "hearings", "hearing-calendar", "evidence", "invoices", "documents", "impdocs", "notice-maker", "quick-docs", "expenses", "contacts", "notes", "tasks", "ai-agent"] as SectionId[],
 };
 
-// ΓöÇΓöÇ Simple module-level store (no external dependency) ΓöÇΓöÇ
+// ── Simple module-level store (no external dependency) ──
 let _permissions: PermissionMap = { ...DEFAULT_PERMISSIONS };
 let _loaded = false;
 let _loading = false;
@@ -82,7 +82,7 @@ export async function loadPermissions(): Promise<void> {
       _permissions = perms;
     }
   } catch {
-    // Not logged in yet, or table missing ΓÇö keep safe defaults
+    // Not logged in yet, or table missing — keep safe defaults
   }
 
   _loaded = true;
@@ -99,7 +99,7 @@ export async function setRolePermissions(role: UserRole, sections: SectionId[]):
     await restDelete("role_permissions", `role=eq.${role}`);
     await restInsert("role_permissions", { role, sections });
   } catch {
-    // Silent ΓÇö local state still applied
+    // Silent — local state still applied
   }
 }
 

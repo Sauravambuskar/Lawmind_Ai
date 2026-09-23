@@ -1,4 +1,4 @@
-﻿import {
+import {
   TrendingUp, Users, UserPlus, Eye, Plus, FileText, Phone, Image,
   Clock, AlertTriangle, CalendarClock, BriefcaseBusiness,
   CheckCircle2, AlertCircle, ChevronRight, Scale,
@@ -34,7 +34,7 @@ export default function Dashboard() {
 
   const currentQuote = LEGAL_TIPS[Math.floor(Date.now() / (3 * 60 * 60 * 1000)) % LEGAL_TIPS.length];
 
-  // ΓöÇΓöÇ Real data from Supabase ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Real data from Supabase ─────────────────────────────────────────────
   const { data: allCases = [] } = useQuery({
     queryKey: ["dashboard-cases"],
     queryFn: () => restGetAll<any>("cases?select=id,status,case_stage,court_type,created_at,next_hearing_date,title&order=created_at.desc"),
@@ -86,9 +86,9 @@ export default function Dashboard() {
     return Object.entries(months).slice(-6).map(([month, value]) => ({ month: month.split(" ")[0], value }));
   })();
 
-  const adviceStats = { thisMonth: caseCounts.pending, chart: casesChart.length > 0 ? casesChart.map(c => ({ month: c.month, value: c.value })) : [{ month: "ΓÇö", value: 0 }] };
+  const adviceStats = { thisMonth: caseCounts.pending, chart: casesChart.length > 0 ? casesChart.map(c => ({ month: c.month, value: c.value })) : [{ month: "—", value: 0 }] };
 
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ────────────────────────────────────────────────────────────────────────────
 
   const stats = [
     { label: "Total Cases",    value: caseCounts.total,          icon: BriefcaseBusiness, color: "text-blue-500",    bg: "bg-blue-500/10" },
@@ -140,7 +140,7 @@ export default function Dashboard() {
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center gap-8 pr-0 lg:pr-[300px] xl:pr-[360px]">
           <div className="flex-1 flex flex-col gap-6">
             <div>
-              <h2 className="text-3xl font-bold text-foreground tracking-tight">{greeting}, {displayName} ≡ƒæï</h2>
+              <h2 className="text-3xl font-bold text-foreground tracking-tight">{greeting}, {displayName} 👋</h2>
               <p className="text-muted-foreground mt-2 text-[15px] max-w-lg leading-relaxed">Here's a summary of your practice's performance and upcoming agenda.</p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -160,12 +160,12 @@ export default function Dashboard() {
           <div className="bg-white/90 backdrop-blur-md border border-border/80 rounded-xl p-4 shadow-sm w-full max-w-[240px] shrink-0 hidden lg:block">
             <div className="flex items-center gap-2 text-muted-foreground font-semibold text-xs mb-2.5">
               <div className="bg-muted p-1 rounded">
-                <span className="text-primary font-bold text-sm leading-none">Γ¥¥</span>
+                <span className="text-primary font-bold text-sm leading-none">❝</span>
               </div>
               Tip of the Day
             </div>
             <p className="text-[13.5px] text-foreground font-medium leading-relaxed">{currentQuote}</p>
-            <p className="text-[11px] text-muted-foreground mt-2.5">ΓÇô LawMind</p>
+            <p className="text-[11px] text-muted-foreground mt-2.5">– LawMind</p>
           </div>
         </div>
       </div>
@@ -413,7 +413,7 @@ export default function Dashboard() {
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{item.type}</span>
                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                          ΓÇó {formatDistanceToNow(new Date(item.time), { addSuffix: true })}
+                          • {formatDistanceToNow(new Date(item.time), { addSuffix: true })}
                         </span>
                       </div>
                     </div>

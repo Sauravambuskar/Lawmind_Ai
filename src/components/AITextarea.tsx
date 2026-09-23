@@ -1,4 +1,4 @@
-﻿import {
+import {
   useState, useRef, useCallback, useEffect,
   type TextareaHTMLAttributes,
 } from "react";
@@ -8,14 +8,14 @@ import { useAppSettings } from "@/hooks/useAppSettings";
 import { sendAIMessageWithFailover } from "@/lib/ai-providers";
 import { cn } from "@/lib/utils";
 
-/* ΓöÇΓöÇΓöÇ Props ΓöÇΓöÇΓöÇ */
+/* ─── Props ─── */
 export interface AITextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   /** A short description of what this field is for, used as context for the AI. */
   context?: string;
   className?: string;
 }
 
-/* ΓöÇΓöÇΓöÇ Main Component ΓöÇΓöÇΓöÇ */
+/* ─── Main Component ─── */
 export function AITextarea({ context = "text field", className, value, onChange, ...rest }: AITextareaProps) {
   const { settings } = useAppSettings();
   const { hasActiveKey, getAllConfigs } = useAIConfig();
@@ -65,7 +65,7 @@ export function AITextarea({ context = "text field", className, value, onChange,
               {
                 role: "system",
                 content:
-                  "You are a professional legal writing assistant. Complete the given text naturally and concisely. Return ONLY the continuation ΓÇö never repeat the existing text. Max 2 sentences.",
+                  "You are a professional legal writing assistant. Complete the given text naturally and concisely. Return ONLY the continuation — never repeat the existing text. Max 2 sentences.",
               },
               {
                 role: "user",
@@ -133,7 +133,7 @@ export function AITextarea({ context = "text field", className, value, onChange,
         {...rest}
       />
 
-      {/* AI badge ΓÇö subtle indicator that autofill is active */}
+      {/* AI badge — subtle indicator that autofill is active */}
       {isFeatureOn && (
         <div className="absolute top-2 right-2 pointer-events-none">
           <span className="flex items-center gap-1 text-[9px] font-semibold text-violet-400/60 dark:text-violet-400/50 select-none">

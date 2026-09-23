@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Pencil, Download, CalendarDays, Filter, Clock, LayoutList, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
@@ -139,7 +139,7 @@ export default function HearingsPage() {
                   <Label className="font-semibold text-muted-foreground">Case *</Label>
                   <Select value={form.case_id} onValueChange={v => setForm(p => ({ ...p, case_id: v }))}>
                     <SelectTrigger className="bg-muted/50"><SelectValue placeholder="Select case" /></SelectTrigger>
-                    <SelectContent>{cases.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.case_number} ΓÇö {c.title}</SelectItem>)}</SelectContent>
+                    <SelectContent>{cases.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.case_number} — {c.title}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -221,7 +221,7 @@ export default function HearingsPage() {
                         <div className="font-mono font-medium text-foreground bg-muted/50 px-2 py-0.5 rounded inline-block text-xs border border-border/50 w-fit">
                           {(h as any).cases?.case_number || "No Case #"}
                         </div>
-                        <span className="font-semibold text-foreground">{h.purpose || "ΓÇö"}</span>
+                        <span className="font-semibold text-foreground">{h.purpose || "—"}</span>
                       </div>
                     </td>
                     <td className="py-4 px-5">
@@ -234,8 +234,8 @@ export default function HearingsPage() {
                       </div>
                     </td>
                     <td className="py-4 px-5">
-                      <p className="text-foreground font-medium">{h.court_name || "ΓÇö"}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Judge: {h.judge_name || "ΓÇö"}</p>
+                      <p className="text-foreground font-medium">{h.court_name || "—"}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Judge: {h.judge_name || "—"}</p>
                     </td>
                     <td className="py-4 px-5">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border ${sConf.bg} ${sConf.text} ${sConf.border}`}>

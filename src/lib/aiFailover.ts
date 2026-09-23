@@ -1,8 +1,8 @@
-﻿/**
- * AI Failover ΓÇö cooldown registry (circuit breaker)
+/**
+ * AI Failover — cooldown registry (circuit breaker)
  *
  * Problem this solves: when a key hits its rate limit, the old failover chain
- * retried that same key on *every* subsequent request ΓÇö burning a wasted call
+ * retried that same key on *every* subsequent request — burning a wasted call
  * and adding latency each time before moving on.
  *
  * Here, a key that fails is put in cooldown and skipped entirely until it is
@@ -11,19 +11,19 @@
  */
 
 export type FailureKind =
-  | 'rate_limit'   // 429 ΓÇö key is throttled, comes back on its own
-  | 'auth'         // 401/403 ΓÇö key is bad/revoked
-  | 'model'        // 404 / decommissioned ΓÇö model name wrong for this provider
-  | 'server'       // 5xx ΓÇö provider-side outage
+  | 'rate_limit'   // 429 — key is throttled, comes back on its own
+  | 'auth'         // 401/403 — key is bad/revoked
+  | 'model'        // 404 / decommissioned — model name wrong for this provider
+  | 'server'       // 5xx — provider-side outage
   | 'timeout'      // request took too long
   | 'network'      // fetch failed outright (DNS, offline, CORS)
-  | 'bad_request'; // 4xx caused by our payload ΓÇö not the key's fault
+  | 'bad_request'; // 4xx caused by our payload — not the key's fault
 
 /** How long to sit out, per failure kind. Escalates on repeated failures. */
 const BASE_COOLDOWN_MS: Record<FailureKind, number> = {
   rate_limit: 60_000,      // 1 min (overridden by Retry-After when provided)
-  auth: 900_000,           // 15 min ΓÇö key is probably dead, stop wasting calls
-  model: 1_800_000,        // 30 min ΓÇö misconfigured model, needs a human
+  auth: 900_000,           // 15 min — key is probably dead, stop wasting calls
+  model: 1_800_000,        // 30 min — misconfigured model, needs a human
   server: 30_000,          // 30 s
   timeout: 30_000,
   network: 20_000,
@@ -40,7 +40,7 @@ export interface CooldownEntry {
   until: number;      // epoch ms
   kind: FailureKind;
   reason: string;
-  failures: number;   // consecutive failures ΓÇö drives escalating backoff
+  failures: number;   // consecutive failures — drives escalating backoff
 }
 
 type CooldownMap = Record<string, CooldownEntry>;
@@ -50,7 +50,7 @@ function load(): CooldownMap {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw) as CooldownMap;
   } catch {
-    /* corrupt or unavailable storage ΓÇö treat as empty */
+    /* corrupt or unavailable storage — treat as empty */
   }
   return {};
 }
@@ -59,13 +59,13 @@ function save(map: CooldownMap): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
   } catch {
-    /* storage full or blocked ΓÇö cooldowns just won't survive reload */
+    /* storage full or blocked — cooldowns just won't survive reload */
   }
 }
 
 /**
  * Stable id for a config. Includes a short key fingerprint so two keys on the
- * same provider+model cool down independently ΓÇö the whole point of extra keys.
+ * same provider+model cool down independently — the whole point of extra keys.
  * Never stores the key itself.
  */
 export function configId(c: { provider: string; model: string; apiKey: string }): string {
@@ -122,7 +122,7 @@ export function markFailure(
 
   const base = BASE_COOLDOWN_MS[kind];
   if (base === 0 && retryAfterMs === undefined) {
-    // bad_request ΓÇö the key is fine, don't sideline it
+    // bad_request — the key is fine, don't sideline it
     return;
   }
 
@@ -184,7 +184,7 @@ const ROTATION_KEY = 'lawmind_ai_rotation';
  *
  * Spreading requests across a provider's keys is what actually multiplies
  * throughput. A chain that always starts at key #1 puts the entire load on
- * key #1 and only touches the spares after it has already failed ΓÇö so six
+ * key #1 and only touches the spares after it has already failed — so six
  * keys still give you one key's worth of rate limit. Rotating the starting
  * point gives you six.
  */
@@ -194,7 +194,7 @@ export function nextRotation(): number {
     localStorage.setItem(ROTATION_KEY, String(n % 1_000_000));
     return n;
   } catch {
-    // Storage blocked ΓÇö random start still spreads load across a session.
+    // Storage blocked — random start still spreads load across a session.
     return Math.floor(Math.random() * 1000);
   }
 }

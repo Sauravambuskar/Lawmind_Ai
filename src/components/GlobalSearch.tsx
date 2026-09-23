@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, X, FileText, Users, Briefcase, Scale, Calendar } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
@@ -97,7 +97,7 @@ export function GlobalSearch() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{r.label}</p>
-                    <p className="text-xs text-muted-foreground truncate">{r.type} ΓÇó {r.sub}</p>
+                    <p className="text-xs text-muted-foreground truncate">{r.type} • {r.sub}</p>
                   </div>
                 </button>
               );

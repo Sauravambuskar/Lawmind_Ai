@@ -1,11 +1,11 @@
-﻿import { restGet, restCount } from "@/lib/restClient";
+import { restGet, restCount } from "@/lib/restClient";
 
 /** Fetch rows for AI context; returns [] on any failure. */
 async function fetchFromRest(path: string): Promise<any[]> {
   try { return await restGet<any>(path); } catch { return []; }
 }
 
-// ΓöÇΓöÇ Token budget ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Token budget ──────────────────────────────────────────────────────────────
 // Groq free tier: ~8k token context window for the system prompt.
 // We keep the whole system + data block under ~6000 chars (~1500 tokens).
 const MAX_CONTEXT_CHARS = 5500;
@@ -15,7 +15,7 @@ function truncate(str: string): string {
   return str.slice(0, MAX_CONTEXT_CHARS) + "\n\n_[Context truncated to fit token limit. Ask for specific data if needed.]_";
 }
 
-// ΓöÇΓöÇ Summary stats (always small) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Summary stats (always small) ─────────────────────────────────────────────
 async function fetchSummaryStats(): Promise<string> {
   const today = new Date().toISOString().split("T")[0];
   const [total, open, pending, disposed, hearingsCount, clients, invoices] = await Promise.all([
@@ -35,7 +35,7 @@ async function fetchSummaryStats(): Promise<string> {
   ].join("\n");
 }
 
-// ΓöÇΓöÇ Data fetchers (small limits to avoid 413) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Data fetchers (small limits to avoid 413) ─────────────────────────────────
 
 async function fetchActiveCases() {
   const [open, pending] = await Promise.all([
@@ -84,17 +84,17 @@ async function fetchDocuments() {
   return fetchFromRest(`documents?select=title,document_type,created_at&order=created_at.desc&limit=15`);
 }
 
-// ΓöÇΓöÇ Compact table (key columns only, no wrap) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Compact table (key columns only, no wrap) ─────────────────────────────────
 function toTable(rows: Record<string, unknown>[]): string {
   if (!rows?.length) return "_No records found._";
   const keys = Object.keys(rows[0]);
   const header = `| ${keys.join(" | ")} |`;
   const sep    = `| ${keys.map(() => "---").join(" | ")} |`;
-  const body   = rows.map(r => `| ${keys.map(k => String(r[k] ?? "ΓÇö").slice(0, 40)).join(" | ")} |`).join("\n");
+  const body   = rows.map(r => `| ${keys.map(k => String(r[k] ?? "—").slice(0, 40)).join(" | ")} |`).join("\n");
   return `${header}\n${sep}\n${body}`;
 }
 
-// ΓöÇΓöÇ Main builder ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Main builder ──────────────────────────────────────────────────────────────
 export async function buildDataContext(userMessage: string): Promise<string> {
   const lower = userMessage.toLowerCase();
   const parts: string[] = [];
@@ -102,64 +102,64 @@ export async function buildDataContext(userMessage: string): Promise<string> {
   // Always include compact summary
   parts.push(`## Summary\n${await fetchSummaryStats()}`);
 
-  // ΓöÇΓöÇ Cases ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Cases ─────────────────────────────────────────────────────────────────
   if (/pending|open|active|show.*case|all.*case|list.*case/i.test(lower)) {
     const rows = await fetchActiveCases();
-    parts.push(`\n## Active Cases (open + pending) ΓÇö ${rows.length} records\n${toTable(rows)}`);
+    parts.push(`\n## Active Cases (open + pending) — ${rows.length} records\n${toTable(rows)}`);
   }
 
   if (/disposed|closed|completed|finished/i.test(lower)) {
     const rows = await fetchDisposedCases();
-    parts.push(`\n## Disposed/Closed Cases ΓÇö ${rows.length} records\n${toTable(rows)}`);
+    parts.push(`\n## Disposed/Closed Cases — ${rows.length} records\n${toTable(rows)}`);
   }
 
-  // ΓöÇΓöÇ Hearings ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Hearings ──────────────────────────────────────────────────────────────
   if (/today.*hearing|hearing.*today/i.test(lower)) {
     const rows = await fetchTodayHearings();
-    parts.push(`\n## Today's Hearings ΓÇö ${rows.length} records\n${toTable(rows)}`);
+    parts.push(`\n## Today's Hearings — ${rows.length} records\n${toTable(rows)}`);
   }
 
   if (/hearing|calendar|next.*date|upcoming/i.test(lower)) {
     const rows = await fetchUpcomingHearings();
-    parts.push(`\n## Upcoming Hearings ΓÇö ${rows.length} records\n${toTable(rows)}`);
+    parts.push(`\n## Upcoming Hearings — ${rows.length} records\n${toTable(rows)}`);
   }
 
-  // ΓöÇΓöÇ Clients ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Clients ───────────────────────────────────────────────────────────────
   if (/client|customer|party/i.test(lower)) {
     const rows = await fetchClients();
-    parts.push(`\n## Clients ΓÇö ${rows.length} records\n${toTable(rows)}`);
+    parts.push(`\n## Clients — ${rows.length} records\n${toTable(rows)}`);
   }
 
-  // ΓöÇΓöÇ Financial ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Financial ─────────────────────────────────────────────────────────────
   if (/invoice|bill|payment|fee|financial|revenue|money/i.test(lower)) {
     const rows = await fetchInvoices();
-    parts.push(`\n## Invoices ΓÇö ${rows.length} records\n${toTable(rows)}`);
+    parts.push(`\n## Invoices — ${rows.length} records\n${toTable(rows)}`);
   }
 
   if (/expense|cost|spend/i.test(lower)) {
     const rows = await fetchExpenses();
-    parts.push(`\n## Expenses ΓÇö ${rows.length} records\n${toTable(rows)}`);
+    parts.push(`\n## Expenses — ${rows.length} records\n${toTable(rows)}`);
   }
 
-  // ΓöÇΓöÇ Advocates ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Advocates ─────────────────────────────────────────────────────────────
   if (/advocate|lawyer|counsel/i.test(lower)) {
     const rows = await fetchAdvocates();
-    parts.push(`\n## Advocates ΓÇö ${rows.length} records\n${toTable(rows)}`);
+    parts.push(`\n## Advocates — ${rows.length} records\n${toTable(rows)}`);
   }
 
-  // ΓöÇΓöÇ Tasks ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Tasks ─────────────────────────────────────────────────────────────────
   if (/task|todo|to-do|action/i.test(lower)) {
     const rows = await fetchTasks();
-    parts.push(`\n## Tasks ΓÇö ${rows.length} records\n${toTable(rows)}`);
+    parts.push(`\n## Tasks — ${rows.length} records\n${toTable(rows)}`);
   }
 
-  // ΓöÇΓöÇ Documents ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Documents ─────────────────────────────────────────────────────────────
   if (/document|file|attachment/i.test(lower)) {
     const rows = await fetchDocuments();
-    parts.push(`\n## Documents ΓÇö ${rows.length} records\n${toTable(rows)}`);
+    parts.push(`\n## Documents — ${rows.length} records\n${toTable(rows)}`);
   }
 
-  // ΓöÇΓöÇ Default: show active cases + upcoming hearings ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Default: show active cases + upcoming hearings ─────────────────────────
   if (parts.length === 1) {
     const [cases, hearings] = await Promise.all([fetchActiveCases(), fetchUpcomingHearings()]);
     parts.push(`\n## Active Cases (top 20)\n${toTable(cases.slice(0, 15))}`);
@@ -170,9 +170,9 @@ export async function buildDataContext(userMessage: string): Promise<string> {
   return truncate(parts.join("\n\n"));
 }
 
-// ΓöÇΓöÇ System prompt (kept compact) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── System prompt (kept compact) ─────────────────────────────────────────────
 export function getSystemPrompt(dataContext: string): string {
-  return `You are LawMind AI ΓÇö legal practice assistant for Advocate Manmohan D. Sarda, Akola/Washim, Maharashtra.
+  return `You are LawMind AI — legal practice assistant for Advocate Manmohan D. Sarda, Akola/Washim, Maharashtra.
 
 **DB SCHEMA:**
 - cases: case_number, title, status (open/pending/disposed/closed), case_type, court_name, filing_date
@@ -183,10 +183,10 @@ export function getSystemPrompt(dataContext: string): string {
 - advocates: name, phone, specialization
 
 **RULES:**
-- Use ONLY the data below ΓÇö it is LIVE and REAL
+- Use ONLY the data below — it is LIVE and REAL
 - "pending cases" = open + pending status combined
 - Show markdown tables for lists
-- All amounts in Γé╣
+- All amounts in ₹
 - If data shows 0 records but summary shows non-zero, say "data loaded partially"
 
 **LIVE DATA:**

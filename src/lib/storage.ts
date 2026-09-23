@@ -1,4 +1,4 @@
-﻿import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 const BUCKET = "legal-files";
 
@@ -18,7 +18,7 @@ export function extractFilePath(pathOrUrl: string): string {
     const sIdx = pathOrUrl.indexOf(signedMarker);
     if (sIdx !== -1) return decodeURIComponent(pathOrUrl.substring(sIdx + signedMarker.length).split("?")[0]);
   }
-  // PHP /uploads/<path> ΓÇö strip the leading /uploads/ prefix if present
+  // PHP /uploads/<path> — strip the leading /uploads/ prefix if present
   const uploadsMarker = "/uploads/";
   if (pathOrUrl.startsWith(uploadsMarker)) {
     return pathOrUrl.substring(uploadsMarker.length);

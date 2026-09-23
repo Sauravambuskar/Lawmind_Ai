@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -171,11 +171,11 @@ export default function ClientsPage() {
                     </div>
                   </td>
                   <td className="py-4 px-5">
-                    <p className="font-medium text-foreground">{client.phone || "ΓÇö"}</p>
+                    <p className="font-medium text-foreground">{client.phone || "—"}</p>
                   </td>
                   <td className="py-4 px-5">
-                    <p className="text-foreground font-medium">{client.city || "ΓÇö"}</p>
-                    <p className="text-xs text-muted-foreground">{[client.state, client.country].filter(Boolean).join(", ") || "ΓÇö"}</p>
+                    <p className="text-foreground font-medium">{client.city || "—"}</p>
+                    <p className="text-xs text-muted-foreground">{[client.state, client.country].filter(Boolean).join(", ") || "—"}</p>
                   </td>
                   <td className="py-4 px-5 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">

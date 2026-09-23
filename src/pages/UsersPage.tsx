@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Shield, Users, UserCheck, Scale, UserCog, ChevronDown, Pencil, KeyRound, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -406,7 +406,7 @@ export default function UsersPage() {
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
                           : 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
                       }`}>
-                        {member.status === 'active' ? 'ΓùÅ Active' : 'Γùï Inactive'}
+                        {member.status === 'active' ? '● Active' : '○ Inactive'}
                       </span>
                     </td>
 
@@ -503,7 +503,7 @@ export default function UsersPage() {
           {isSuperAdmin && (
             <div className="flex items-center gap-1.5 text-[11px] text-purple-600 dark:text-purple-400">
               <Shield className="w-3 h-3" />
-              <span>Super Admin ΓÇö full control</span>
+              <span>Super Admin — full control</span>
             </div>
           )}
         </div>
@@ -518,7 +518,7 @@ export default function UsersPage() {
           <p className="text-[12px] font-semibold text-amber-800 dark:text-amber-300">How to add new members</p>
           <p className="text-[11px] text-amber-700/80 dark:text-amber-400/70 mt-0.5 leading-relaxed">
             New members sign up at the login page using their email. Once registered they appear here with the default role <strong>Agent</strong>.
-            Use the <strong>Manage</strong> dropdown to assign the correct role ΓÇö Admin, Lawyer, or Agent.
+            Use the <strong>Manage</strong> dropdown to assign the correct role — Admin, Lawyer, or Agent.
           </p>
         </div>
       </div>

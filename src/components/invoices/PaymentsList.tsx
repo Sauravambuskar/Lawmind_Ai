@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Download, CheckCircle, Plus, Receipt } from "lucide-react";
 import { format } from "date-fns";
@@ -107,7 +107,7 @@ export function PaymentsList({ invoices, payments }: Props) {
       {/* Unpaid invoices - quick actions */}
       {unpaidInvoices.length > 0 && (
         <div className="bg-card border border-border rounded-xl p-6">
-          <h3 className="text-sm font-semibold text-foreground mb-4">Pending Invoices ΓÇö Record Payment</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-4">Pending Invoices — Record Payment</h3>
           <div className="space-y-2">
             {unpaidInvoices.slice(0, 5).map(inv => {
               const paidSoFar = payments
@@ -119,7 +119,7 @@ export function PaymentsList({ invoices, payments }: Props) {
                 <div key={inv.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 border border-border">
                   <div className="flex items-center gap-3 w-1/3">
                     <span className="text-sm font-mono font-medium">{inv.invoice_number}</span>
-                    <span className="text-sm text-muted-foreground truncate">{(inv as any).clients?.name || "ΓÇö"}</span>
+                    <span className="text-sm text-muted-foreground truncate">{(inv as any).clients?.name || "—"}</span>
                   </div>
                   <div className="flex items-center justify-between w-1/3 px-4 text-sm">
                     <span className="text-muted-foreground">Total: {CURRENCY}{Number(inv.total_amount ?? 0).toLocaleString("en-IN")}</span>
@@ -186,11 +186,11 @@ export function PaymentsList({ invoices, payments }: Props) {
                 <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="py-3 px-4 text-sm font-medium">{format(new Date(p.payment_date), "MMM d, yyyy")}</td>
                   <td className="py-3 px-4 text-sm font-mono text-primary">{p.invoices?.invoice_number}</td>
-                  <td className="py-3 px-4 text-sm">{(p.invoices?.clients as any)?.name || "ΓÇö"}</td>
+                  <td className="py-3 px-4 text-sm">{(p.invoices?.clients as any)?.name || "—"}</td>
                   <td className="py-3 px-4">
-                    <Badge variant="outline" className="capitalize text-[10px]">{(p.payment_method || "ΓÇö").replace(/_/g, " ")}</Badge>
+                    <Badge variant="outline" className="capitalize text-[10px]">{(p.payment_method || "—").replace(/_/g, " ")}</Badge>
                   </td>
-                  <td className="py-3 px-4 text-sm text-muted-foreground">{p.reference_no || "ΓÇö"}</td>
+                  <td className="py-3 px-4 text-sm text-muted-foreground">{p.reference_no || "—"}</td>
                   <td className="py-3 px-4 text-sm text-right font-bold text-emerald-500">{CURRENCY}{Number(p.amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
                   <td className="py-3 px-4 text-right">
                     <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => window.print()}>Print</Button>

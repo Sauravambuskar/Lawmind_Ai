@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { useAppSettings } from "@/hooks/useAppSettings";
@@ -28,15 +28,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-// ΓöÇΓöÇ Provider icons ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Provider icons ─────────────────────────────────────────────────────────
 const ICONS: Record<AIProvider, typeof Zap> = {
   groq: Zap, openai: Brain, gemini: Sparkles, openrouter: ExternalLink, custom: Cpu,
 };
 
-// ΓöÇΓöÇ Tabs ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Tabs ───────────────────────────────────────────────────────────────────
 type Tab = "providers" | "groups" | "modules";
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════════════════════
 export default function AISettingsPage() {
   const {
     config, loading, updateProvider, setActiveProvider, getAllConfigs,
@@ -90,7 +90,7 @@ export default function AISettingsPage() {
         <ShieldCheck className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
         <p className="text-sm text-slate-300 leading-relaxed">
           API keys are stored securely in the database and shared across <strong>all users</strong>.
-          Once saved, <strong>all users instantly get access</strong> ΓÇö no action needed on their side.
+          Once saved, <strong>all users instantly get access</strong> — no action needed on their side.
           Only Admins and Super Admins can modify keys.
         </p>
       </div>
@@ -105,7 +105,7 @@ export default function AISettingsPage() {
               Active Module: <strong>{mod.name}</strong>
             </span>
             <span className="text-xs text-violet-400/70 ml-1">
-              {PROVIDER_INFO[mod.provider]?.label} ┬╖ {mod.model}
+              {PROVIDER_INFO[mod.provider]?.label} · {mod.model}
             </span>
             <button
               onClick={() => setActiveModule(undefined)}
@@ -139,7 +139,7 @@ export default function AISettingsPage() {
         ))}
       </div>
 
-      {/* ΓöÇΓöÇ Tab: Providers ΓöÇΓöÇ */}
+      {/* ── Tab: Providers ── */}
       {tab === "providers" && (
         <div className="grid gap-5 md:grid-cols-2">
           {(Object.keys(PROVIDER_INFO) as AIProvider[]).map((provider) => (
@@ -158,7 +158,7 @@ export default function AISettingsPage() {
         </div>
       )}
 
-      {/* ΓöÇΓöÇ Tab: API Groups ΓöÇΓöÇ */}
+      {/* ── Tab: API Groups ── */}
       {tab === "groups" && (
         <ApiGroupsTab
           groups={groups}
@@ -170,7 +170,7 @@ export default function AISettingsPage() {
         />
       )}
 
-      {/* ΓöÇΓöÇ Tab: Modules ΓöÇΓöÇ */}
+      {/* ── Tab: Modules ── */}
       {tab === "modules" && (
         <ModulesTab
           modules={modules}
@@ -189,7 +189,7 @@ export default function AISettingsPage() {
         />
       )}
 
-      {/* ΓöÇΓöÇ AI Autofill ΓöÇΓöÇ */}
+      {/* ── AI Autofill ── */}
       <div className="rounded-2xl border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
@@ -228,9 +228,9 @@ export default function AISettingsPage() {
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════════════════════
 // Provider Card
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════════════════════
 interface CardEntry { apiKey: string; model: string; baseUrl?: string; enabled: boolean }
 
 function ProviderCard({
@@ -314,7 +314,7 @@ function ProviderCard({
         <div className="relative">
           <input
             type={showKey ? "text" : "password"}
-            placeholder="Enter your API keyΓÇª"
+            placeholder="Enter your API key…"
             value={entry.apiKey}
             onChange={(e) => { onUpdate({ apiKey: e.target.value }); setTestResult(null); }}
             className="w-full rounded-lg border border-slate-600/60 bg-slate-900/60 px-3 py-2 pr-10 text-sm text-slate-200 placeholder:text-slate-500 focus:border-amber-400/50 focus:outline-none transition-colors"
@@ -377,9 +377,9 @@ function ProviderCard({
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════════════════════
 // API Groups Tab
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════════════════════
 function ApiGroupsTab({
   groups, onCreateGroup, onUpdateGroup, onDeleteGroup, onAddKey, onRemoveKey,
 }: {
@@ -567,7 +567,7 @@ function ApiGroupCard({
             {group.notes && <span className="text-[11px] text-muted-foreground ml-2">{group.notes}</span>}
           </div>
         )}
-        <span className="text-[11px] text-muted-foreground shrink-0">{info.label} ┬╖ {group.keys.length}/{MAX_KEYS_PER_GROUP} keys</span>
+        <span className="text-[11px] text-muted-foreground shrink-0">{info.label} · {group.keys.length}/{MAX_KEYS_PER_GROUP} keys</span>
 
         {editing ? (
           <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -605,7 +605,7 @@ function ApiGroupCard({
           </div>
 
           {group.keys.length === 0 && (
-            <p className="text-xs text-muted-foreground italic text-center py-2">No keys yet ΓÇö add one below.</p>
+            <p className="text-xs text-muted-foreground italic text-center py-2">No keys yet — add one below.</p>
           )}
 
           {group.keys.map((gk, i) => {
@@ -665,9 +665,9 @@ function ApiGroupCard({
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════════════════════
 // AI Modules Tab
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════════════════════
 function ModulesTab({
   modules, groups, activeModuleId, providerModels, primaryKeys,
   onSetActive, onCreate, onUpdate, onDelete,
@@ -713,7 +713,7 @@ function ModulesTab({
         <div>
           <h3 className="text-sm font-semibold">AI Modules</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Named AI profiles ΓÇö each picks a provider, model, and optional API group. Switch modules to instantly change how the AI Agent behaves.
+            Named AI profiles — each picks a provider, model, and optional API group. Switch modules to instantly change how the AI Agent behaves.
           </p>
         </div>
         <button onClick={() => setShowCreate(!showCreate)}
@@ -775,7 +775,7 @@ function ModulesTab({
               <label className="text-[11px] text-muted-foreground uppercase tracking-wider block mb-1">API Group (optional)</label>
               <select value={form.groupId} onChange={(e) => setForm(f => ({ ...f, groupId: e.target.value }))}
                 className="w-full rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-sm focus:outline-none focus:border-amber-400/50">
-                <option value="">ΓÇö Use primary key pool ΓÇö</option>
+                <option value="">— Use primary key pool —</option>
                 {groups.filter((g) => g.provider === form.provider).map((g) => (
                   <option key={g.id} value={g.id}>{g.name} ({g.keys.length} keys)</option>
                 ))}
@@ -795,7 +795,7 @@ function ModulesTab({
                     setForm(f => ({ ...f, fallbackProvider: p, fallbackModel: p ? (providerModels[p]?.[0]?.id || '') : '', fallbackGroupId: '' }));
                   }}
                   className="w-full rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-sm focus:outline-none focus:border-amber-400/50">
-                  <option value="">ΓÇö None ΓÇö</option>
+                  <option value="">— None —</option>
                   {(Object.keys(PROVIDER_INFO) as AIProvider[]).filter((p) => p !== form.provider).map((p) => (
                     <option key={p} value={p}>{PROVIDER_INFO[p].label}</option>
                   ))}
@@ -823,7 +823,7 @@ function ModulesTab({
                   <label className="text-[11px] text-muted-foreground block mb-1">Fallback API Group</label>
                   <select value={form.fallbackGroupId} onChange={(e) => setForm(f => ({ ...f, fallbackGroupId: e.target.value }))}
                     className="w-full rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-sm focus:outline-none focus:border-amber-400/50">
-                    <option value="">ΓÇö Use primary key pool ΓÇö</option>
+                    <option value="">— Use primary key pool —</option>
                     {groups.filter((g) => g.provider === form.fallbackProvider).map((g) => (
                       <option key={g.id} value={g.id}>{g.name} ({g.keys.length} keys)</option>
                     ))}
@@ -847,7 +847,7 @@ function ModulesTab({
         <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-border">
           <Package className="w-8 h-8 text-muted-foreground/30 mb-3" />
           <p className="text-sm text-muted-foreground">No modules yet</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">Create a module to quickly switch AI behaviour ΓÇö e.g. one for drafting, one for research.</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Create a module to quickly switch AI behaviour — e.g. one for drafting, one for research.</p>
         </div>
       )}
 
@@ -958,7 +958,7 @@ function ModuleCard({
             <label className="text-[11px] text-muted-foreground block mb-0.5">API Group</label>
             <select value={editGroupId} onChange={(e) => setEditGroupId(e.target.value)}
               className="w-full rounded-lg border border-border bg-muted/50 px-2.5 py-1.5 text-sm focus:outline-none">
-              <option value="">ΓÇö Use primary key pool ΓÇö</option>
+              <option value="">— Use primary key pool —</option>
               {groups.filter((g) => g.provider === editProvider).map((g) => (
                 <option key={g.id} value={g.id}>{g.name} ({g.keys.length} keys)</option>
               ))}
@@ -969,7 +969,7 @@ function ModuleCard({
             <select value={editFbProvider}
               onChange={(e) => { const p = e.target.value as AIProvider | ""; setEditFbProvider(p); setEditFbModel(p ? (providerModels[p]?.[0]?.id || '') : ''); setEditFbGroupId(''); }}
               className="w-full rounded-lg border border-border bg-muted/50 px-2.5 py-1.5 text-sm focus:outline-none">
-              <option value="">ΓÇö None ΓÇö</option>
+              <option value="">— None —</option>
               {(Object.keys(PROVIDER_INFO) as AIProvider[]).filter((p) => p !== editProvider).map((p) => <option key={p} value={p}>{PROVIDER_INFO[p].label}</option>)}
             </select>
           </div>
@@ -1071,9 +1071,9 @@ function ModuleCard({
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════════════════════
 // Failover Chain Status
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════════════════════
 interface ChainConfig { provider: AIProvider; apiKey: string; model: string; name: string }
 
 function FailoverStatusPanel({ configs }: { configs: ChainConfig[] }) {
@@ -1105,7 +1105,7 @@ function FailoverStatusPanel({ configs }: { configs: ChainConfig[] }) {
           <div>
             <h3 className="text-sm font-semibold">Failover Chain</h3>
             <p className="text-xs text-muted-foreground mt-0.5 max-w-lg">
-              Every request walks this list top-to-bottom. Rate limited or failed keys are skipped automatically ΓÇö users never see an error.
+              Every request walks this list top-to-bottom. Rate limited or failed keys are skipped automatically — users never see an error.
             </p>
           </div>
         </div>
@@ -1144,7 +1144,7 @@ function FailoverStatusPanel({ configs }: { configs: ChainConfig[] }) {
                   <span className="text-[11px] text-muted-foreground font-mono truncate flex-1">{r.model}</span>
                   {r.remaining > 0 ? (
                     <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 shrink-0" title={r.reason}>
-                      {r.kind ? FAILURE_LABEL[r.kind] : "Resting"} ┬╖ back in {formatRemaining(r.remaining)}
+                      {r.kind ? FAILURE_LABEL[r.kind] : "Resting"} · back in {formatRemaining(r.remaining)}
                     </span>
                   ) : (
                     <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">Ready</span>
@@ -1165,9 +1165,9 @@ function FailoverStatusPanel({ configs }: { configs: ChainConfig[] }) {
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════════════════════
 // Extra Keys (per-provider pool)
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════════════════════
 function ExtraKeysSection({ provider, primaryKey, extraKeys, onAdd, onRemove }: {
   provider: AIProvider; primaryKey: string; extraKeys: ExtraKey[];
   onAdd: (key: string) => Promise<void>; onRemove: (id: string) => Promise<void>;
@@ -1186,7 +1186,7 @@ function ExtraKeysSection({ provider, primaryKey, extraKeys, onAdd, onRemove }: 
     try {
       await onAdd(key);
       setNewKey(""); setShowAdd(false);
-      toast.success(`Key added ΓÇö ${PROVIDER_INFO[provider].label} now rotates ${used + 1} keys`);
+      toast.success(`Key added — ${PROVIDER_INFO[provider].label} now rotates ${used + 1} keys`);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Could not add key"); }
     finally { setBusy(false); }
   };
@@ -1251,7 +1251,7 @@ function ExtraKeysSection({ provider, primaryKey, extraKeys, onAdd, onRemove }: 
       )}
       {full && <p className="text-[10px] text-slate-500 italic">Pool is full ({MAX_KEYS_PER_PROVIDER} keys). Remove one to add another.</p>}
       {used <= 1 && !showAdd && (
-        <p className="text-[10px] text-slate-600 italic">Add more keys ΓÇö requests rotate across all keys, sharing the rate-limit load.</p>
+        <p className="text-[10px] text-slate-600 italic">Add more keys — requests rotate across all keys, sharing the rate-limit load.</p>
       )}
     </div>
   );

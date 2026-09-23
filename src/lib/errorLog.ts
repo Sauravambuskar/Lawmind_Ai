@@ -1,4 +1,4 @@
-﻿import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ErrorLogEntry {
   message: string;
@@ -18,7 +18,7 @@ export async function logError(entry: ErrorLogEntry): Promise<void> {
       user_id: entry.user_id ?? null,
     });
   } catch {
-    // Silently ignore ΓÇö logging must never crash the app
+    // Silently ignore — logging must never crash the app
   }
 }
 

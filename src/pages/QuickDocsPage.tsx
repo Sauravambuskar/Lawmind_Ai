@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { FileText, Download, Sparkles, FileSignature, ScrollText, Pencil, Copy }
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 
-// ΓöÇΓöÇ Template Definitions ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Template Definitions ──────────────────────────────────────────────
 interface TemplateField {
   key: string;
   label: string;
@@ -142,7 +142,7 @@ DATE: ${date}                                           ${v.advocateName || "___
                                                         COUNSEL FOR COMPLAINANT
 
 
-ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+────────────────────────────────────────────────────────
 
 AFFIDAVIT
 
@@ -152,7 +152,7 @@ AFFIDAVIT
 
                    Hence this affidavit.
 
-                                                        ΓÇªΓÇªΓÇªΓÇªΓÇªΓÇªΓÇªΓÇªΓÇª
+                                                        ………………………
                                                           DEPONENT
 
 
@@ -163,7 +163,7 @@ VERIFICATION
     Hence, sworn, signed and verified at ${v.place || "Akola"} on this
     day of ________-20__.
 
-${v.place || "Akola"}                                   ΓÇªΓÇªΓÇªΓÇªΓÇªΓÇªΓÇªΓÇªΓÇª
+${v.place || "Akola"}                                   ………………………
 DATE: ${date}                                             DEPONENT
 
 I know the deponent,
@@ -174,7 +174,7 @@ Who has signed before me.
   },
 ];
 
-// ΓöÇΓöÇ More Templates (Civil) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── More Templates (Civil) ────────────────────────────────────────────
 TEMPLATES.push(
   {
     id: "file_documents",
@@ -203,12 +203,12 @@ ${v.caseNumber || "R.C.S. No. ____/____"}                            ${v.filingF
 
 ${v.plaintiff || "________________"}
 
-                              ΓÇª.Plaintiff
+                              ….Plaintiff
                     Versus
 
 ${v.defendant || "________________"}
 
-                              ΓÇª.Defendant(s)
+                              ….Defendant(s)
 
 APPLICATION FOR GRANT OF PERMISSION TO FILE THE DOCUMENTS
 
@@ -265,7 +265,7 @@ Date: ${date}                                           ${v.plaintiff || "______
 
 ${v.caseNumber || "R.C.S. No. ____/____"}                            ${v.filingFor || "F.F. ____/____/____"}
 
-${v.plaintiff || "________________"} ΓÇª.VersusΓÇª. ${v.defendant || "________________"}
+${v.plaintiff || "________________"} ….Versus…. ${v.defendant || "________________"}
 
 LIST OF DOCUMENTS ON BEHALF OF ${(v.partyType || "PLAINTIFF").toUpperCase()}
 
@@ -331,7 +331,7 @@ Date. ${date}                                                ${v.plaintiff || "_
   }
 );
 
-// ΓöÇΓöÇ Court Document Templates (Criminal - from system prompt ┬º6) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Court Document Templates (Criminal - from system prompt §6) ───────
 TEMPLATES.push(
   {
     id: "warrant_bailable",
@@ -372,7 +372,7 @@ Seal                                                          Court No. ${v.cour
       return `${copy}
 
 
-ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+─────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ${copy}`;
     },
@@ -437,7 +437,7 @@ Court Seal                                                ${courtTitle.includes(
 
 
 
-ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+─────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ${copy}`;
     },
@@ -543,7 +543,7 @@ Seal of Court`;
   }
 );
 
-// ΓöÇΓöÇ General Templates ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── General Templates ─────────────────────────────────────────────────
 TEMPLATES.push(
   {
     id: "adjournment",
@@ -635,7 +635,7 @@ Date. ${date}                                                ${v.plaintiff || "_
   }
 );
 
-// ΓöÇΓöÇ Component ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Component ─────────────────────────────────────────────────────────
 export default function QuickDocsPage() {
   const [selectedId, setSelectedId] = useState<string>("");
   const [values, setValues] = useState<Record<string, string>>({ date: new Date().toISOString().slice(0, 10) });

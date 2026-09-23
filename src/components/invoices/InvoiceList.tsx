@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Pencil, Download, FileDown, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -175,8 +175,8 @@ export function InvoiceList({ invoices, clients, cases, payments }: Props) {
             ) : paginatedItems.map(inv => (
               <tr key={inv.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                 <td className="py-4 px-6 font-mono text-xs font-medium text-foreground">{inv.invoice_number}</td>
-                <td className="py-4 px-6 font-medium text-foreground">{(inv as any).clients?.name || "ΓÇö"}</td>
-                <td className="py-4 px-6 text-muted-foreground">{(inv as any).cases?.title || "ΓÇö"}</td>
+                <td className="py-4 px-6 font-medium text-foreground">{(inv as any).clients?.name || "—"}</td>
+                <td className="py-4 px-6 text-muted-foreground">{(inv as any).cases?.title || "—"}</td>
                 <td className="py-4 px-6 text-right text-muted-foreground">{Number(inv.amount).toLocaleString("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 })}</td>
                 <td className="py-4 px-6 text-right font-semibold text-foreground">{Number(inv.total_amount ?? 0).toLocaleString("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 })}</td>
                 <td className="py-4 px-6">

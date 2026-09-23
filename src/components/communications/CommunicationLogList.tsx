@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Phone, Mail, Users, MessageSquare, FileText, MoreHorizontal, Pencil } from "lucide-react";
 import { format } from "date-fns";
@@ -131,7 +131,7 @@ export function CommunicationLogList({ clientId, caseId }: Props) {
                         <div>
                           <h4 className="font-semibold text-sm text-foreground">{log.summary}</h4>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            <span className="capitalize font-medium text-primary/80">{log.type}</span> ΓÇó {format(new Date(log.date), "MMM d, yyyy h:mm a")}
+                            <span className="capitalize font-medium text-primary/80">{log.type}</span> • {format(new Date(log.date), "MMM d, yyyy h:mm a")}
                           </p>
                         </div>
                         <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">

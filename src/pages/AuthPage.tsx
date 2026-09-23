@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -90,7 +90,7 @@ export default function AuthPage() {
             Manage your legal practice with confidence
           </h1>
           <p className="text-primary-foreground/70 text-lg leading-relaxed">
-            Streamline cases, track hearings, manage clients, and handle invoices ΓÇö all in one powerful platform.
+            Streamline cases, track hearings, manage clients, and handle invoices — all in one powerful platform.
           </p>
           <div className="mt-12 space-y-4">
             {["Case & hearing management", "Client & advocate tracking", "Invoice & expense automation"].map((feature) => (
@@ -146,7 +146,7 @@ export default function AuthPage() {
                     </div>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input id="password" type={showPassword ? "text" : "password"} placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 pr-10 h-11 bg-white/40 backdrop-blur-md border-white/30 focus:bg-white/60 transition-colors" required minLength={6} />
+                      <Input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 pr-10 h-11 bg-white/40 backdrop-blur-md border-white/30 focus:bg-white/60 transition-colors" required minLength={6} />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>

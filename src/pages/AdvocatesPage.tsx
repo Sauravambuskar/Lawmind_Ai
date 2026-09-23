@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -158,11 +158,11 @@ export default function AdvocatesPage() {
                     </div>
                   </td>
                   <td className="py-4 px-5">
-                    <p className="text-foreground font-medium">{a.email || "ΓÇö"}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{a.phone || "ΓÇö"}</p>
+                    <p className="text-foreground font-medium">{a.email || "—"}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{a.phone || "—"}</p>
                   </td>
                   <td className="py-4 px-5">
-                    <span className="text-foreground font-medium">{a.specialization || "ΓÇö"}</span>
+                    <span className="text-foreground font-medium">{a.specialization || "—"}</span>
                   </td>
                   <td className="py-4 px-5">
                     {a.status === "active" ? (

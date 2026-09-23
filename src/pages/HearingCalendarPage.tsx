@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { restGet, restGetAll } from "@/lib/restClient";
 import { PageHeader } from "@/components/PageHeader";
@@ -188,7 +188,7 @@ export default function HearingCalendarPage() {
                 <Link key={h.id} to={`/cases/${h.id}`} className="p-3 rounded-lg border border-border hover:bg-muted/20 transition-colors">
                   <p className="text-sm font-bold text-foreground truncate">{h.case_number}</p>
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{h.title}</p>
-                  <p className="text-[10px] text-amber-600 font-medium mt-1">{h.court_name || "Court"} ΓÇó {h.case_stage || "ΓÇö"}</p>
+                  <p className="text-[10px] text-amber-600 font-medium mt-1">{h.court_name || "Court"} • {h.case_stage || "—"}</p>
                 </Link>
               ))}
             </div>

@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -24,7 +24,7 @@ export default function InvoicesPage() {
     queryFn: () => restGetAll("clients?select=id,name&order=name.asc"),
   });
 
-  // Lookup list only ΓÇö a distinct key from the Cases page cache
+  // Lookup list only — a distinct key from the Cases page cache
   const { data: cases = [] } = useQuery({
     queryKey: ["cases-lookup"],
     queryFn: () => restGetAll("cases?select=id,title&order=created_at.desc"),

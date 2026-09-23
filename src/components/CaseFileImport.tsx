@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { Upload, FileUp, CheckCircle, AlertCircle, XCircle, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
-// ΓöÇΓöÇ Column Mapping ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Column Mapping ────────────────────────────────────────────────────
 // Maps CSV header names (case-insensitive, trimmed) to DB column names
 const CSV_TO_DB_MAP: Record<string, string> = {
   "nexthearingdate": "next_hearing_date",
@@ -66,7 +66,7 @@ const DATE_FIELDS = new Set([
   "case_imported_date", "disposed_date",
 ]);
 
-// ΓöÇΓöÇ Parse CSV ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Parse CSV ─────────────────────────────────────────────────────────
 function parseCSV(text: string): { headers: string[]; rows: Record<string, string>[] } {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return { headers: [], rows: [] };
@@ -100,7 +100,7 @@ function parseCSVLine(line: string): string[] {
   return values;
 }
 
-// ΓöÇΓöÇ Date Parsing ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Date Parsing ──────────────────────────────────────────────────────
 function parseDate(value: string): string | null {
   if (!value || value === "--" || value === "NA" || value === "N/A") return null;
   // Try common date formats: DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD, DD.MM.YYYY
@@ -134,7 +134,7 @@ function parseDate(value: string): string | null {
   return null;
 }
 
-// ΓöÇΓöÇ Component ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Component ─────────────────────────────────────────────────────────
 export function CaseFileImport() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -232,11 +232,11 @@ export function CaseFileImport() {
             if (!dbRow.case_stage) dbRow.case_stage = csvValue;
           }
         }
-        // Handle "Client" column ΓÇö store in description
+        // Handle "Client" column — store in description
         else if (dbCol === "description" && csvHeader.toLowerCase().trim() === "client") {
           dbRow["description"] = `Client: ${csvValue}`;
         }
-        // Handle "Lawyer" column ΓÇö store in case_notes_1
+        // Handle "Lawyer" column — store in case_notes_1
         else if (dbCol === "case_notes_1" && csvHeader.toLowerCase().trim() === "lawyer") {
           dbRow.case_notes_1 = `Lawyer: ${csvValue}`;
         }
@@ -256,7 +256,7 @@ export function CaseFileImport() {
       dbRows.push(dbRow);
     }
 
-    // ΓöÇΓöÇ Normalize all rows to have the same keys (PostgREST requirement) ΓöÇΓöÇ
+    // ── Normalize all rows to have the same keys (PostgREST requirement) ──
     // Only allow columns that actually exist in the DB schema
     const VALID_DB_COLUMNS = new Set([
       "id", "title", "case_number", "description", "status", "client_id", "advocate_id",
@@ -394,9 +394,9 @@ export function CaseFileImport() {
                   {preview.map((row, i) => (
                     <tr key={i} className="border-b border-border last:border-0">
                       {headers.slice(0, 7).map(h => (
-                        <td key={h} className="py-1.5 px-2.5 truncate max-w-[120px] text-foreground">{row[h] || "ΓÇö"}</td>
+                        <td key={h} className="py-1.5 px-2.5 truncate max-w-[120px] text-foreground">{row[h] || "—"}</td>
                       ))}
-                      {headers.length > 7 && <td className="py-1.5 px-2.5 text-muted-foreground">ΓÇª</td>}
+                      {headers.length > 7 && <td className="py-1.5 px-2.5 text-muted-foreground">…</td>}
                     </tr>
                   ))}
                 </tbody>
@@ -412,7 +412,7 @@ export function CaseFileImport() {
                   ? <CheckCircle className="w-5 h-5 text-emerald-600" />
                   : <AlertCircle className="w-5 h-5 text-amber-600" />}
                 <span className="text-sm font-semibold">{result.success} imported successfully</span>
-                {result.failed > 0 && <span className="text-sm text-destructive ml-2">ΓÇó {result.failed} failed</span>}
+                {result.failed > 0 && <span className="text-sm text-destructive ml-2">• {result.failed} failed</span>}
               </div>
               {result.errors.length > 0 && (
                 <div className="mt-2 space-y-1">

@@ -1,4 +1,4 @@
-﻿import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TablePaginationProps {
@@ -29,7 +29,7 @@ export function TablePagination({ currentPage, totalPages, totalItems, startInde
   return (
     <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
       <span className="text-sm text-muted-foreground">
-        Showing {startIndex + 1}ΓÇô{end} of {totalItems}
+        Showing {startIndex + 1}–{end} of {totalItems}
       </span>
       <div className="flex items-center gap-1">
         <Button variant="outline" size="icon" className="h-8 w-8" onClick={onPrev} disabled={currentPage <= 1}>
@@ -37,7 +37,7 @@ export function TablePagination({ currentPage, totalPages, totalItems, startInde
         </Button>
         {pages.map((p, i) =>
           p === "..." ? (
-            <span key={`e${i}`} className="px-1 text-muted-foreground text-sm">ΓÇª</span>
+            <span key={`e${i}`} className="px-1 text-muted-foreground text-sm">…</span>
           ) : (
             <Button
               key={p}

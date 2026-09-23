@@ -1,5 +1,5 @@
-﻿// ============================================================
-// LAWMIND ΓÇö MySQL/PHP Client (Supabase API compatible)
+// ============================================================
+// LAWMIND — MySQL/PHP Client (Supabase API compatible)
 // Drop-in replacement for @supabase/supabase-js
 // ============================================================
 
@@ -8,7 +8,7 @@ type Filter = { op: string; col: string; val: any };
 type OrderSpec = { column: string; ascending: boolean };
 type EmbedSpec = { table: string; as: string; fk: string; pk?: string; many?: boolean };
 
-// ΓöÇΓöÇ Token + session storage ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Token + session storage ─────────────────────────────────
 const TOKEN_KEY = 'lawmind.token';
 const USER_KEY  = 'lawmind.user';
 
@@ -31,7 +31,7 @@ function setStoredUser(u: any): void {
   } catch {}
 }
 
-// ΓöÇΓöÇ API base URL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── API base URL ────────────────────────────────────────────
 function apiBase(): string {
   const cfg = (window as any).APP_CONFIG;
   return (cfg?.apiUrl || '/api').replace(/\/$/, '');
@@ -68,7 +68,7 @@ async function apiGet(path: string): Promise<any> {
   return data;
 }
 
-// ΓöÇΓöÇ Auth state change listeners ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Auth state change listeners ─────────────────────────────
 type AuthEvent = 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED' | 'INITIAL_SESSION';
 const authListeners: Array<(event: AuthEvent, session: any) => void> = [];
 function emit(event: AuthEvent, session: any) {
@@ -82,12 +82,12 @@ function sessionFromToken(): any {
   return { access_token: token, refresh_token: token, token_type: 'bearer', user };
 }
 
-// ΓöÇΓöÇ Parse Supabase-style select string into columns + embeds ΓöÇ
+// ── Parse Supabase-style select string into columns + embeds ─
 // Examples:
 //   '*'
 //   'id, name, email'
 //   '*, clients(name, email), advocates(name)'
-//   '*, hearings!case_id(*)'        ΓÇö explicit fk
+//   '*, hearings!case_id(*)'        — explicit fk
 function parseSelect(sel?: string): { columns: string; embeds: EmbedSpec[] } {
   if (!sel || sel === '*') return { columns: '*', embeds: [] };
   const embeds: EmbedSpec[] = [];
@@ -119,12 +119,12 @@ function parseSelect(sel?: string): { columns: string; embeds: EmbedSpec[] } {
 }
 
 function guessFk(relTable: string): string {
-  // 'clients' ΓåÆ 'client_id', 'advocates' ΓåÆ 'advocate_id', 'cases' ΓåÆ 'case_id'
+  // 'clients' → 'client_id', 'advocates' → 'advocate_id', 'cases' → 'case_id'
   const singular = relTable.endsWith('s') ? relTable.slice(0, -1) : relTable;
   return `${singular}_id`;
 }
 
-// ΓöÇΓöÇ Query Builder ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Query Builder ───────────────────────────────────────────
 class QueryBuilder<T = any> implements PromiseLike<{ data: any; error: any; count?: number | null }> {
   private filters: Filter[] = [];
   private orders: OrderSpec[] = [];
@@ -228,7 +228,7 @@ class QueryBuilder<T = any> implements PromiseLike<{ data: any; error: any; coun
   }
 }
 
-// ΓöÇΓöÇ Auth API ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Auth API ────────────────────────────────────────────────
 const authApi = {
   async signUp({ email, password, options }: { email: string; password: string; options?: any }) {
     const res = await apiPost('/auth/signup.php', {
@@ -274,7 +274,7 @@ const authApi = {
   },
 
   async updateUser(_attrs: any) {
-    // Minimal implementation ΓÇö accepts but no-ops for password/email changes in Phase 1
+    // Minimal implementation — accepts but no-ops for password/email changes in Phase 1
     return { data: { user: getStoredUser() }, error: null };
   },
 
@@ -306,7 +306,7 @@ const authApi = {
   },
 };
 
-// ΓöÇΓöÇ Storage API ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Storage API ─────────────────────────────────────────────
 function storageFrom(_bucket: string) {
   return {
     async upload(path: string, file: File | Blob, _opts?: any) {
@@ -345,12 +345,12 @@ function storageFrom(_bucket: string) {
   };
 }
 
-// ΓöÇΓöÇ RPC ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── RPC ────────────────────────────────────────────────────
 async function rpc(fn: string, args?: any) {
   return apiPost(`/rpc.php?fn=${encodeURIComponent(fn)}`, args || {});
 }
 
-// ΓöÇΓöÇ Channel (real-time stub) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Channel (real-time stub) ───────────────────────────────
 function channel(_name: string) {
   return {
     on(_event: string, _filter: any, _cb: any) { return this; },
@@ -359,7 +359,7 @@ function channel(_name: string) {
   };
 }
 
-// ΓöÇΓöÇ Public client ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Public client ──────────────────────────────────────────
 export const mysqlClient = {
   from: <T = any>(table: string) => new QueryBuilder<T>(table),
   auth: authApi,

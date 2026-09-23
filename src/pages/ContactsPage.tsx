@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Pencil, Download, Phone as PhoneIcon, Users } from "lucide-react";
@@ -167,7 +167,7 @@ export default function ContactsPage() {
                     </div>
                   </td>
                   <td className="py-4 px-5">
-                    <div className="font-medium text-foreground">{c.company || "ΓÇö"}</div>
+                    <div className="font-medium text-foreground">{c.company || "—"}</div>
                     {c.designation && <div className="text-xs text-muted-foreground">{c.designation}</div>}
                   </td>
                   <td className="py-4 px-5">

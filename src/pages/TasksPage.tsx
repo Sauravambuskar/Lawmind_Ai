@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -250,7 +250,7 @@ export default function TasksPage() {
                   <Select value={form.case_id} onValueChange={v => setForm(p => ({ ...p, case_id: v }))}>
                     <SelectTrigger className="bg-muted/50"><SelectValue placeholder="Select case (optional)" /></SelectTrigger>
                     <SelectContent>
-                      {cases.map(c => <SelectItem key={c.id} value={c.id}>{c.case_number} ΓÇö {c.title}</SelectItem>)}
+                      {cases.map(c => <SelectItem key={c.id} value={c.id}>{c.case_number} — {c.title}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

@@ -1,4 +1,4 @@
-﻿import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
@@ -19,7 +19,7 @@ function InfoCard({ icon: Icon, label, value }: { icon: any; label: string; valu
       <Icon className="w-4 h-4 mt-0.5 text-primary shrink-0" />
       <div>
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm font-medium">{value || "ΓÇö"}</p>
+        <p className="text-sm font-medium">{value || "—"}</p>
       </div>
     </div>
   );
@@ -129,7 +129,7 @@ export default function AdvocateDetailPage() {
               </div>
               <p className="text-sm text-muted-foreground">{advocate.specialization || "General Practice"}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {advocate.bar_number ? `Bar #${advocate.bar_number} ┬╖ ` : ""}
+                {advocate.bar_number ? `Bar #${advocate.bar_number} · ` : ""}
                 Since {format(new Date(advocate.created_at), "MMM dd, yyyy")}
               </p>
             </div>
@@ -205,13 +205,13 @@ export default function AdvocateDetailPage() {
                       <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                         <td className="py-3 px-4 text-sm font-mono">{c.case_number}</td>
                         <td className="py-3 px-4 text-sm font-medium">{c.title}</td>
-                        <td className="py-3 px-4 text-sm">{c.clients?.name || "ΓÇö"}</td>
-                        <td className="py-3 px-4 text-sm">{c.case_type || "ΓÇö"}</td>
-                        <td className="py-3 px-4 text-sm">{c.court_name || "ΓÇö"}</td>
+                        <td className="py-3 px-4 text-sm">{c.clients?.name || "—"}</td>
+                        <td className="py-3 px-4 text-sm">{c.case_type || "—"}</td>
+                        <td className="py-3 px-4 text-sm">{c.court_name || "—"}</td>
                         <td className="py-3 px-4">
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[c.status] || "bg-muted text-muted-foreground"}`}>{c.status}</span>
                         </td>
-                        <td className="py-3 px-4 text-sm">{c.filing_date ? format(new Date(c.filing_date), "MMM dd, yyyy") : "ΓÇö"}</td>
+                        <td className="py-3 px-4 text-sm">{c.filing_date ? format(new Date(c.filing_date), "MMM dd, yyyy") : "—"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -239,10 +239,10 @@ export default function AdvocateDetailPage() {
                     {hearings.map((h: any) => (
                       <tr key={h.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                         <td className="py-3 px-4 text-sm">{format(new Date(h.hearing_date), "MMM dd, yyyy")}</td>
-                        <td className="py-3 px-4 text-sm font-medium">{h.cases?.title || "ΓÇö"}</td>
-                        <td className="py-3 px-4 text-sm">{h.court_name || "ΓÇö"}</td>
-                        <td className="py-3 px-4 text-sm">{h.judge_name || "ΓÇö"}</td>
-                        <td className="py-3 px-4 text-sm">{h.purpose || "ΓÇö"}</td>
+                        <td className="py-3 px-4 text-sm font-medium">{h.cases?.title || "—"}</td>
+                        <td className="py-3 px-4 text-sm">{h.court_name || "—"}</td>
+                        <td className="py-3 px-4 text-sm">{h.judge_name || "—"}</td>
+                        <td className="py-3 px-4 text-sm">{h.purpose || "—"}</td>
                         <td className="py-3 px-4">
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[h.status] || "bg-muted text-muted-foreground"}`}>{h.status}</span>
                         </td>
@@ -271,9 +271,9 @@ export default function AdvocateDetailPage() {
                     {evidence.map((e: any) => (
                       <tr key={e.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                         <td className="py-3 px-4 text-sm font-medium">{e.title}</td>
-                        <td className="py-3 px-4 text-sm">{e.evidence_type || "ΓÇö"}</td>
-                        <td className="py-3 px-4 text-sm">{e.cases?.title || "ΓÇö"}</td>
-                        <td className="py-3 px-4 text-sm">{e.submitted_date ? format(new Date(e.submitted_date), "MMM dd, yyyy") : "ΓÇö"}</td>
+                        <td className="py-3 px-4 text-sm">{e.evidence_type || "—"}</td>
+                        <td className="py-3 px-4 text-sm">{e.cases?.title || "—"}</td>
+                        <td className="py-3 px-4 text-sm">{e.submitted_date ? format(new Date(e.submitted_date), "MMM dd, yyyy") : "—"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -299,8 +299,8 @@ export default function AdvocateDetailPage() {
                     {documents.map((d: any) => (
                       <tr key={d.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                         <td className="py-3 px-4 text-sm font-medium">{d.title}</td>
-                        <td className="py-3 px-4 text-sm">{d.document_type || "ΓÇö"}</td>
-                        <td className="py-3 px-4 text-sm">{d.cases?.title || "ΓÇö"}</td>
+                        <td className="py-3 px-4 text-sm">{d.document_type || "—"}</td>
+                        <td className="py-3 px-4 text-sm">{d.cases?.title || "—"}</td>
                         <td className="py-3 px-4 text-sm">{format(new Date(d.created_at), "MMM dd, yyyy")}</td>
                       </tr>
                     ))}

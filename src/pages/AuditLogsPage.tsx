@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Search, Filter, ShieldAlert, History } from "lucide-react";
@@ -148,11 +148,11 @@ export default function AuditLogsPage() {
                     {log.table_name}
                   </td>
                   <td className="py-3 px-6 font-mono text-xs text-muted-foreground">
-                    {log.record_id ? (log.record_id.length > 8 ? `${log.record_id.substring(0, 8)}...` : log.record_id) : "ΓÇö"}
+                    {log.record_id ? (log.record_id.length > 8 ? `${log.record_id.substring(0, 8)}...` : log.record_id) : "—"}
                   </td>
                   <td className="py-3 px-6">
                     <div className="text-xs max-w-xs truncate text-muted-foreground" title={JSON.stringify(log.new_data || log.old_data)}>
-                      {log.new_data ? JSON.stringify(log.new_data) : log.old_data ? JSON.stringify(log.old_data) : "ΓÇö"}
+                      {log.new_data ? JSON.stringify(log.new_data) : log.old_data ? JSON.stringify(log.old_data) : "—"}
                     </div>
                   </td>
                 </tr>

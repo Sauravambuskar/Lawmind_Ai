@@ -1,4 +1,4 @@
-﻿import { LogOut, Menu } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -23,7 +23,7 @@ export function AppHeader({ onToggleSidebar }: { onToggleSidebar: () => void }) 
     <header className="sticky top-0 z-30 h-16 bg-background border-b border-border/70 flex items-center justify-between px-4 md:px-6"
       style={{ borderTop: "2px solid hsl(42 58% 52% / 0.35)" }}>
 
-      {/* Left ΓÇö toggle + search + AI */}
+      {/* Left — toggle + search + AI */}
       <div className="flex items-center gap-2 md:gap-3">
         <Button variant="ghost" size="icon" onClick={onToggleSidebar}
           className="text-muted-foreground hover:bg-muted hover:text-foreground shrink-0 rounded-md">
@@ -55,7 +55,7 @@ export function AppHeader({ onToggleSidebar }: { onToggleSidebar: () => void }) 
         </Tooltip>
       </div>
 
-      {/* Right ΓÇö date + user + actions */}
+      {/* Right — date + user + actions */}
       <div className="flex items-center gap-2 md:gap-3">
 
         {/* Date */}
@@ -74,7 +74,7 @@ export function AppHeader({ onToggleSidebar }: { onToggleSidebar: () => void }) 
           </span>
         </div>
 
-        {/* Avatar button ΓåÆ profile */}
+        {/* Avatar button → profile */}
         <button onClick={() => navigate("/profile")} title="Profile"
           className="w-8 h-8 rounded-full bg-primary/10 border border-primary/25 flex items-center justify-center text-[12px] font-semibold text-primary hover:bg-primary/15 transition-colors shrink-0">
           {initials}

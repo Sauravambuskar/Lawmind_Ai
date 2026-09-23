@@ -1,26 +1,26 @@
-﻿/**
- * Multi-Key Store ΓÇö extra API keys per provider, AI Modules, and API Groups.
+/**
+ * Multi-Key Store — extra API keys per provider, AI Modules, and API Groups.
  *
  * All data lives in the shared `app_settings` table so every user/device sees
  * the same configuration, matching how primary keys in `ai_config` behave.
  *
- * ΓöÇΓöÇΓöÇ Concepts ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ * ─── Concepts ────────────────────────────────────────────────────────────────
  *
- *  ExtraKey   ΓÇô a spare API key for a provider (key pool / round-robin)
- *  ApiGroup   ΓÇô a named group of keys for one provider (e.g. "Production Keys",
+ *  ExtraKey   – a spare API key for a provider (key pool / round-robin)
+ *  ApiGroup   – a named group of keys for one provider (e.g. "Production Keys",
  *               "Free Tier Pool"). Each group can hold up to MAX_KEYS_PER_GROUP
  *               keys and falls back internally before escalating.
- *  AIModule   ΓÇô a named usage profile (e.g. "Legal Drafting", "Case Research").
+ *  AIModule   – a named usage profile (e.g. "Legal Drafting", "Case Research").
  *               Each module independently picks which provider+model to use and
  *               which ApiGroup to draw keys from.  The active module is what
  *               the AI Agent uses for all requests.
- * ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { supabase } from '@/integrations/supabase/client';
 import type { AIProvider } from './ai-providers';
 
-// ΓöÇΓöÇ Constants ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 /** Total keys allowed per provider (primary + spares). */
 export const MAX_KEYS_PER_PROVIDER = 6;
@@ -38,7 +38,7 @@ const GROUPS_KEY       = 'ai_api_groups';
 const MODULES_KEY      = 'ai_modules';
 const LEGACY_STORAGE_KEY = 'lawmind_extra_api_keys';
 
-// ΓöÇΓöÇ Types ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 const PROVIDERS: AIProvider[] = ['groq', 'openai', 'gemini', 'openrouter', 'custom'];
 
@@ -87,7 +87,7 @@ export interface AIModule {
   updatedAt:    string;
 }
 
-// ΓöÇΓöÇ In-memory caches ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── In-memory caches ──────────────────────────────────────────────────────────
 
 function emptyMap(): ExtraKeysMap {
   return { groq: [], openai: [], gemini: [], openrouter: [], custom: [] };
@@ -97,7 +97,7 @@ let cache:        ExtraKeysMap = emptyMap();
 let groupsCache:  ApiGroup[]   = [];
 let modulesCache: AIModule[]   = [];
 
-// ΓöÇΓöÇ Normalisation ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Normalisation ─────────────────────────────────────────────────────────────
 
 function normalise(raw: unknown): ExtraKeysMap {
   const out = emptyMap();
@@ -136,7 +136,7 @@ function normaliseModules(raw: unknown): AIModule[] {
   );
 }
 
-// ΓöÇΓöÇ ExtraKeys (legacy per-provider key pool) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── ExtraKeys (legacy per-provider key pool) ──────────────────────────────────
 
 export function getCachedKeys():  ExtraKeysMap { return cache;        }
 export function setCachedKeys(m: ExtraKeysMap) { cache = normalise(m); }
@@ -151,7 +151,7 @@ export function getTotalExtraKeys(): number {
   return Object.values(cache).reduce((sum, l) => sum + l.length, 0);
 }
 
-// ΓöÇΓöÇ API Groups ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── API Groups ────────────────────────────────────────────────────────────────
 
 export function getCachedGroups(): ApiGroup[] { return groupsCache; }
 
@@ -170,7 +170,7 @@ export function getKeysFromGroup(groupId: string): string[] {
   return group.keys.map((k) => k.key).filter(Boolean);
 }
 
-// ΓöÇΓöÇ AI Modules ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── AI Modules ────────────────────────────────────────────────────────────────
 
 export function getCachedModules(): AIModule[] { return modulesCache; }
 
@@ -178,7 +178,7 @@ export function getModuleById(id: string): AIModule | undefined {
   return modulesCache.find((m) => m.id === id);
 }
 
-// ΓöÇΓöÇ Persistence helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Persistence helpers ───────────────────────────────────────────────────────
 
 async function fetchSetting<T>(key: string): Promise<T | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -199,7 +199,7 @@ async function saveSetting(key: string, value: unknown): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-// ΓöÇΓöÇ Load all ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Load all ──────────────────────────────────────────────────────────────────
 
 function readLegacyLocalKeys(): ExtraKeysMap | null {
   try {
@@ -238,7 +238,7 @@ export async function fetchAIModules(): Promise<AIModule[]> {
   return modulesCache;
 }
 
-/** Fetch everything at once ΓÇö call this from useAIConfig on mount. */
+/** Fetch everything at once — call this from useAIConfig on mount. */
 export async function fetchAllStoreData(): Promise<{
   extraKeys: ExtraKeysMap;
   groups: ApiGroup[];
@@ -252,7 +252,7 @@ export async function fetchAllStoreData(): Promise<{
   return { extraKeys, groups, modules };
 }
 
-// ΓöÇΓöÇ Persist helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Persist helpers ───────────────────────────────────────────────────────────
 
 export async function persistExtraKeys(map: ExtraKeysMap): Promise<void> {
   const value = normalise(map);
@@ -270,7 +270,7 @@ export async function persistAIModules(modules: AIModule[]): Promise<void> {
   modulesCache = modules;
 }
 
-// ΓöÇΓöÇ ExtraKey CRUD ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── ExtraKey CRUD ─────────────────────────────────────────────────────────────
 
 export class KeyLimitError extends Error {}
 
@@ -304,7 +304,7 @@ export async function removeExtraKey(provider: AIProvider, id: string): Promise<
   return cache;
 }
 
-// ΓöÇΓöÇ ApiGroup CRUD ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── ApiGroup CRUD ─────────────────────────────────────────────────────────────
 
 export async function createApiGroup(
   provider: AIProvider,
@@ -387,7 +387,7 @@ export async function removeKeyFromGroup(
   return groupsCache;
 }
 
-// ΓöÇΓöÇ AIModule CRUD ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── AIModule CRUD ─────────────────────────────────────────────────────────────
 
 export async function createAIModule(
   name: string,

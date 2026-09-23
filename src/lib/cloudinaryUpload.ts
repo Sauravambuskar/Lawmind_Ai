@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Cloudinary File Upload Utility
  * 
  * Uses Cloudinary's unsigned upload preset for client-side file uploads.
@@ -8,7 +8,7 @@
  * 
  * SETUP:
  * 1. Create account at https://cloudinary.com
- * 2. Go to Settings ΓåÆ Upload ΓåÆ Upload Presets ΓåÆ Add Upload Preset
+ * 2. Go to Settings → Upload → Upload Presets → Add Upload Preset
  * 3. Set "Signing Mode" to "Unsigned"
  * 4. Set the preset name (e.g. "lawmind_docs")
  * 5. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET in .env
@@ -65,7 +65,7 @@ export async function uploadToCloudinary(file: File): Promise<UploadResult> {
 
 /**
  * Delete a file from Cloudinary (requires server-side for signed deletion)
- * For now, just returns true ΓÇö cleanup can be done via Cloudinary dashboard
+ * For now, just returns true — cleanup can be done via Cloudinary dashboard
  */
 export async function deleteFromCloudinary(_publicId: string): Promise<boolean> {
   // Unsigned deletion is not supported by Cloudinary

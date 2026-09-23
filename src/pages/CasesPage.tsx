@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -95,7 +95,7 @@ export default function CasesPage() {
     },
   });
 
-  // ΓöÇΓöÇ Save (create / update) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Save (create / update) ──────────────────────────────────────────────
   const saveMutation = useMutation({
     mutationFn: async () => {
       const { client_id, advocate_id, filing_date, template_id, matter_id,
@@ -139,7 +139,7 @@ export default function CasesPage() {
     },
   });
 
-  // ΓöÇΓöÇ Delete single (optimistic) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Delete single (optimistic) ──────────────────────────────────────────
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await restDelete("cases", `id=eq.${id}`);
@@ -163,7 +163,7 @@ export default function CasesPage() {
     onSuccess: () => toast.success("Case deleted"),
   });
 
-  // ΓöÇΓöÇ Bulk delete (optimistic) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Bulk delete (optimistic) ────────────────────────────────────────────
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
       const idsParam = ids.map(i => `"${i}"`).join(",");
@@ -246,7 +246,7 @@ export default function CasesPage() {
 
   const { paginatedItems, currentPage, totalPages, totalItems, startIndex, nextPage, prevPage, goToPage } = usePagination(filtered);
 
-  // ΓöÇΓöÇ Selection helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Selection helpers ───────────────────────────────────────────────────
   const allPageSelected = paginatedItems.length > 0 && paginatedItems.every(c => selectedIds.has(c.id));
 
   const toggleAll = () => {
@@ -524,16 +524,16 @@ export default function CasesPage() {
                       <div className="flex flex-col gap-1">
                         <span className="text-sm font-medium text-foreground flex items-center gap-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
-                          {c.case_stage || <span className="text-muted-foreground italic text-xs">ΓÇö</span>}
+                          {c.case_stage || <span className="text-muted-foreground italic text-xs">—</span>}
                         </span>
                         <span className="text-xs text-muted-foreground flex items-center gap-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-purple-500/50" />
-                          {c.case_side || <span className="italic">ΓÇö</span>}
+                          {c.case_side || <span className="italic">—</span>}
                         </span>
                       </div>
                     </td>
-                    <td className="py-4 px-5 text-muted-foreground font-medium">{c.court_name || "ΓÇö"}</td>
-                    <td className="py-4 px-5 text-muted-foreground text-xs font-medium">{c.next_hearing_date || "ΓÇö"}</td>
+                    <td className="py-4 px-5 text-muted-foreground font-medium">{c.court_name || "—"}</td>
+                    <td className="py-4 px-5 text-muted-foreground text-xs font-medium">{c.next_hearing_date || "—"}</td>
                     <td className="py-4 px-5">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border ${sConf.bg} ${sConf.text} ${sConf.border}`}>
                         {c.status}

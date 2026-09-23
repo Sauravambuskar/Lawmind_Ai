@@ -1,4 +1,4 @@
-﻿import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 import { restGet } from "@/lib/restClient";
@@ -152,7 +152,7 @@ export default function TodayPage() {
           <div>
             <h2 className="text-lg font-semibold text-foreground">{greeting}!</h2>
             <p className="text-sm text-muted-foreground">
-              {format(new Date(), "EEEE, MMMM d, yyyy")} ΓÇö You have{" "}
+              {format(new Date(), "EEEE, MMMM d, yyyy")} — You have{" "}
               <strong className="text-foreground">{todayHearings.length} hearing{todayHearings.length !== 1 ? "s" : ""}</strong> and{" "}
               <strong className="text-foreground">{todayTasks.length + overdueTasks.length} task{todayTasks.length + overdueTasks.length !== 1 ? "s" : ""}</strong> pending today.
             </p>
@@ -161,7 +161,7 @@ export default function TodayPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* ΓöÇΓöÇΓöÇ Today's Hearings ΓöÇΓöÇΓöÇ */}
+        {/* ─── Today's Hearings ─── */}
         <div className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/10">
             <div className="flex items-center gap-2">
@@ -180,7 +180,7 @@ export default function TodayPage() {
               <div className="py-12 flex flex-col items-center justify-center text-muted-foreground">
                 <Calendar className="w-10 h-10 mb-3 opacity-30" />
                 <p className="text-sm font-medium">No hearings today</p>
-                <p className="text-xs mt-0.5">You're free ΓÇö perfect time to catch up on tasks.</p>
+                <p className="text-xs mt-0.5">You're free — perfect time to catch up on tasks.</p>
               </div>
             ) : todayHearings.map(h => (
               <div key={h.id} className="flex items-start gap-3 px-5 py-4 hover:bg-muted/30 transition-colors">
@@ -208,7 +208,7 @@ export default function TodayPage() {
           </div>
         </div>
 
-        {/* ΓöÇΓöÇΓöÇ Tasks Due Today + Overdue ΓöÇΓöÇΓöÇ */}
+        {/* ─── Tasks Due Today + Overdue ─── */}
         <div className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/10">
             <div className="flex items-center gap-2">
@@ -258,12 +258,12 @@ export default function TodayPage() {
           </div>
         </div>
 
-        {/* ΓöÇΓöÇΓöÇ Upcoming Hearings (Next 7 days) ΓöÇΓöÇΓöÇ */}
+        {/* ─── Upcoming Hearings (Next 7 days) ─── */}
         <div className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/10">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-purple-500" />
-              <h3 className="text-sm font-semibold text-foreground">Next 7 Days ΓÇö Hearings</h3>
+              <h3 className="text-sm font-semibold text-foreground">Next 7 Days — Hearings</h3>
               {upcomingHearings.length > 0 && (
                 <span className="px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 text-[10px] font-bold">{upcomingHearings.length}</span>
               )}
@@ -288,7 +288,7 @@ export default function TodayPage() {
                     <p className="text-sm font-medium text-foreground truncate">{h.purpose || "Hearing"}</p>
                     <p className="text-xs text-muted-foreground truncate">
                       {h.cases?.case_number && <span className="font-mono">{h.cases.case_number}</span>}
-                      {h.court_name && <span className="ml-1.5">┬╖ {h.court_name}</span>}
+                      {h.court_name && <span className="ml-1.5">· {h.court_name}</span>}
                     </p>
                   </div>
                   <span className="text-[10px] text-muted-foreground shrink-0">{format(d, "h:mm a")}</span>
@@ -298,7 +298,7 @@ export default function TodayPage() {
           </div>
         </div>
 
-        {/* ΓöÇΓöÇΓöÇ Overdue Invoices ΓöÇΓöÇΓöÇ */}
+        {/* ─── Overdue Invoices ─── */}
         <div className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/10">
             <div className="flex items-center gap-2">
@@ -326,7 +326,7 @@ export default function TodayPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">#{inv.invoice_number}</p>
-                  <p className="text-xs text-muted-foreground truncate">{(inv.clients as any)?.name || "No client"} ┬╖ Due {inv.due_date}</p>
+                  <p className="text-xs text-muted-foreground truncate">{(inv.clients as any)?.name || "No client"} · Due {inv.due_date}</p>
                 </div>
                 <span className="text-sm font-bold text-rose-500 shrink-0">{CURRENCY}{Number(inv.total_amount ?? 0).toLocaleString("en-IN")}</span>
               </div>
@@ -335,7 +335,7 @@ export default function TodayPage() {
         </div>
       </div>
 
-      {/* ΓöÇΓöÇΓöÇ All Upcoming Tasks ΓöÇΓöÇΓöÇ */}
+      {/* ─── All Upcoming Tasks ─── */}
       {otherTasks.length > 0 && (
         <div className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/10">
@@ -361,7 +361,7 @@ export default function TodayPage() {
   );
 }
 
-/* ΓöÇΓöÇ Reusable Task Row ΓöÇΓöÇ */
+/* ── Reusable Task Row ── */
 function TaskItem({ task, overdue = false }: { task: TaskRow; overdue?: boolean }) {
   const priorityCfg = PRIORITY_ICONS[task.priority] || PRIORITY_ICONS.medium;
   const statusCfg = STATUS_ICONS[task.status] || STATUS_ICONS.todo;

@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Bell, CalendarClock, AlertTriangle, CheckCircle, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { restGet } from "@/lib/restClient";
@@ -51,7 +51,7 @@ function useNotifications() {
         ),
       ]);
 
-      // Resolve client names separately ΓÇö there is no FK join exposed on invoices
+      // Resolve client names separately — there is no FK join exposed on invoices
       const clientIds = [...new Set(invoiceRows.map(i => i.client_id).filter(Boolean))];
       const clientNames = new Map<string, string>();
       if (clientIds.length) {
@@ -158,8 +158,8 @@ export function NotificationBell() {
                     n.kind === "hearing" ? "text-amber-600" : "text-rose-600"
                   }`}>
                     {n.kind === "hearing"
-                      ? format(new Date(n.date), "EEE, MMM d ┬╖ h:mm a")
-                      : `${CURRENCY}${n.amount.toLocaleString(LOCALE)} ΓÇö Due ${n.dueDate}`}
+                      ? format(new Date(n.date), "EEE, MMM d · h:mm a")
+                      : `${CURRENCY}${n.amount.toLocaleString(LOCALE)} — Due ${n.dueDate}`}
                   </p>
                 </div>
               </button>

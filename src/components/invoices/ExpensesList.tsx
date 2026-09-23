@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Pencil, Download } from "lucide-react";
 import { format } from "date-fns";
@@ -88,7 +88,7 @@ export function ExpensesList({ expenses, cases }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Total Expenses</p>
-          <p className="text-2xl font-bold text-foreground">Γé╣{totalExpenses.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
+          <p className="text-2xl font-bold text-foreground">₹{totalExpenses.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Expense Count</p>
@@ -155,9 +155,9 @@ export function ExpensesList({ expenses, cases }: Props) {
               ) : paginatedItems.map(exp => (
                 <tr key={exp.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                   <td className="py-3 px-4 text-sm font-medium">{exp.title}</td>
-                  <td className="py-3 px-4 text-sm text-right font-medium">Γé╣{Number(exp.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-                  <td className="py-3 px-4"><Badge variant="outline">{exp.category || "ΓÇö"}</Badge></td>
-                  <td className="py-3 px-4 text-sm">{exp.expense_date ? format(new Date(exp.expense_date), "PP") : "ΓÇö"}</td>
+                  <td className="py-3 px-4 text-sm text-right font-medium">₹{Number(exp.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                  <td className="py-3 px-4"><Badge variant="outline">{exp.category || "—"}</Badge></td>
+                  <td className="py-3 px-4 text-sm">{exp.expense_date ? format(new Date(exp.expense_date), "PP") : "—"}</td>
                   <td className="py-3 px-4 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <Button variant="ghost" size="icon" onClick={() => openEdit(exp)}><Pencil className="w-4 h-4 text-primary" /></Button>

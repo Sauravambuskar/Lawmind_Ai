@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { restGetAll, restInsert } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,10 +49,10 @@ const DEMO_NOTICE: Omit<NoticeDraft, "id" | "name" | "lastUpdated"> = {
   date: "2025-10-07",
   deliveryMode: "NOTICE BY R .P .A .D.",
   clientName: "FORTUNATE AGRO SOLUTION PVT. LTD",
-  clientAddress: "C/o, Suraj Warehouse Sr No.155-B, Behind Kad Hights, Main Road Phursungi, Taluka Haveli, Dist ΓÇôPune-412308",
+  clientAddress: "C/o, Suraj Warehouse Sr No.155-B, Behind Kad Hights, Main Road Phursungi, Taluka Haveli, Dist –Pune-412308",
   clientMobile: "9130074025, 9822333747",
   recipientName: "Ashirwad Agro Agency, Through its Prop.",
-  recipientAddress: "Serve No.5, Plot No-1, Sharda Colony, At Post.- Maloni, Tal ΓÇôShahada, Dist.-Nandurbar - 425409",
+  recipientAddress: "Serve No.5, Plot No-1, Sharda Colony, At Post.- Maloni, Tal –Shahada, Dist.-Nandurbar - 425409",
   recipientMobile: "9763940520",
   subject: "LEGAL NOTICE FOR RECOVERY OF OUTSTANDING DUES OF RS. 90,201/- WITH INTEREST",
   paragraphs: [
@@ -560,7 +560,7 @@ Response Format:
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10 print:p-0 print:space-y-0">
       
-      {/* ΓöÇΓöÇ Page Header ΓöÇΓöÇ */}
+      {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
         <PageHeader 
           title="Legal Notice Maker" 
@@ -587,7 +587,7 @@ Response Format:
         </div>
       </div>
 
-      {/* ΓöÇΓöÇ Main Layout ΓöÇΓöÇ */}
+      {/* ── Main Layout ── */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start print:block print:w-full">
         
         {/* LEFT COLUMN: Drafts list & Editor Form */}
@@ -1038,7 +1038,7 @@ Response Format:
                     >
                       {aiLoading ? (
                         <>
-                          <RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" /> Drafting notice, please waitΓÇª
+                          <RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" /> Drafting notice, please wait…
                         </>
                       ) : (
                         <>

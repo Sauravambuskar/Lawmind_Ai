@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Pencil, Download, Wallet, CreditCard, PieChart, Receipt } from "lucide-react";
@@ -147,7 +147,7 @@ export default function ExpensesPage() {
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
-            <p className="text-2xl font-bold text-foreground">Γé╣{totalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p className="text-2xl font-bold text-foreground">₹{totalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
         </div>
         <div className="bg-card border border-border shadow-sm rounded-xl p-5 flex items-center gap-4">
@@ -165,7 +165,7 @@ export default function ExpensesPage() {
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">Average Expense</p>
-            <p className="text-2xl font-bold text-foreground">Γé╣{filtered.length ? (totalExpenses / filtered.length).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}</p>
+            <p className="text-2xl font-bold text-foreground">₹{filtered.length ? (totalExpenses / filtered.length).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}</p>
           </div>
         </div>
       </div>
@@ -228,10 +228,10 @@ export default function ExpensesPage() {
                     )}
                   </td>
                   <td className="py-4 px-5 text-right">
-                    <span className="font-bold text-foreground">Γé╣{Number(e.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="font-bold text-foreground">₹{Number(e.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </td>
                   <td className="py-4 px-5 text-muted-foreground font-medium">
-                    {e.expense_date ? new Date(e.expense_date).toLocaleDateString() : "ΓÇö"}
+                    {e.expense_date ? new Date(e.expense_date).toLocaleDateString() : "—"}
                   </td>
                   <td className="py-4 px-5 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">

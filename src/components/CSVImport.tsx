@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { Upload, FileUp, CheckCircle, AlertCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -168,7 +168,7 @@ export function CSVImport({ table, fields, queryKey, label = "Import CSV" }: CSV
             <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-1.5 max-h-36 overflow-y-auto">
               <div className="flex items-center gap-2 text-sm font-semibold text-destructive mb-2">
                 <XCircle className="w-4 h-4" />
-                {validationErrors.length} validation error(s) ΓÇö fix your CSV before importing
+                {validationErrors.length} validation error(s) — fix your CSV before importing
               </div>
               {validationErrors.map((err, i) => (
                 <p key={i} className="text-xs text-destructive">
@@ -211,7 +211,7 @@ export function CSVImport({ table, fields, queryKey, label = "Import CSV" }: CSV
                 : <AlertCircle className="w-5 h-5 text-amber-500" />}
               <div className="text-sm">
                 <span className="font-medium text-foreground">{result.success} imported</span>
-                {result.failed > 0 && <span className="text-destructive ml-2">ΓÇó {result.failed} failed</span>}
+                {result.failed > 0 && <span className="text-destructive ml-2">• {result.failed} failed</span>}
               </div>
             </div>
           )}

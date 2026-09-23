@@ -1,12 +1,12 @@
-﻿/**
- * Email Service ΓÇö sends emails via EmailJS (frontend) or logs for SMTP (server-side future)
+/**
+ * Email Service — sends emails via EmailJS (frontend) or logs for SMTP (server-side future)
  * 
  * EmailJS Setup (free 200 emails/month):
- * 1. Go to https://emailjs.com ΓåÆ Create account
+ * 1. Go to https://emailjs.com → Create account
  * 2. Add email service (Gmail/Outlook/SMTP)
  * 3. Create email template
  * 4. Get Service ID, Template ID, Public Key
- * 5. Save in Admin ΓåÆ Email Settings
+ * 5. Save in Admin → Email Settings
  */
 
 import { supabase } from "@/integrations/supabase/client";
@@ -47,7 +47,7 @@ export async function loadEmailConfig(): Promise<EmailConfig | null> {
  */
 async function sendViaEmailJS(config: EmailConfig, params: SendEmailParams): Promise<boolean> {
   if (!config.emailjs_service_id || !config.emailjs_template_id || !config.emailjs_public_key) {
-    throw new Error("EmailJS not configured. Go to Admin ΓåÆ Email Settings.");
+    throw new Error("EmailJS not configured. Go to Admin → Email Settings.");
   }
 
   const templateParams = {
@@ -76,19 +76,19 @@ async function sendViaEmailJS(config: EmailConfig, params: SendEmailParams): Pro
 }
 
 /**
- * Main send email function ΓÇö routes to correct provider
+ * Main send email function — routes to correct provider
  */
 export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; error?: string }> {
   try {
     const config = await loadEmailConfig();
     if (!config) {
-      throw new Error("Email not configured. Go to Admin ΓåÆ Email Settings and set up EmailJS.");
+      throw new Error("Email not configured. Go to Admin → Email Settings and set up EmailJS.");
     }
 
     if (config.provider === "emailjs") {
       await sendViaEmailJS(config, params);
     } else {
-      // SMTP ΓÇö log for server-side processing (future Edge Function)
+      // SMTP — log for server-side processing (future Edge Function)
       throw new Error("SMTP requires server-side setup. Use EmailJS for now.");
     }
 
@@ -96,7 +96,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
     return { success: true };
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Failed to send email";
-    // Best-effort failure log ΓÇö never let logging mask the original error
+    // Best-effort failure log — never let logging mask the original error
     try {
       await logEmail(params, "failed", message);
     } catch {
@@ -156,7 +156,7 @@ export function getInvoiceEmail(invoiceNumber: string, amount: string, dueDate: 
 Please find the details of your pending invoice:
 
 Invoice Number: #${invoiceNumber}
-Amount Due: Γé╣${amount}
+Amount Due: ₹${amount}
 Due Date: ${dueDate}
 
 Kindly arrange for payment at your earliest convenience. You can pay via UPI, bank transfer, or cheque.

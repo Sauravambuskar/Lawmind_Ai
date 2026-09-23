@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ function readLinkError(): string | null {
 type Status = "checking" | "ready" | "invalid";
 
 export default function ResetPasswordPage() {
-  // Captured on first render ΓÇö supabase-js clears the hash once it processes the link.
+  // Captured on first render — supabase-js clears the hash once it processes the link.
   const [linkError] = useState(readLinkError);
   const [status, setStatus] = useState<Status>(linkError ? "invalid" : "checking");
   const [password, setPassword] = useState("");
@@ -147,7 +147,7 @@ export default function ResetPasswordPage() {
                     <Label htmlFor="password" className="text-foreground text-sm font-medium">New password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input id="password" type={showPassword ? "text" : "password"} placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 pr-10 h-11 bg-white/40 backdrop-blur-md border-white/30 focus:bg-white/60 transition-colors" required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" />
+                      <Input id="password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 pr-10 h-11 bg-white/40 backdrop-blur-md border-white/30 focus:bg-white/60 transition-colors" required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -158,7 +158,7 @@ export default function ResetPasswordPage() {
                     <Label htmlFor="confirmPassword" className="text-foreground text-sm font-medium">Confirm new password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input id="confirmPassword" type={showPassword ? "text" : "password"} placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pl-10 h-11 bg-white/40 backdrop-blur-md border-white/30 focus:bg-white/60 transition-colors" required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" />
+                      <Input id="confirmPassword" type={showPassword ? "text" : "password"} placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pl-10 h-11 bg-white/40 backdrop-blur-md border-white/30 focus:bg-white/60 transition-colors" required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" />
                     </div>
                     {confirmPassword.length > 0 && password !== confirmPassword && (
                       <p className="text-xs text-destructive">Passwords don't match</p>

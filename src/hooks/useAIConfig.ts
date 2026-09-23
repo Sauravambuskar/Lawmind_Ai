@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { AIProvider } from '@/lib/ai-providers';
@@ -50,7 +50,7 @@ const DEFAULT_CONFIG: AIConfig = {
   activeProvider: 'groq',
 };
 
-// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function useAIConfig() {
   const [config, setConfig]       = useState<AIConfig>(DEFAULT_CONFIG);
@@ -63,7 +63,7 @@ export function useAIConfig() {
   const saveTimersRef    = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const pendingUpdatesRef = useRef<Record<string, Record<string, unknown>>>({});
 
-  // ΓöÇΓöÇ Fetch from Supabase ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Fetch from Supabase ────────────────────────────────────────────────────
   const loadConfig = useCallback(async () => {
     if (isSavingRef.current) return;
 
@@ -125,7 +125,7 @@ export function useAIConfig() {
     return () => { (supabase as any).removeChannel(channel); };
   }, [loadConfig]);
 
-  // ΓöÇΓöÇ Flush pending DB writes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Flush pending DB writes ────────────────────────────────────────────────
   const flushProvider = useCallback(async (provider: AIProvider) => {
     const pending = pendingUpdatesRef.current[provider];
     if (!pending || Object.keys(pending).length === 0) return;
@@ -164,12 +164,12 @@ export function useAIConfig() {
     setTimeout(() => { isSavingRef.current = false; }, 2000);
   }, []);
 
-  // ΓöÇΓöÇ Active Module switching ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Active Module switching ────────────────────────────────────────────────
   const setActiveModule = useCallback((moduleId: string | undefined) => {
     setConfig((prev) => ({ ...prev, activeModuleId: moduleId }));
   }, []);
 
-  // ΓöÇΓöÇ Failover chain builder ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Failover chain builder ────────────────────────────────────────────────
   /**
    * Build the ordered list of configs the failover engine will walk.
    * Priority (top = first tried):
@@ -193,7 +193,7 @@ export function useAIConfig() {
       ? modules.find((m) => m.id === config.activeModuleId)
       : undefined;
 
-    // ΓöÇΓöÇ 1. Module's primary group ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── 1. Module's primary group ──────────────────────────────────────────
     if (activeModule?.groupId) {
       const group = getGroupById(activeModule.groupId);
       if (group) {
@@ -201,12 +201,12 @@ export function useAIConfig() {
           provider: group.provider,
           apiKey:   k.key,
           model:    activeModule.model,
-          name:     `${activeModule.name} ΓÇ║ ${group.name}${i > 0 ? ` #${i + 1}` : ''}`,
+          name:     `${activeModule.name} › ${group.name}${i > 0 ? ` #${i + 1}` : ''}`,
         }));
       }
     }
 
-    // ΓöÇΓöÇ 2. Active provider key pool ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── 2. Active provider key pool ────────────────────────────────────────
     const effectiveProvider = activeModule?.provider ?? config.activeProvider;
     const effectiveModel    = activeModule?.model    ?? config.providers[effectiveProvider]?.model;
     const primary = config.providers[effectiveProvider];
@@ -220,7 +220,7 @@ export function useAIConfig() {
       }));
     }
 
-    // ΓöÇΓöÇ 3. Module fallback provider ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── 3. Module fallback provider ────────────────────────────────────────
     if (activeModule?.fallbackProvider) {
       const fbGroup = activeModule.fallbackGroupId
         ? getGroupById(activeModule.fallbackGroupId)
@@ -231,7 +231,7 @@ export function useAIConfig() {
           provider: activeModule.fallbackProvider!,
           apiKey:   k.key,
           model:    activeModule.fallbackModel ?? config.providers[activeModule.fallbackProvider!]?.model ?? '',
-          name:     `${activeModule.name} fallback ΓÇ║ ${fbGroup.name}${i > 0 ? ` #${i + 1}` : ''}`,
+          name:     `${activeModule.name} fallback › ${fbGroup.name}${i > 0 ? ` #${i + 1}` : ''}`,
         }));
       } else {
         const fbEntry = config.providers[activeModule.fallbackProvider];
@@ -247,7 +247,7 @@ export function useAIConfig() {
       }
     }
 
-    // ΓöÇΓöÇ 4. All other providers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── 4. All other providers ─────────────────────────────────────────────
     const others: AIProvider[] = ['groq', 'openai', 'openrouter', 'gemini', 'custom'];
     others.filter((p) => p !== effectiveProvider && p !== activeModule?.fallbackProvider)
       .forEach((p) => {
@@ -271,7 +271,7 @@ export function useAIConfig() {
     return { provider: config.activeProvider, apiKey: entry.apiKey, model: entry.model, baseUrl: entry.baseUrl, name: config.activeProvider };
   }, [config]);
 
-  // ΓöÇΓöÇ ExtraKey pool ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── ExtraKey pool ──────────────────────────────────────────────────────────
   const addKey    = useCallback(async (provider: AIProvider, key: string, label?: string) => {
     setExtraKeys(await addExtraKey(provider, key.trim(), label));
   }, []);
@@ -279,7 +279,7 @@ export function useAIConfig() {
     setExtraKeys(await removeExtraKey(provider, id));
   }, []);
 
-  // ΓöÇΓöÇ API Groups ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── API Groups ─────────────────────────────────────────────────────────────
   const createGroup = useCallback(async (provider: AIProvider, name: string, notes?: string) => {
     await createApiGroup(provider, name, notes);
     setGroups([...getCachedGroups()]);
@@ -306,7 +306,7 @@ export function useAIConfig() {
     setGroups([...getCachedGroups()]);
   }, []);
 
-  // ΓöÇΓöÇ AI Modules ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── AI Modules ─────────────────────────────────────────────────────────────
   const createModule = useCallback(async (
     name: string, provider: AIProvider, model: string,
     opts?: Parameters<typeof createAIModule>[3],

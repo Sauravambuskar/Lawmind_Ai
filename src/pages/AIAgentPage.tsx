@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useCallback, type FormEvent } from "react";
+import { useState, useRef, useEffect, useCallback, type FormEvent } from "react";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/hooks/useAuth";
@@ -64,7 +64,7 @@ function getGreeting() {
   return "Good Evening";
 }
 
-/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Page ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+/* ═══════════════════════════ Page ═══════════════════════════ */
 
 export default function AIAgentPage() {
   const { config, loading: configLoading, getActiveConfig, getAllConfigs, hasActiveKey, modules, setActiveModule } = useAIConfig();
@@ -131,13 +131,13 @@ export default function AIAgentPage() {
 
       const result = await sendAIMessageWithFailover(getAllConfigs(), history);
 
-      // The primary failed but a fallback answered ΓÇö say so, quietly. The user
+      // The primary failed but a fallback answered — say so, quietly. The user
       // still got their reply, they just deserve to know a key needs attention.
       if (result.attempts.length > 0) {
         toast.info(`Answered by ${result.servedBy}`, {
           description: result.attempts
             .map((a) => `${a.name}: ${FAILURE_LABEL[a.kind]}`)
-            .join(" ┬╖ "),
+            .join(" · "),
         });
       }
 
@@ -150,7 +150,7 @@ export default function AIAgentPage() {
       toast.error(`AI Error: ${errorMsg}`);
       setMessages((p) => [...p, {
         id: crypto.randomUUID(), role: "assistant",
-        content: `ΓÜá∩╕Å **Error:** ${errorMsg}\n\nPlease check your API key in AI Settings.`,
+        content: `⚠️ **Error:** ${errorMsg}\n\nPlease check your API key in AI Settings.`,
         timestamp: new Date(),
       }]);
     } finally {
@@ -194,7 +194,7 @@ export default function AIAgentPage() {
     const researchMessage: ChatMsg = {
       id: crypto.randomUUID(),
       role: "assistant",
-      content: `**≡ƒîÉ Web Research Results for "${researchQuery}"** (${preset.label})\n\n\`\`\`json\n${JSON.stringify(result.data, null, 2)}\n\`\`\`\n\n_Completed in ${result.duration_ms ? Math.round(result.duration_ms / 1000) : "~"}s, ${result.steps ?? 0} steps_`,
+      content: `**🌐 Web Research Results for "${researchQuery}"** (${preset.label})\n\n\`\`\`json\n${JSON.stringify(result.data, null, 2)}\n\`\`\`\n\n_Completed in ${result.duration_ms ? Math.round(result.duration_ms / 1000) : "~"}s, ${result.steps ?? 0} steps_`,
       timestamp: new Date(),
     };
 
@@ -241,15 +241,15 @@ export default function AIAgentPage() {
     }
   };
 
-  /* ΓöÇΓöÇ Config loading ΓöÇΓöÇ */
+  /* ── Config loading ── */
   if (configLoading) return (
     <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
       <OrbGif pulse />
-      <span className="text-sm text-muted-foreground">Loading AIΓÇª</span>
+      <span className="text-sm text-muted-foreground">Loading AI…</span>
     </div>
   );
 
-  /* ΓöÇΓöÇ No API key ΓöÇΓöÇ */
+  /* ── No API key ── */
   if (!hasActiveKey) return (
     <div className="flex flex-col items-center justify-center h-[70vh] text-center px-4 gap-5">
       <OrbGif dimmed />
@@ -283,14 +283,14 @@ export default function AIAgentPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
 
-      {/* ΓöÇΓöÇ Status bar ΓöÇΓöÇ */}
+      {/* ── Status bar ── */}
       <div className="flex items-center justify-between px-4 md:px-6 py-2 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: activeInfo.color }} />
           <span className="text-[11px] text-muted-foreground">
             {activeModule
-              ? <><span className="text-violet-400 font-semibold">{activeModule.name}</span> ┬╖ {activeInfo.label} ┬╖ {activeModule.model}</>
-              : <>{activeInfo.label} ┬╖ {config.providers[config.activeProvider].model}</>
+              ? <><span className="text-violet-400 font-semibold">{activeModule.name}</span> · {activeInfo.label} · {activeModule.model}</>
+              : <>{activeInfo.label} · {config.providers[config.activeProvider].model}</>
             }
           </span>
         </div>
@@ -343,7 +343,7 @@ export default function AIAgentPage() {
                   <div className="px-3 py-2 border-t border-border">
                     <Link to="/setup/ai-settings" onClick={() => setModulesOpen(false)}
                       className="text-[10px] text-amber-400 hover:text-amber-300 transition-colors">
-                      Manage modules ΓåÆ
+                      Manage modules →
                     </Link>
                   </div>
                 </div>
@@ -382,10 +382,10 @@ export default function AIAgentPage() {
         </div>
       </div>
 
-      {/* ΓöÇΓöÇ Content ΓöÇΓöÇ */}
+      {/* ── Content ── */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         {!hasMessages ? (
-          /* ΓöÇΓöÇΓöÇ Welcome screen ΓöÇΓöÇΓöÇ */
+          /* ─── Welcome screen ─── */
           <div className="flex flex-col items-center justify-center min-h-full px-4 py-10">
 
             {/* GIF Orb */}
@@ -432,7 +432,7 @@ export default function AIAgentPage() {
           </div>
 
         ) : (
-          /* ΓöÇΓöÇΓöÇ Chat messages ΓöÇΓöÇΓöÇ */
+          /* ─── Chat messages ─── */
           <div className="px-4 md:px-6 py-6 space-y-5 max-w-3xl mx-auto w-full">
 
             {messages.map((msg) => (
@@ -457,8 +457,8 @@ export default function AIAgentPage() {
                     <span className="text-[10px] text-muted-foreground">
                       {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
-                    {msg.model  && <span className="text-[10px] text-muted-foreground">┬╖ {msg.model}</span>}
-                    {msg.tokens && <span className="text-[10px] text-muted-foreground">┬╖ {msg.tokens} tokens</span>}
+                    {msg.model  && <span className="text-[10px] text-muted-foreground">· {msg.model}</span>}
+                    {msg.tokens && <span className="text-[10px] text-muted-foreground">· {msg.tokens} tokens</span>}
                     <div className="ml-auto flex items-center gap-1">
                       <button onClick={() => handleCopy(msg.id, msg.content)}
                         className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -523,7 +523,7 @@ export default function AIAgentPage() {
         )}
       </div>
 
-      {/* ΓöÇΓöÇ Bottom input (only when chatting) ΓöÇΓöÇ */}
+      {/* ── Bottom input (only when chatting) ── */}
       {hasMessages && (
         <div className="shrink-0 border-t border-border bg-background/80 backdrop-blur-sm px-4 md:px-6 py-4">
           <div className="max-w-3xl mx-auto">
@@ -537,7 +537,7 @@ export default function AIAgentPage() {
         </div>
       )}
 
-      {/* ΓöÇΓöÇ Web Research Dialog ΓöÇΓöÇ */}
+      {/* ── Web Research Dialog ── */}
       <Dialog open={webResearchOpen} onOpenChange={setWebResearchOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -607,7 +607,7 @@ export default function AIAgentPage() {
   );
 }
 
-/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Voice Input Hook ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+/* ═══════════════ Voice Input Hook ═══════════════ */
 
 type VoiceHookOptions = { onTranscript: (text: string) => void };
 
@@ -666,7 +666,7 @@ function useVoiceInput({ onTranscript }: VoiceHookOptions) {
   return { isListening, isSupported, startListening, stopListening };
 }
 
-/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Animated GIF Orb ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+/* ═══════════════ Animated GIF Orb ═══════════════ */
 
 function OrbGif({
   size  = "lg",
@@ -700,7 +700,7 @@ function OrbGif({
   );
 }
 
-/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Chat Input ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+/* ═══════════════ Chat Input ═══════════════ */
 
 function ChatInput({
   inputRef, input, setInput, loading, onKeyDown,
@@ -717,7 +717,7 @@ function ChatInput({
 
   return (
     <div className="relative">
-      {/* ΓöÇΓöÇ Listening overlay banner ΓöÇΓöÇ */}
+      {/* ── Listening overlay banner ── */}
       {isListening && (
         <div className="absolute -top-12 left-0 right-0 flex items-center justify-center animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
           <div className="flex items-center gap-2.5 bg-red-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg shadow-red-500/30">
@@ -731,7 +731,7 @@ function ChatInput({
                 />
               ))}
             </div>
-            <span>ListeningΓÇª</span>
+            <span>Listening…</span>
             <button
               type="button"
               onClick={stopListening}
@@ -743,7 +743,7 @@ function ChatInput({
         </div>
       )}
 
-      {/* ΓöÇΓöÇ Input row ΓöÇΓöÇ */}
+      {/* ── Input row ── */}
       <div className={`flex items-end gap-2 rounded-2xl border bg-card px-4 py-3 transition-all duration-200 ${
         isListening
           ? "border-red-400/60 shadow-lg shadow-red-400/10"
@@ -754,7 +754,7 @@ function ChatInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder={isListening ? "Listening to your voiceΓÇª" : "Ask AI a question or make a requestΓÇª"}
+          placeholder={isListening ? "Listening to your voice…" : "Ask AI a question or make a request…"}
           rows={1}
           className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none max-h-32"
           style={{ minHeight: 36 }}
@@ -765,7 +765,7 @@ function ChatInput({
           }}
         />
 
-        {/* ΓöÇΓöÇ Mic button ΓöÇΓöÇ */}
+        {/* ── Mic button ── */}
         {isSupported && (
           <button
             type="button"
@@ -802,7 +802,7 @@ function ChatInput({
           </button>
         )}
 
-        {/* ΓöÇΓöÇ Send button ΓöÇΓöÇ */}
+        {/* ── Send button ── */}
         <button
           type="submit"
           disabled={!input.trim() || loading}
@@ -815,7 +815,7 @@ function ChatInput({
   );
 }
 
-/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Markdown ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+/* ═══════════════ Markdown ═══════════════ */
 
 function MarkdownContent({ content }: { content: string }) {
   return (

@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Pencil, Lock, Download, Eye, Fingerprint, ShieldAlert } from "lucide-react";
@@ -171,7 +171,7 @@ export default function EvidencePage() {
                   <Label className="font-semibold text-muted-foreground">Case Reference *</Label>
                   <Select value={form.case_id} onValueChange={v => setForm(p => ({ ...p, case_id: v }))}>
                     <SelectTrigger className="bg-muted/50"><SelectValue placeholder="Select case" /></SelectTrigger>
-                    <SelectContent>{cases.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.case_number} ΓÇö {c.title}</SelectItem>)}</SelectContent>
+                    <SelectContent>{cases.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.case_number} — {c.title}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -269,7 +269,7 @@ export default function EvidencePage() {
                     </span>
                   </td>
                   <td className="py-4 px-5 text-muted-foreground font-medium">
-                    {e.submitted_date ? format(new Date(e.submitted_date), "MMM d, yyyy") : "ΓÇö"}
+                    {e.submitted_date ? format(new Date(e.submitted_date), "MMM d, yyyy") : "—"}
                   </td>
                   <td className="py-4 px-5 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">

@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Document, Page, Text, View, StyleSheet, pdf } from "@react-pdf/renderer";
 
 function formatCurrency(n: number) {
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
 const InvoiceDocument = ({ invoice }: { invoice: any }) => {
   const invoiceDate = new Date(invoice.created_at).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' });
   const dueDate = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' }) : "Upon Receipt";
-  const clientName = invoice.clients?.name || "ΓÇö";
+  const clientName = invoice.clients?.name || "—";
   const clientEmail = invoice.clients?.email || "";
   const caseTitle = invoice.cases?.title || "General Legal Services";
 
@@ -367,7 +367,7 @@ const InvoiceDocument = ({ invoice }: { invoice: any }) => {
           </View>
           <View style={[styles.totalsRow, { borderBottom: "none", height: 22, backgroundColor: "#f8fafc" }]}>
             <Text style={[styles.totalsRowLabel, { fontSize: 10, color: primaryText }]}>Total Due</Text>
-            <Text style={[styles.totalsRowValue, styles.bold, { fontSize: 10, color: "#2563eb" }]}>Γé╣ {formatCurrency(Number(invoice.total_amount ?? 0))}</Text>
+            <Text style={[styles.totalsRowValue, styles.bold, { fontSize: 10, color: "#2563eb" }]}>₹ {formatCurrency(Number(invoice.total_amount ?? 0))}</Text>
           </View>
 
           {/* Words */}
@@ -378,7 +378,7 @@ const InvoiceDocument = ({ invoice }: { invoice: any }) => {
 
         {/* Footer */}
         <View style={styles.footerText}>
-          <Text>Page 1 / 2 ΓÇó This is a computer generated document and requires no signature.</Text>
+          <Text>Page 1 / 2 • This is a computer generated document and requires no signature.</Text>
           <Text style={[styles.bold, { color: primaryText }]}>Powered By LawMind</Text>
         </View>
       </Page>
@@ -427,7 +427,7 @@ const InvoiceDocument = ({ invoice }: { invoice: any }) => {
         </View>
 
         <View style={styles.footerText}>
-          <Text>Page 2 / 2 ΓÇó This is a computer generated document and requires no signature.</Text>
+          <Text>Page 2 / 2 • This is a computer generated document and requires no signature.</Text>
           <Text style={[styles.bold, { color: primaryText }]}>Powered By LawMind</Text>
         </View>
       </Page>

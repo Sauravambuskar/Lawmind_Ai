@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -115,15 +115,15 @@ export default function CaseDetailPage() {
 }
 
 function InfoField({ label, value }: { label: string; value: string | null | undefined }) {
-  return <div><p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</p><p className="text-sm font-medium text-foreground mt-0.5 truncate">{value || "ΓÇö"}</p></div>;
+  return <div><p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</p><p className="text-sm font-medium text-foreground mt-0.5 truncate">{value || "—"}</p></div>;
 }
 function EmptyState({ icon: Icon, text }: { icon: any; text: string }) {
   return <div className="flex flex-col items-center justify-center py-16"><Icon className="w-12 h-12 text-muted-foreground opacity-20 mb-3" /><p className="text-sm font-medium text-muted-foreground">{text}</p></div>;
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// Status Changer ΓÇö quick status update dropdown
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
+// Status Changer — quick status update dropdown
+// ══════════════════════════════════════════════════════════════
 function StatusChanger({ caseId, currentStatus, sConf, queryClient }: { caseId: string; currentStatus: string; sConf: any; queryClient: any }) {
   const [changing, setChanging] = useState(false);
 
@@ -164,9 +164,9 @@ function StatusChanger({ caseId, currentStatus, sConf, queryClient }: { caseId: 
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
 // TAB: Case History (read-only timeline)
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
 function TabHistory({ hearings, tasks, invoices, expenses, documents }: any) {
   const events: any[] = [];
   (hearings || []).forEach((h: any) => events.push({ date: new Date(h.hearing_date), title: `Hearing: ${h.title || "Scheduled"}`, sub: h.court_name, type: "hearing", status: h.status }));
@@ -185,9 +185,9 @@ function TabHistory({ hearings, tasks, invoices, expenses, documents }: any) {
   ))}</div>;
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// TAB: Appointments / Hearings ΓÇö FULL CRUD
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
+// TAB: Appointments / Hearings — FULL CRUD
+// ══════════════════════════════════════════════════════════════
 function TabAppointments({ caseId, userId, hearings, qc }: { caseId: string; userId: string; hearings: any[]; qc: any }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ hearing_date: "", court_name: "", judge_name: "", purpose: "", status: "scheduled", notes: "" });
@@ -221,8 +221,8 @@ function TabAppointments({ caseId, userId, hearings, qc }: { caseId: string; use
       {hearings.length === 0 ? <EmptyState icon={Gavel} text="No hearings scheduled" /> : <div className="space-y-2">{hearings.map((h: any) => (
         <div key={h.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
           <Gavel className="w-5 h-5 text-amber-500 shrink-0" />
-          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{h.title || "Hearing"}</p><p className="text-xs text-muted-foreground">{h.court_name || "ΓÇö"} ΓÇó Judge: {h.judge || "ΓÇö"}</p></div>
-          <div className="text-right shrink-0"><p className="text-xs font-medium">{h.hearing_date ? format(new Date(h.hearing_date), "dd MMM yyyy") : "ΓÇö"}</p><span className="text-[10px] uppercase font-bold bg-muted px-1.5 py-0.5 rounded">{h.status}</span></div>
+          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{h.title || "Hearing"}</p><p className="text-xs text-muted-foreground">{h.court_name || "—"} • Judge: {h.judge || "—"}</p></div>
+          <div className="text-right shrink-0"><p className="text-xs font-medium">{h.hearing_date ? format(new Date(h.hearing_date), "dd MMM yyyy") : "—"}</p><span className="text-[10px] uppercase font-bold bg-muted px-1.5 py-0.5 rounded">{h.status}</span></div>
           <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(h)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(h.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
         </div>
       ))}</div>}
@@ -239,9 +239,9 @@ function TabAppointments({ caseId, userId, hearings, qc }: { caseId: string; use
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// TAB: Tasks ΓÇö FULL CRUD
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
+// TAB: Tasks — FULL CRUD
+// ══════════════════════════════════════════════════════════════
 function TabTasks({ caseId, userId, tasks, qc }: { caseId: string; userId: string; tasks: any[]; qc: any }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", status: "todo", priority: "medium", due_date: "" });
@@ -287,9 +287,9 @@ function TabTasks({ caseId, userId, tasks, qc }: { caseId: string; userId: strin
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// TAB: Documents ΓÇö FULL CRUD
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
+// TAB: Documents — FULL CRUD
+// ══════════════════════════════════════════════════════════════
 function TabDocuments({ caseId, userId, documents, qc }: { caseId: string; userId: string; documents: any[]; qc: any }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", document_type: "", file_url: "" });
@@ -321,7 +321,7 @@ function TabDocuments({ caseId, userId, documents, qc }: { caseId: string; userI
       {documents.length === 0 ? <EmptyState icon={FileText} text="No documents" /> : <div className="space-y-2">{documents.map((d: any) => (
         <div key={d.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
           <FileText className="w-5 h-5 text-primary shrink-0" />
-          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{d.name}</p><p className="text-xs text-muted-foreground">{d.category || "General"} ΓÇó {format(new Date(d.created_at), "dd MMM yyyy")}</p></div>
+          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{d.name}</p><p className="text-xs text-muted-foreground">{d.category || "General"} • {format(new Date(d.created_at), "dd MMM yyyy")}</p></div>
           {d.file_url && <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View</a>}
           <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(d)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
         </div>
@@ -332,7 +332,7 @@ function TabDocuments({ caseId, userId, documents, qc }: { caseId: string; userI
           <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
           <div className="grid grid-cols-2 gap-3"><div><Label>Document Type</Label><Input value={form.document_type} onChange={e => setForm(p => ({ ...p, document_type: e.target.value }))} placeholder="e.g. Affidavit, Petition" /></div><div><Label>File URL</Label><Input value={form.file_url} onChange={e => setForm(p => ({ ...p, file_url: e.target.value }))} placeholder="https://..." /></div></div>
           <CloudinaryUpload label="Upload Document (PDF, DOCX, Image)" onUpload={(url, name) => setForm(p => ({ ...p, file_url: url, title: p.title || name }))} />
-          {form.file_url && <p className="text-xs text-emerald-600 truncate">Γ£ô File: {form.file_url}</p>}
+          {form.file_url && <p className="text-xs text-emerald-600 truncate">✓ File: {form.file_url}</p>}
           <Button onClick={() => save.mutate()} disabled={!form.title || save.isPending} className="w-full">{save.isPending ? "Saving..." : editId ? "Update" : "Add Document"}</Button>
         </div>
       </DialogContent></Dialog>
@@ -340,9 +340,9 @@ function TabDocuments({ caseId, userId, documents, qc }: { caseId: string; userI
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// TAB: Invoices ΓÇö FULL CRUD
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
+// TAB: Invoices — FULL CRUD
+// ══════════════════════════════════════════════════════════════
 function TabInvoices({ caseId, userId, invoices, qc }: { caseId: string; userId: string; invoices: any[]; qc: any }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ invoice_number: "", amount: "", tax: "0", total: "", status: "draft", due_date: "", notes: "" });
@@ -395,9 +395,9 @@ function TabInvoices({ caseId, userId, invoices, qc }: { caseId: string; userId:
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// TAB: Expenses ΓÇö FULL CRUD
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
+// TAB: Expenses — FULL CRUD
+// ══════════════════════════════════════════════════════════════
 function TabExpenses({ caseId, userId, expenses, qc }: { caseId: string; userId: string; expenses: any[]; qc: any }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", amount: "", category: "", expense_date: new Date().toISOString().slice(0, 10) });
@@ -422,7 +422,7 @@ function TabExpenses({ caseId, userId, expenses, qc }: { caseId: string; userId:
       {expenses.length === 0 ? <EmptyState icon={DollarSign} text="No expenses" /> : <div className="space-y-2">{expenses.map((e: any) => (
         <div key={e.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
           <DollarSign className="w-5 h-5 text-orange-500 shrink-0" />
-          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{e.title}</p><p className="text-xs text-muted-foreground">{e.category || "General"} ΓÇó {e.expense_date ? format(new Date(e.expense_date), "dd MMM yyyy") : "ΓÇö"}</p></div>
+          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{e.title}</p><p className="text-xs text-muted-foreground">{e.category || "General"} • {e.expense_date ? format(new Date(e.expense_date), "dd MMM yyyy") : "—"}</p></div>
           <p className="text-sm font-bold shrink-0">{CURRENCY}{e.amount}</p>
           <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(e)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(e.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
         </div>
@@ -439,9 +439,9 @@ function TabExpenses({ caseId, userId, expenses, qc }: { caseId: string; userId:
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// TAB: Notes ΓÇö CRUD via communication_logs
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
+// TAB: Notes — CRUD via communication_logs
+// ══════════════════════════════════════════════════════════════
 function TabNotes({ caseId, userId, caseData, qc }: { caseId: string; userId: string; caseData: any; qc: any }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ summary: "", notes: "", type: "other" as string });
@@ -495,11 +495,11 @@ function TabNotes({ caseId, userId, caseData, qc }: { caseId: string; userId: st
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
 // TAB: Notify to Clients (placeholder with action button)
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// TAB: Notify to Clients ΓÇö Hearing Reminders
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
+// TAB: Notify to Clients — Hearing Reminders
+// ══════════════════════════════════════════════════════════════
 function TabNotify({ caseId, userId, caseData, qc }: { caseId: string; userId: string; caseData: any; qc: any }) {
   const { data: reminders = [] } = useQuery({
     queryKey: ["case-reminders", caseId],
@@ -586,8 +586,8 @@ function TabNotify({ caseId, userId, caseData, qc }: { caseId: string; userId: s
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  Hearing: {r.hearing_date} ΓÇó Remind {r.remind_days_before} day(s) before
-                  {r.is_dismissed && " ΓÇó Dismissed"}
+                  Hearing: {r.hearing_date} • Remind {r.remind_days_before} day(s) before
+                  {r.is_dismissed && " • Dismissed"}
                 </p>
               </div>
               {!r.is_dismissed && (
@@ -607,9 +607,9 @@ function TabNotify({ caseId, userId, caseData, qc }: { caseId: string; userId: s
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// TAB: Related Judgments ΓÇö FULL CRUD
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
+// TAB: Related Judgments — FULL CRUD
+// ══════════════════════════════════════════════════════════════
 function TabJudgments({ caseId, userId, qc }: { caseId: string; userId: string; qc: any }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", citation: "", court: "", year: "", summary: "", url: "", relevance: "" });
@@ -679,7 +679,7 @@ function TabJudgments({ caseId, userId, qc }: { caseId: string; userId: string; 
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{editId ? "Edit Judgment" : "Link Judgment / Precedent"}</DialogTitle></DialogHeader>
           <div className="grid gap-3 py-3">
-            <div><Label>Case Title / Judgment Name *</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Cheque Dishonour ΓÇö 138 NI Act" /></div>
+            <div><Label>Case Title / Judgment Name *</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Cheque Dishonour — 138 NI Act" /></div>
             <div className="grid grid-cols-3 gap-3">
               <div><Label>Citation</Label><Input value={form.citation} onChange={e => setForm(p => ({ ...p, citation: e.target.value }))} placeholder="e.g. AIR 2020 SC 123" /></div>
               <div><Label>Court</Label><Input value={form.court} onChange={e => setForm(p => ({ ...p, court: e.target.value }))} placeholder="e.g. Supreme Court" /></div>
@@ -696,9 +696,9 @@ function TabJudgments({ caseId, userId, qc }: { caseId: string; userId: string; 
   );
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
 // TAB: AI Document Drafting
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ══════════════════════════════════════════════════════════════
 function TabTimeEntries({ caseId, userId, caseData, qc }: { caseId: string; userId: string; caseData: any; qc: any }) {
   const { getActiveConfig, getAllConfigs, hasActiveKey, totalConfiguredKeys } = useAIConfig();
   const [docType, setDocType] = useState("adjournment");
@@ -785,7 +785,7 @@ Notes: ${caseData.case_notes_1 || ""} ${caseData.case_notes_2 || ""}
 
       {hasActiveKey && totalConfiguredKeys > 1 && (
         <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-lg text-xs">
-          <span className="font-bold text-emerald-700 dark:text-emerald-300">≡ƒ¢í∩╕Å Failover Active:</span>
+          <span className="font-bold text-emerald-700 dark:text-emerald-300">🛡️ Failover Active:</span>
           <span className="text-emerald-600 dark:text-emerald-400 ml-1">{totalConfiguredKeys} API keys configured. If one fails, system auto-switches to next available.</span>
         </div>
       )}
@@ -814,9 +814,9 @@ Notes: ${caseData.case_notes_1 || ""} ${caseData.case_notes_2 || ""}
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
             {[
               ["Case No.", caseData.case_number],
-              ["Court", caseData.court_name || "ΓÇö"],
-              ["Next Hearing", caseData.next_hearing_date || "ΓÇö"],
-              ["Stage", caseData.case_stage || "ΓÇö"],
+              ["Court", caseData.court_name || "—"],
+              ["Next Hearing", caseData.next_hearing_date || "—"],
+              ["Stage", caseData.case_stage || "—"],
             ].map(([k, v]) => (
               <div key={k} className="flex gap-2">
                 <span className="text-[11px] text-muted-foreground w-24 shrink-0">{k}:</span>
@@ -828,7 +828,7 @@ Notes: ${caseData.case_notes_1 || ""} ${caseData.case_notes_2 || ""}
 
         <Button onClick={handleGenerate} disabled={generating || !hasActiveKey} className="w-full" size="lg">
           {generating ? (
-            <><span className="animate-spin mr-2">Γƒ│</span>Drafting document...</>
+            <><span className="animate-spin mr-2">⟳</span>Drafting document...</>
           ) : (
             <><Sparkles className="w-4 h-4 mr-2" />Generate {DOC_TYPES.find(d => d.id === docType)?.label}</>
           )}
@@ -845,13 +845,13 @@ Notes: ${caseData.case_notes_1 || ""} ${caseData.case_notes_2 || ""}
                 {copied ? <><Check className="w-3.5 h-3.5 mr-1 text-emerald-500" />Copied</> : "Copy"}
               </Button>
               <Button variant="outline" size="sm" onClick={() => handlePrintDoc(generatedDoc, caseData)}>
-                ≡ƒû¿∩╕Å Print
+                🖨️ Print
               </Button>
               <Button variant="outline" size="sm" onClick={() => handleDownloadPDF(generatedDoc, caseData)}>
-                ≡ƒôä PDF
+                📄 PDF
               </Button>
               <Button variant="outline" size="sm" onClick={() => handleDownloadWord(generatedDoc, caseData)}>
-                ≡ƒô¥ Word
+                📝 Word
               </Button>
             </div>
           </div>
@@ -864,7 +864,7 @@ Notes: ${caseData.case_notes_1 || ""} ${caseData.case_notes_2 || ""}
   );
 }
 
-// ΓöÇΓöÇ Print Document ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Print Document ────────────────────────────────────────────────────
 function handlePrintDoc(content: string, caseData: any) {
   const printWindow = window.open("", "_blank");
   if (!printWindow) { toast.error("Popup blocked. Allow popups to print."); return; }
@@ -878,7 +878,7 @@ function handlePrintDoc(content: string, caseData: any) {
   printWindow.document.close();
 }
 
-// ΓöÇΓöÇ Download as PDF ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Download as PDF ───────────────────────────────────────────────────
 async function handleDownloadPDF(content: string, caseData: any) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -912,7 +912,7 @@ async function handleDownloadPDF(content: string, caseData: any) {
   toast.success("PDF downloaded");
 }
 
-// ΓöÇΓöÇ Download as Word (.doc) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Download as Word (.doc) ───────────────────────────────────────────
 function handleDownloadWord(content: string, caseData: any) {
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head><meta charset="utf-8"><title>${caseData.case_number}</title>

@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Search, Download, AlertTriangle } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ export function OverduesList({ invoices }: Props) {
             <AlertTriangle className="w-4 h-4 text-destructive" />
             <p className="text-xs font-semibold text-muted-foreground uppercase">Total Overdue Amount</p>
           </div>
-          <p className="text-2xl font-bold text-destructive">Γé╣{totalOverdue.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
+          <p className="text-2xl font-bold text-destructive">₹{totalOverdue.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Overdue Invoices</p>
@@ -92,15 +92,15 @@ export function OverduesList({ invoices }: Props) {
             </thead>
             <tbody>
               {paginatedItems.length === 0 ? (
-                <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No overdue invoices ≡ƒÄë</td></tr>
+                <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No overdue invoices 🎉</td></tr>
               ) : paginatedItems.map(inv => {
                 const days = inv.due_date ? daysOverdue(inv.due_date) : 0;
                 return (
                   <tr key={inv.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                     <td className="py-3 px-4 text-sm font-mono">{inv.invoice_number}</td>
-                    <td className="py-3 px-4 text-sm">{(inv as any).clients?.name || "ΓÇö"}</td>
-                    <td className="py-3 px-4 text-sm text-right font-medium">Γé╣{Number(inv.total_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-                    <td className="py-3 px-4 text-sm">{inv.due_date ? format(new Date(inv.due_date), "PP") : "ΓÇö"}</td>
+                    <td className="py-3 px-4 text-sm">{(inv as any).clients?.name || "—"}</td>
+                    <td className="py-3 px-4 text-sm text-right font-medium">₹{Number(inv.total_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                    <td className="py-3 px-4 text-sm">{inv.due_date ? format(new Date(inv.due_date), "PP") : "—"}</td>
                     <td className="py-3 px-4 text-sm text-center font-semibold">{days}</td>
                     <td className="py-3 px-4">
                       <Badge variant={urgency(days) as any}>
