@@ -1,8 +1,8 @@
-﻿import { useState, useEffect, createContext, ReactNode } from "react";
+import { useState, useEffect, createContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { UserRole, UserProfile } from "./auth.types";
 
-// Minimal session shape used by the MySQL client (compatible with Supabase shape)
+// Minimal session shape (subset of Supabase's Session)
 export interface AppSession {
   access_token: string;
   refresh_token: string;

@@ -28,7 +28,7 @@ export function extractFilePath(pathOrUrl: string): string {
 
 /**
  * Get a URL for a file.
- * Uses the PHP storage layer (mysqlClient shim), which returns a public /uploads/ URL.
+ * Creates a 1-hour signed URL from Supabase Storage.
  * Returns null on failure.
  */
 export async function getSignedFileUrl(pathOrUrl: string): Promise<string | null> {
