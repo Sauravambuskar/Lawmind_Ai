@@ -867,7 +867,7 @@ export default function QuickDocsPage() {
             </CardHeader>
             <CardContent className="space-y-3 max-h-[65vh] overflow-y-auto custom-scrollbar">
               {!template ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">\u2190 Select a template to begin</p>
+                <p className="text-sm text-muted-foreground py-8 text-center">← Select a template to begin</p>
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-3">
@@ -962,7 +962,7 @@ export default function QuickDocsPage() {
                 <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
                   <FileText className="w-12 h-12 text-muted-foreground opacity-30 mb-3" />
                   <p className="text-sm font-medium text-muted-foreground">Generated document will appear here</p>
-                  <p className="text-xs text-muted-foreground mt-1">Select template \u2192 Fill details \u2192 Generate</p>
+                  <p className="text-xs text-muted-foreground mt-1">Select template → Fill details → Generate</p>
                 </div>
               )}
             </CardContent>
