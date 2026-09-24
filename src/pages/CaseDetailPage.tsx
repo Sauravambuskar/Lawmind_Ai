@@ -20,7 +20,7 @@ import {
   Sparkles, ExternalLink, BookOpen, AlarmClock, Check, X
 } from "lucide-react";
 import { CASE_STATUS_CONFIG, CASE_STATUSES, type CaseStatus, CURRENCY } from "@/lib/constants";
-import { CloudinaryUpload } from "@/components/CloudinaryUpload";
+import { R2Upload } from "@/components/R2Upload";
 import { restGet, restGetAll, restGetOne, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { sendAIMessageWithFailover } from "@/lib/ai-providers";
@@ -331,8 +331,7 @@ function TabDocuments({ caseId, userId, documents, qc }: { caseId: string; userI
           <div><Label>Title *</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} /></div>
           <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
           <div className="grid grid-cols-2 gap-3"><div><Label>Document Type</Label><Input value={form.document_type} onChange={e => setForm(p => ({ ...p, document_type: e.target.value }))} placeholder="e.g. Affidavit, Petition" /></div><div><Label>File URL</Label><Input value={form.file_url} onChange={e => setForm(p => ({ ...p, file_url: e.target.value }))} placeholder="https://..." /></div></div>
-          <CloudinaryUpload label="Upload Document (PDF, DOCX, Image)" onUpload={(url, name) => setForm(p => ({ ...p, file_url: url, title: p.title || name }))} />
-          {form.file_url && <p className="text-xs text-emerald-600 truncate">✓ File: {form.file_url}</p>}
+          <R2Upload folder="case-documents" value={form.file_url} maxSizeMB={50} label="Upload Document (PDF, DOCX, Image)" onUpload={(url, name) => setForm(p => ({ ...p, file_url: url, title: p.title || name }))} />
           <Button onClick={() => save.mutate()} disabled={!form.title || save.isPending} className="w-full">{save.isPending ? "Saving..." : editId ? "Update" : "Add Document"}</Button>
         </div>
       </DialogContent></Dialog>

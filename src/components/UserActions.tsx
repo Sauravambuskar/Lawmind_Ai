@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,7 +10,7 @@ import { restUpdate } from "@/lib/restClient";
 import { APP_SECTIONS, DEFAULT_PERMISSIONS, type SectionId } from "@/lib/permissionStore";
 import type { UserProfile } from "@/hooks/auth.types";
 
-/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Edit User Modal ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+/* ═══════════════ Edit User Modal ═══════════════ */
 
 interface EditUserModalProps {
   member: UserProfile;
@@ -137,7 +137,7 @@ export function EditUserModal({ member, open, onOpenChange, onSuccess }: EditUse
   );
 }
 
-/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Password Reset ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+/* ═══════════════ Password Reset ═══════════════ */
 
 interface ResetPasswordModalProps {
   member: UserProfile;
@@ -191,7 +191,7 @@ export function ResetPasswordModal({ member, open, onOpenChange }: ResetPassword
   );
 }
 
-/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ Delete User Confirmation ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+/* ═══════════════ Delete User Confirmation ═══════════════ */
 
 interface DeleteUserModalProps {
   member: UserProfile;

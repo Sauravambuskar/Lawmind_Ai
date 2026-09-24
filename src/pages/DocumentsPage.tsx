@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Pencil, FileText, Download, Files, Eye, X, ExternalLink } from "lucide-react";
@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { usePagination } from "@/hooks/usePagination";
 import { TablePagination } from "@/components/TablePagination";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
-import { CloudinaryUpload } from "@/components/CloudinaryUpload";
+import { R2Upload } from "@/components/R2Upload";
 import { PageLoader } from "@/components/PageLoader";
 import { exportToCSV } from "@/lib/export";
 
@@ -38,7 +38,7 @@ function getFileType(url: string): "pdf" | "image" | "other" {
   return "other";
 }
 
-// ΓöÇΓöÇ Document Preview Dialog ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Document Preview Dialog ───────────────────────────────────────────────
 function DocumentPreview({ doc, onClose }: { doc: DocumentRow; onClose: () => void }) {
   const fileType = doc.file_url ? getFileType(doc.file_url) : "other";
 
@@ -220,7 +220,7 @@ export default function DocumentsPage() {
                     </Select>
                   </div>
                 </div>
-                <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">File Attachment</Label><CloudinaryUpload onUpload={(url) => setForm(p => ({ ...p, file_url: url }))} label="Upload Document" maxSizeMB={20} /></div>
+                <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">File Attachment</Label><R2Upload folder="documents" value={form.file_url} onUpload={(url) => setForm(p => ({ ...p, file_url: url }))} label="Upload Document" maxSizeMB={50} /></div>
               </div>
               <Button onClick={() => saveMutation.mutate()} disabled={!form.title || saveMutation.isPending} className="w-full">
                 {saveMutation.isPending ? "Saving..." : editId ? "Update Document" : "Upload Document"}

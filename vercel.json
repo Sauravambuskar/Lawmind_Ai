@@ -6,6 +6,7 @@
     }
   },
   "rewrites": [
-    { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
+    { "source": "/files/:path*", "destination": "/api/r2-file?key=:path*" },
+    { "source": "/((?!api/|assets/|files/).*)", "destination": "/index.html" }
   ]
 }

@@ -16,11 +16,12 @@ import mammoth from "mammoth";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CloudinaryUpload } from "@/components/CloudinaryUpload";
+import { R2Upload } from "@/components/R2Upload";
 import { getSignedFileUrl } from "@/lib/storage";
 
 async function resolveDocUrl(filename: string): Promise<string | null> {
   if (/^https?:\/\//.test(filename)) return filename;
+  if (filename.startsWith("/")) return filename;
   if (filename.includes("/")) return getSignedFileUrl(filename);
   return `/impdocs/${encodeURIComponent(filename)}`;
 }
@@ -237,13 +238,15 @@ const ImpDocsPage = () => {
                 </div>
                 <div className="grid gap-2">
                   <Label>File Upload</Label>
-                  <CloudinaryUpload 
+                  <R2Upload
+                    folder="important-docs"
+                    value={newDoc.filename}
                     onUpload={(url, filename) => {
                       const ext = filename.split(".").pop()?.toUpperCase() || "";
                       setNewDoc(p => ({ ...p, filename: url, type: ext }));
                     }}
                     label="Upload Document"
-                    maxSizeMB={20}
+                    maxSizeMB={50}
                   />
                 </div>
                 <div className="flex items-start gap-2 bg-amber-50 p-3 rounded-xl border border-amber-100 mt-2">

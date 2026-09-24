@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,7 +106,7 @@ export default function EmailSettingsPage() {
   const handleTestEmail = async () => {
     if (!testEmail) { toast.error("Enter a test email address"); return; }
     setTesting(true);
-    const template = getGeneralNotification("Test Email from LawMind AI", "This is a test email to verify your email configuration is working correctly.\n\nΓ£à If you received this, your email setup is complete!");
+    const template = getGeneralNotification("Test Email from LawMind AI", "This is a test email to verify your email configuration is working correctly.\n\n✅ If you received this, your email setup is complete!");
     template.to_email = testEmail;
     const result = await sendEmail(template);
     setTesting(false);
@@ -141,7 +141,7 @@ export default function EmailSettingsPage() {
 
               {form.provider === "emailjs" && (
                 <div className="space-y-3 p-4 bg-muted/30 border border-border rounded-lg">
-                  <p className="text-xs text-muted-foreground">Setup: Go to <a href="https://emailjs.com" target="_blank" className="text-primary hover:underline">emailjs.com</a> ΓåÆ Create account ΓåÆ Add Service ΓåÆ Create Template ΓåÆ Copy IDs below</p>
+                  <p className="text-xs text-muted-foreground">Setup: Go to <a href="https://emailjs.com" target="_blank" className="text-primary hover:underline">emailjs.com</a> → Create account → Add Service → Create Template → Copy IDs below</p>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div><Label>Service ID</Label><Input value={form.emailjs_service_id} onChange={e => setForm(p => ({ ...p, emailjs_service_id: e.target.value }))} placeholder="service_xxx" /></div>
                     <div><Label>Template ID</Label><Input value={form.emailjs_template_id} onChange={e => setForm(p => ({ ...p, emailjs_template_id: e.target.value }))} placeholder="template_xxx" /></div>
@@ -152,7 +152,7 @@ export default function EmailSettingsPage() {
 
               {form.provider === "smtp" && (
                 <div className="space-y-3 p-4 bg-muted/30 border border-border rounded-lg">
-                  <p className="text-xs text-amber-600 font-medium">ΓÜá∩╕Å SMTP sending requires a server-side Edge Function. Settings saved here for future use.</p>
+                  <p className="text-xs text-amber-600 font-medium">⚠️ SMTP sending requires a server-side Edge Function. Settings saved here for future use.</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label>SMTP Host</Label><Input value={form.smtp_host} onChange={e => setForm(p => ({ ...p, smtp_host: e.target.value }))} placeholder="smtp.gmail.com" /></div>
                     <div><Label>SMTP Port</Label><Input value={form.smtp_port} onChange={e => setForm(p => ({ ...p, smtp_port: e.target.value }))} placeholder="587" /></div>

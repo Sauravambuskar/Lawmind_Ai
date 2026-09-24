@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
-import { Upload, FileCheck, Loader2, AlertCircle, X } from "lucide-react";
+import { Upload, FileCheck, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { uploadToR2, isR2Configured, formatFileSize } from "@/lib/r2Upload";
+import { uploadToR2, formatFileSize, type R2Folder } from "@/lib/r2Upload";
 import { toast } from "sonner";
 
 interface R2UploadProps {
@@ -10,7 +10,7 @@ interface R2UploadProps {
   accept?: string;
   label?: string;
   maxSizeMB?: number;
-  folder?: string;
+  folder?: R2Folder;
 }
 
 /**
@@ -32,12 +32,6 @@ export function R2Upload({
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Check if R2 is configured
-    if (!isR2Configured()) {
-      toast.error("R2 storage not configured. Add credentials in .env");
-      return;
-    }
 
     // Size check
     if (file.size > maxSizeMB * 1024 * 1024) {
@@ -66,15 +60,6 @@ export function R2Upload({
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  if (!isR2Configured()) {
-    return (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 bg-muted/30 rounded-lg border border-border">
-        <AlertCircle className="w-4 h-4 text-amber-500" />
-        <span>R2 storage not configured. Add credentials to .env</span>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-2">
       <input 
@@ -83,7 +68,6 @@ export function R2Upload({
         accept={accept} 
         onChange={handleFile} 
         className="hidden" 
-        id="r2-file-upload" 
       />
       
       {value || uploaded ? (
