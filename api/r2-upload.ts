@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { ALLOWED_FOLDERS, R2_BUCKET_NAME, s3Client } from './_r2';
+import { ALLOWED_FOLDERS, R2_BUCKET_NAME, s3Client } from './_r2.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
