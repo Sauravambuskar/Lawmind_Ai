@@ -22,20 +22,20 @@ export default function AuditLogsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("audit_logs")
-        .select("*, profiles(full_name, email)")
+        .select("*")
         .order("created_at", { ascending: false })
         .limit(1000);
-      
+
       if (error) {
         if (error.code === "PGRST205") return []; // Table doesn't exist
         throw error;
       }
-      return data || [];
+      // audit_logs.user_id has no FK to profiles, so PostgREST can't embed it.
+      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, email");
+      const byUser = new Map((profiles || []).map((p) => [p.user_id, p]));
+      return (data || []).map((l) => ({ ...l, profiles: byUser.get(l.user_id) ?? null }));
     },
   });
-
-  const showLoader = useMinLoader(isLoading);
-  if (showLoader) return <PageLoader />;
 
   // Extract unique tables for the filter
   const tables = Array.from(new Set(logs.map(l => l.table_name))).sort();
@@ -50,6 +50,9 @@ export default function AuditLogsPage() {
     .filter(l => tableFilter === "all" || l.table_name === tableFilter);
 
   const { paginatedItems, currentPage, totalPages, totalItems, startIndex, nextPage, prevPage, goToPage } = usePagination(filteredLogs, 15);
+
+  const showLoader = useMinLoader(isLoading);
+  if (showLoader) return <PageLoader />;
 
   const actionColor = (action: string) => {
     switch (action) {

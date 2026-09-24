@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Pencil, StickyNote } from "lucide-react";
@@ -30,9 +30,12 @@ export default function NotesPage() {
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ["notes"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("notes").select("*, cases(title, case_number), clients(name)").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("notes").select("*, cases(title, case_number)").order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      // notes.client_id has no FK to clients, so PostgREST can't embed it.
+      const { data: clientRows } = await supabase.from("clients").select("id, name");
+      const clientById = new Map((clientRows || []).map((c) => [c.id, c]));
+      return data.map((n) => ({ ...n, clients: n.client_id ? clientById.get(n.client_id) ?? null : null }));
     },
   });
 

@@ -33,9 +33,12 @@ export default function AdvicePage() {
   const { data: advice = [], isLoading } = useQuery({
     queryKey: ["advice"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("advice").select("*, clients(name), cases(title)").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("advice").select("*, clients(name)").order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      // advice.case_id has no FK to cases, so PostgREST can't embed it.
+      const { data: caseRows } = await supabase.from("cases").select("id, title");
+      const caseById = new Map((caseRows || []).map((c) => [c.id, c]));
+      return data.map((a) => ({ ...a, cases: a.case_id ? caseById.get(a.case_id) ?? null : null }));
     },
   });
 

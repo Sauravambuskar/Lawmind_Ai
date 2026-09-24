@@ -18,7 +18,7 @@ export default function HearingCalendarPage() {
       const caseHearings = await restGetAll<any>("cases?select=id,case_number,title,next_hearing_date,court_name,case_stage&next_hearing_date=not.is.null&order=next_hearing_date.asc");
 
       // 2. Fetch hearings table entries
-      const hearingsData = await restGet<any>("hearings?select=id,case_id,hearing_date,court_name,purpose,status&order=hearing_date.asc").catch(() => []);
+      const hearingsData = await restGet<any>("hearings?select=id,case_id,hearing_date,court_name,title,status&order=hearing_date.asc").catch(() => []);
 
       // 3. Merge both sources (avoid duplicates by using a map keyed by date+case)
       const all: any[] = [];
@@ -42,8 +42,8 @@ export default function HearingCalendarPage() {
           seen.add(key);
           all.push({
             id: h.case_id || h.id,
-            case_number: h.purpose || "Hearing",
-            title: h.purpose || "Scheduled Hearing",
+            case_number: h.title || "Hearing",
+            title: h.title || "Scheduled Hearing",
             next_hearing_date: dateStr,
             court_name: h.court_name,
             case_stage: h.status,
