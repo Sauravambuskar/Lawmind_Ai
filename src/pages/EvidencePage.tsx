@@ -18,6 +18,7 @@ import { usePagination } from "@/hooks/usePagination";
 import { TablePagination } from "@/components/TablePagination";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { R2Upload } from "@/components/R2Upload";
+import { deleteR2File } from "@/lib/r2Upload";
 import { PageLoader } from "@/components/PageLoader";
 import { exportToCSV } from "@/lib/export";
 
@@ -71,9 +72,10 @@ export default function EvidencePage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("evidence").delete().eq("id", id);
+    mutationFn: async (row: { id: string; file_url?: string | null }) => {
+      const { error } = await supabase.from("evidence").delete().eq("id", row.id);
       if (error) throw error;
+      await deleteR2File(row.file_url);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["evidence"] });
@@ -283,7 +285,7 @@ export default function EvidencePage() {
                       <Button variant="ghost" size="icon" onClick={() => openEdit(e)} className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors">
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <DeleteConfirm onConfirm={() => deleteMutation.mutate(e.id)} />
+                      <DeleteConfirm onConfirm={() => deleteMutation.mutate(e)} />
                     </div>
                   </td>
                 </tr>

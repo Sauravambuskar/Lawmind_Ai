@@ -6,9 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Download, Sparkles, FileSignature, ScrollText, Pencil, Copy } from "lucide-react";
+import { FileText, Download, Sparkles, FileSignature, ScrollText, Pencil, Copy, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { restInsert } from "@/lib/restClient";
+import { useAuth } from "@/hooks/useAuth";
+import { uploadToR2 } from "@/lib/r2Upload";
 
 // ── Template Definitions ──────────────────────────────────────────────
 interface TemplateField {
@@ -671,10 +675,11 @@ export default function QuickDocsPage() {
     toast.success("Copied to clipboard!");
   };
 
-  const handleDownload = () => {
-    const content = isEditing ? editedDoc : (generatedDoc || "");
-    if (!content) return;
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const pdfFileName = () => `${template?.label || "document"}.pdf`;
 
+  const buildPdf = (content: string) => {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -775,9 +780,36 @@ export default function QuickDocsPage() {
       doc.setTextColor(0);
     }
 
-    doc.save(`${template?.label || "document"}.pdf`);
+    return doc;
+  };
+
+  const handleDownload = () => {
+    const content = isEditing ? editedDoc : (generatedDoc || "");
+    if (!content) return;
+    buildPdf(content).save(pdfFileName());
     toast.success("PDF downloaded!");
   };
+
+  const saveToDocuments = useMutation({
+    mutationFn: async () => {
+      const content = isEditing ? editedDoc : (generatedDoc || "");
+      if (!content) throw new Error("Generate the document first");
+      const pdf = buildPdf(content).output("blob");
+      const { url } = await uploadToR2(new File([pdf], pdfFileName(), { type: "application/pdf" }), "documents");
+      await restInsert("documents", {
+        name: template?.label || "Quick document",
+        description: `Generated from Quick Docs on ${new Date().toLocaleDateString("en-IN")}`,
+        category: "Quick Doc",
+        file_url: url,
+        created_by: user!.id,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      toast.success("PDF saved to Documents");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not save document"),
+  });
 
   const categories = [
     { key: "criminal", label: "Criminal" },
@@ -905,6 +937,9 @@ export default function QuickDocsPage() {
                     </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleDownload} title="Download">
                       <Download className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => saveToDocuments.mutate()} disabled={saveToDocuments.isPending} title="Save to Documents">
+                      {saveToDocuments.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                     </Button>
                   </div>
                 )}

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { restInsert } from "@/lib/restClient";
+import { R2Upload } from "@/components/R2Upload";
 import { toast } from "sonner";
 import { usePagination } from "@/hooks/usePagination";
 import { TablePagination } from "@/components/TablePagination";
@@ -33,6 +34,7 @@ export function PaymentsList({ invoices, payments }: Props) {
     payment_method: "bank_transfer",
     reference_no: "",
     notes: "",
+    receipt_url: "",
   });
 
   const unpaidInvoices = invoices.filter(inv => inv.status !== "paid" && inv.status !== "cancelled");
@@ -58,6 +60,8 @@ export function PaymentsList({ invoices, payments }: Props) {
         payment_method: form.payment_method,
         reference_no: form.reference_no || null,
         notes: form.notes || null,
+        // Only sent when attached, so payments still record before the receipt_url column exists.
+        ...(form.receipt_url ? { receipt_url: form.receipt_url } : {}),
         created_by: user!.id,
       }),
     onSuccess: () => {
@@ -83,6 +87,7 @@ export function PaymentsList({ invoices, payments }: Props) {
       payment_method: "bank_transfer",
       reference_no: "",
       notes: "",
+      receipt_url: "",
     });
   };
 
@@ -193,7 +198,11 @@ export function PaymentsList({ invoices, payments }: Props) {
                   <td className="py-3 px-4 text-sm text-muted-foreground">{p.reference_no || "—"}</td>
                   <td className="py-3 px-4 text-sm text-right font-bold text-emerald-500">{CURRENCY}{Number(p.amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
                   <td className="py-3 px-4 text-right">
-                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => window.print()}>Print</Button>
+                    {p.receipt_url ? (
+                      <a href={p.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-primary hover:underline">View</a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -250,6 +259,18 @@ export function PaymentsList({ invoices, payments }: Props) {
               </div>
             </div>
             
+            <div className="grid gap-2">
+              <Label>Payment Proof (Optional)</Label>
+              <R2Upload
+                folder="receipts"
+                value={form.receipt_url}
+                onUpload={(url) => setForm(f => ({ ...f, receipt_url: url }))}
+                label="Attach cheque / UPI screenshot"
+                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                maxSizeMB={10}
+              />
+            </div>
+
             <div className="grid gap-2">
               <Label>Notes (Optional)</Label>
               <Textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="bg-muted/50" placeholder="Any additional details..." />

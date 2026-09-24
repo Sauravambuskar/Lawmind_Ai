@@ -1,3 +1,4 @@
+import type { VercelRequest } from '@vercel/node';
 import { S3Client } from '@aws-sdk/client-s3';
 
 export const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || '';
@@ -22,4 +23,19 @@ export const s3Client = new S3Client({
 export function isAllowedKey(key: string): boolean {
   if (!key || key.includes('..') || key.startsWith('/')) return false;
   return ALLOWED_FOLDERS.some((f) => key.startsWith(`${f}/`));
+}
+
+/** Returns the Supabase user id for the request's bearer token, or null. */
+export async function getUserId(req: VercelRequest): Promise<string | null> {
+  const auth = req.headers.authorization;
+  const url = process.env.VITE_SUPABASE_URL;
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+  if (!auth?.startsWith('Bearer ') || !url || !anonKey) return null;
+
+  const res = await fetch(`${url}/auth/v1/user`, {
+    headers: { apikey: anonKey, Authorization: auth },
+  });
+  if (!res.ok) return null;
+  const user = await res.json();
+  return user?.id ?? null;
 }

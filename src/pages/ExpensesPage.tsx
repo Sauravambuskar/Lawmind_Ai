@@ -16,6 +16,7 @@ import { TablePagination } from "@/components/TablePagination";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { exportToCSV } from "@/lib/export";
 import { R2Upload } from "@/components/R2Upload";
+import { deleteR2File } from "@/lib/r2Upload";
 import { PageLoader } from "@/components/PageLoader";
 
 const emptyForm = { title: "", description: "", amount: "", category: "", case_id: "", expense_date: "", receipt_url: "" };
@@ -66,7 +67,10 @@ export default function ExpensesPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => restDelete("expenses", `id=eq.${id}`),
+    mutationFn: async (row: { id: string; receipt_url?: string | null }) => {
+      await restDelete("expenses", `id=eq.${row.id}`);
+      await deleteR2File(row.receipt_url);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); toast.success("Expense deleted"); },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete expense"),
   });
@@ -245,7 +249,7 @@ export default function ExpensesPage() {
                       <Button variant="ghost" size="icon" onClick={() => openEdit(e)} className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors">
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <DeleteConfirm onConfirm={() => deleteMutation.mutate(e.id)} />
+                      <DeleteConfirm onConfirm={() => deleteMutation.mutate(e)} />
                     </div>
                   </td>
                 </tr>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { restGetAll, restInsert } from "@/lib/restClient";
+import { uploadToR2 } from "@/lib/r2Upload";
 import { useAuth } from "@/hooks/useAuth";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { sendAIMessageWithFailover, PROVIDER_INFO } from "@/lib/ai-providers";
@@ -394,19 +395,23 @@ Response Format:
   // Save to supabase document center
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // documents uses name/category/created_by
+      const pdf = buildNoticePdf().output("blob");
+      const { url } = await uploadToR2(
+        new File([pdf], noticeFileName(), { type: "application/pdf" }),
+        "documents",
+      );
       await restInsert("documents", {
         name: `Notice: ${formData.clientName} vs ${formData.recipientName.split(",")[0]}`,
         description: `Ref: ${formData.refNo}. Outstanding: Rs. ${formData.outstandingAmount} @ ${formData.interestRate}. Notice Fee: Rs. ${formData.noticeCharges}. Period: ${formData.noticePeriod}. Info: ${formData.subject.slice(0, 100)}...`,
         category: "Notice",
         case_id: caseLink || null,
-        file_url: null,
+        file_url: url,
         created_by: user!.id,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
-      toast.success("Legal Notice successfully logged to Document Center!");
+      toast.success("Notice PDF saved to Documents");
     },
     onError: (e: unknown) => toast.error(`Database Error: ${e instanceof Error ? e.message : "unknown"}`)
   });
@@ -416,9 +421,10 @@ Response Format:
     window.print();
   };
 
-  // PDF Export handler
-  const handleExportPDF = () => {
-    try {
+  const noticeFileName = () =>
+    `legal_notice_${formData.clientName.replace(/\s+/g, "_").slice(0, 15)}.pdf`;
+
+  const buildNoticePdf = () => {
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -549,7 +555,13 @@ Response Format:
       const noteLines = doc.splitTextToSize(formData.disclaimer, width - 10);
       doc.text(noteLines, margin + 10, y);
 
-      doc.save(`legal_notice_${formData.clientName.replace(/\s+/g, "_").slice(0, 15)}.pdf`);
+      return doc;
+  };
+
+  // PDF Export handler
+  const handleExportPDF = () => {
+    try {
+      buildNoticePdf().save(noticeFileName());
       toast.success("PDF notice downloaded successfully");
     } catch (error) {
       console.error(error);

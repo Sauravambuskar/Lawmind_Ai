@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { CASE_STATUS_CONFIG, CASE_STATUSES, type CaseStatus, CURRENCY } from "@/lib/constants";
 import { R2Upload } from "@/components/R2Upload";
+import { DeleteConfirm } from "@/components/DeleteConfirm";
+import { deleteR2File } from "@/lib/r2Upload";
 import { restGet, restGetAll, restGetOne, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { sendAIMessageWithFailover } from "@/lib/ai-providers";
@@ -311,7 +313,7 @@ function TabDocuments({ caseId, userId, documents, qc }: { caseId: string; userI
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-documents", caseId] }); setOpen(false); setEditId(null); setForm({ title: "", description: "", document_type: "", file_url: "" }); toast.success(editId ? "Updated" : "Document added"); },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save document"),
   });
-  const del = useMutation({ mutationFn: (did: string) => restDelete("documents", `id=eq.${did}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-documents", caseId] }); toast.success("Deleted"); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete") });
+  const del = useMutation({ mutationFn: async (d: { id: string; file_url?: string | null }) => { await restDelete("documents", `id=eq.${d.id}`); await deleteR2File(d.file_url); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-documents", caseId] }); toast.success("Deleted"); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete") });
 
   const openEdit = (d: any) => { setEditId(d.id); setForm({ title: d.name || "", description: d.description || "", document_type: d.category || "", file_url: d.file_url || "" }); setOpen(true); };
 
@@ -323,7 +325,7 @@ function TabDocuments({ caseId, userId, documents, qc }: { caseId: string; userI
           <FileText className="w-5 h-5 text-primary shrink-0" />
           <div className="flex-1 min-w-0"><p className="text-sm font-medium">{d.name}</p><p className="text-xs text-muted-foreground">{d.category || "General"} • {format(new Date(d.created_at), "dd MMM yyyy")}</p></div>
           {d.file_url && <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View</a>}
-          <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(d)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
+          <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(d)}><Pencil className="w-3.5 h-3.5" /></Button><DeleteConfirm title="Delete this document?" description="The record and its uploaded file will be permanently removed." onConfirm={() => del.mutate(d)} /></div>
         </div>
       ))}</div>}
       <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>{editId ? "Edit Document" : "Add Document"}</DialogTitle></DialogHeader>
@@ -411,7 +413,7 @@ function TabExpenses({ caseId, userId, expenses, qc }: { caseId: string; userId:
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-expenses", caseId] }); setOpen(false); setEditId(null); setForm({ title: "", description: "", amount: "", category: "", expense_date: new Date().toISOString().slice(0, 10) }); toast.success(editId ? "Updated" : "Expense added"); },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save expense"),
   });
-  const del = useMutation({ mutationFn: (eid: string) => restDelete("expenses", `id=eq.${eid}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-expenses", caseId] }); toast.success("Deleted"); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete") });
+  const del = useMutation({ mutationFn: async (e: { id: string; receipt_url?: string | null }) => { await restDelete("expenses", `id=eq.${e.id}`); await deleteR2File(e.receipt_url); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-expenses", caseId] }); toast.success("Deleted"); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete") });
 
   const openEdit = (e: any) => { setEditId(e.id); setForm({ title: e.title || "", description: e.description || "", amount: String(e.amount || ""), category: e.category || "", expense_date: e.expense_date || "" }); setOpen(true); };
 
@@ -423,7 +425,7 @@ function TabExpenses({ caseId, userId, expenses, qc }: { caseId: string; userId:
           <DollarSign className="w-5 h-5 text-orange-500 shrink-0" />
           <div className="flex-1 min-w-0"><p className="text-sm font-medium">{e.title}</p><p className="text-xs text-muted-foreground">{e.category || "General"} • {e.expense_date ? format(new Date(e.expense_date), "dd MMM yyyy") : "—"}</p></div>
           <p className="text-sm font-bold shrink-0">{CURRENCY}{e.amount}</p>
-          <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(e)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(e.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
+          <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(e)}><Pencil className="w-3.5 h-3.5" /></Button><DeleteConfirm title="Delete this expense?" description="The expense and any attached receipt will be permanently removed." onConfirm={() => del.mutate(e)} /></div>
         </div>
       ))}</div>}
       <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>{editId ? "Edit Expense" : "Add Expense"}</DialogTitle></DialogHeader>
