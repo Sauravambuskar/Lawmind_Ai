@@ -26,6 +26,9 @@ import { deleteR2File } from "@/lib/r2Upload";
 import { restGet, restGetAll, restGetOne, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { sendAIMessageWithFailover } from "@/lib/ai-providers";
+import { CaseTasksPanel } from "@/components/tasks/CaseTasksPanel";
+import { ProgressBar } from "@/components/tasks/TaskBits";
+import { aggregateProgress, type TaskRow } from "@/lib/tasks";
 
 const TABS = [
   { id: "history", label: "Case History", icon: Clock },
@@ -54,7 +57,7 @@ export default function CaseDetailPage() {
     enabled: !!id,
   });
   const { data: hearings = [] } = useQuery({ queryKey: ["case-hearings", id], queryFn: () => restGetAll<any>(`hearings?select=*&case_id=eq.${id}&order=hearing_date.desc`), enabled: !!id });
-  const { data: tasks = [] } = useQuery({ queryKey: ["case-tasks", id], queryFn: () => restGetAll<any>(`tasks?select=*&case_id=eq.${id}&order=created_at.desc`), enabled: !!id });
+  const { data: tasks = [] } = useQuery({ queryKey: ["case-tasks", id], queryFn: () => restGetAll<TaskRow>(`tasks?select=*&case_id=eq.${id}&order=created_at.desc`), enabled: !!id });
   const { data: invoices = [] } = useQuery({ queryKey: ["case-invoices", id], queryFn: () => restGetAll<any>(`invoices?select=*&case_id=eq.${id}&order=created_at.desc`), enabled: !!id });
   const { data: expenses = [] } = useQuery({ queryKey: ["case-expenses", id], queryFn: () => restGetAll<any>(`expenses?select=*&case_id=eq.${id}&order=expense_date.desc`), enabled: !!id });
   const { data: documents = [] } = useQuery({ queryKey: ["case-documents", id], queryFn: () => restGetAll<any>(`documents?select=*&case_id=eq.${id}&order=created_at.desc`), enabled: !!id });
@@ -94,6 +97,13 @@ export default function CaseDetailPage() {
           <InfoField label="Disposed" value={caseData.disposed_date ? format(new Date(caseData.disposed_date), "dd/MM/yyyy") : null} />
           <InfoField label="Doc Size" value={caseData.document_size} />
         </div>
+        {tasks.length > 0 && (
+          <button onClick={() => setActiveTab("tasks")} className="w-full mt-4 pt-3 border-t border-border flex items-center gap-3 text-left group" title="Open case tasks">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider shrink-0 group-hover:text-primary">Work Progress</span>
+            <ProgressBar value={aggregateProgress(tasks) ?? 0} className="flex-1" />
+            <span className="text-xs text-muted-foreground shrink-0">{tasks.filter(t => t.status === "done").length}/{tasks.length} tasks</span>
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -106,7 +116,7 @@ export default function CaseDetailPage() {
         {activeTab === "notes" && <TabNotes caseId={id!} userId={user?.id || ""} caseData={caseData} qc={queryClient} />}
         {activeTab === "notify" && <TabNotify caseId={id!} userId={user?.id || ""} caseData={caseData} qc={queryClient} />}
         {activeTab === "judgments" && <TabJudgments caseId={id!} userId={user?.id || ""} qc={queryClient} />}
-        {activeTab === "tasks" && <TabTasks caseId={id!} userId={user?.id || ""} tasks={tasks} qc={queryClient} />}
+        {activeTab === "tasks" && <CaseTasksPanel caseId={id!} tasks={tasks} />}
         {activeTab === "appointments" && <TabAppointments caseId={id!} userId={user?.id || ""} hearings={hearings} qc={queryClient} />}
         {activeTab === "invoices" && <TabInvoices caseId={id!} userId={user?.id || ""} invoices={invoices} qc={queryClient} />}
         {activeTab === "expenses" && <TabExpenses caseId={id!} userId={user?.id || ""} expenses={expenses} qc={queryClient} />}
@@ -235,54 +245,6 @@ function TabAppointments({ caseId, userId, hearings, qc }: { caseId: string; use
           <div><Label>Purpose</Label><Input value={form.purpose} onChange={e => setForm(p => ({ ...p, purpose: e.target.value }))} placeholder="e.g. Evidence, Arguments, Order" /></div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} /></div>
           <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full">{save.isPending ? "Saving..." : editId ? "Update" : "Add Hearing"}</Button>
-        </div>
-      </DialogContent></Dialog>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════
-// TAB: Tasks — FULL CRUD
-// ══════════════════════════════════════════════════════════════
-function TabTasks({ caseId, userId, tasks, qc }: { caseId: string; userId: string; tasks: any[]; qc: any }) {
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", status: "todo", priority: "medium", due_date: "" });
-  const [editId, setEditId] = useState<string | null>(null);
-
-  const save = useMutation({
-    mutationFn: async () => {
-      const payload = { ...form, case_id: caseId, due_date: form.due_date || null };
-      if (editId) await restUpdate("tasks", `id=eq.${editId}`, payload);
-      else await restInsert("tasks", { ...payload, created_by: userId });
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-tasks", caseId] }); setOpen(false); setEditId(null); setForm({ title: "", description: "", status: "todo", priority: "medium", due_date: "" }); toast.success(editId ? "Updated" : "Task added"); },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to save task"),
-  });
-  const del = useMutation({ mutationFn: (tid: string) => restDelete("tasks", `id=eq.${tid}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ["case-tasks", caseId] }); toast.success("Deleted"); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Failed to delete") });
-
-  const openEdit = (t: any) => { setEditId(t.id); setForm({ title: t.title || "", description: t.description || "", status: t.status || "todo", priority: t.priority || "medium", due_date: t.due_date || "" }); setOpen(true); };
-
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-4"><h3 className="font-bold">Tasks</h3><Button size="sm" onClick={() => { setEditId(null); setForm({ title: "", description: "", status: "todo", priority: "medium", due_date: "" }); setOpen(true); }}><Plus className="w-4 h-4 mr-1" />Add Task</Button></div>
-      {tasks.length === 0 ? <EmptyState icon={ListTodo} text="No tasks" /> : <div className="space-y-2">{tasks.map((t: any) => (
-        <div key={t.id} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/20">
-          <div className={`w-3 h-3 rounded-full shrink-0 ${t.status === "done" ? "bg-emerald-500" : t.status === "in_progress" ? "bg-blue-500" : "bg-amber-400"}`} />
-          <div className="flex-1 min-w-0"><p className="text-sm font-medium">{t.title}</p>{t.description && <p className="text-xs text-muted-foreground truncate">{t.description}</p>}</div>
-          <div className="text-right shrink-0">{t.due_date && <p className="text-xs text-muted-foreground">{format(new Date(t.due_date), "dd MMM yyyy")}</p>}<span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${t.priority === "high" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" : "bg-muted text-muted-foreground"}`}>{t.priority}</span></div>
-          <div className="flex gap-1"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}><Pencil className="w-3.5 h-3.5" /></Button><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => del.mutate(t.id)}><Trash2 className="w-3.5 h-3.5" /></Button></div>
-        </div>
-      ))}</div>}
-      <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>{editId ? "Edit Task" : "Add Task"}</DialogTitle></DialogHeader>
-        <div className="grid gap-3 py-3">
-          <div><Label>Title *</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} /></div>
-          <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
-          <div className="grid grid-cols-3 gap-3">
-            <div><Label>Status</Label><Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todo">To Do</SelectItem><SelectItem value="in_progress">In Progress</SelectItem><SelectItem value="done">Done</SelectItem></SelectContent></Select></div>
-            <div><Label>Priority</Label><Select value={form.priority} onValueChange={v => setForm(p => ({ ...p, priority: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="high">High</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="low">Low</SelectItem></SelectContent></Select></div>
-            <div><Label>Due Date</Label><Input type="date" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))} /></div>
-          </div>
-          <Button onClick={() => save.mutate()} disabled={!form.title || save.isPending} className="w-full">{save.isPending ? "Saving..." : editId ? "Update" : "Add Task"}</Button>
         </div>
       </DialogContent></Dialog>
     </div>

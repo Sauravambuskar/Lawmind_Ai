@@ -8,8 +8,9 @@ import {
   Calendar, CalendarDays, FileText, Receipt, File, DollarSign,
   ChevronDown, ChevronRight, Scale, Phone, StickyNote,
   Settings2, BarChart3, User, X, BriefcaseBusiness, Bot,
-  ListTodo, Sunrise, FolderOpen, FileSignature, Shield,
+  ListTodo, Sunrise, FolderOpen, FileSignature, Shield, GaugeCircle,
 } from "lucide-react";
+import { useTaskPrivileges } from "@/hooks/useTaskPrivileges";
 import { APP_VERSION } from "@/lib/constants";
 
 const AIAgentIcon = ({ className, strokeWidth, ...props }: { className?: string; strokeWidth?: number }) => (
@@ -53,6 +54,7 @@ const navSections = [
       { label: "Contacts", icon: Phone, path: "/contacts" },
       { label: "Notes", icon: StickyNote, path: "/notes" },
       { label: "Tasks", icon: ListTodo, path: "/tasks" },
+      { label: "Task Dashboard", icon: GaugeCircle, path: "/task-dashboard" },
       { label: "AI Agent", icon: AIAgentIcon, path: "/ai-agent" },
     ],
   },
@@ -119,6 +121,7 @@ function NavItems({
   const role = profile?.role ?? 'agent';
   const isAdminOrAbove = role === 'admin' || role === 'super_admin';
   const { hasAccess } = usePermissions();
+  const { canViewDashboard } = useTaskPrivileges();
 
   // Helper to check if a nav item is accessible based on path
   const canAccess = (path: string) => {
@@ -141,6 +144,7 @@ function NavItems({
             {section.items.filter(item => {
               if (item.label === 'Staff Management') return isAdminOrAbove;
               if (item.label === 'Permissions') return isAdminOrAbove;
+              if (item.path === '/task-dashboard') return canViewDashboard;
               return canAccess(item.path);
             }).map(item => (
               <div key={item.label} className="relative">

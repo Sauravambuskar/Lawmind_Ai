@@ -32,6 +32,8 @@ export const APP_SECTIONS = [
   { id: "email", label: "Email Settings", group: "Setup" },
   { id: "reports", label: "Reports", group: "Setup" },
   { id: "permissions", label: "Permissions", group: "Setup" },
+  { id: "task-assign", label: "Assign / Unassign Tasks", group: "Privileges" },
+  { id: "task-dashboard", label: "Task Progress Dashboard", group: "Privileges" },
 ] as const;
 
 export type SectionId = typeof APP_SECTIONS[number]["id"];

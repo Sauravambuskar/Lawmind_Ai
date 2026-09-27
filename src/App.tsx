@@ -43,6 +43,7 @@ const AISettingsPage    = lazy(() => import("./pages/AISettingsPage"));
 const PermissionsPage  = lazy(() => import("./pages/PermissionsPage"));
 const EmailSettingsPage = lazy(() => import("./pages/EmailSettingsPage"));
 const TasksPage         = lazy(() => import("./pages/TasksPage"));
+const TaskDashboardPage = lazy(() => import("./pages/TaskDashboardPage"));
 const TodayPage         = lazy(() => import("./pages/TodayPage"));
 const ImpDocsPage      = lazy(() => import("./pages/ImpDocsPage"));
 const NoticeMakerPage   = lazy(() => import("./pages/NoticeMakerPage"));
@@ -108,6 +109,7 @@ const App = () => (
                   <Route path="/setup/email"         element={<EmailSettingsPage />} />
                   <Route path="/ai-agent"            element={<AIAgentPage />} />
                   <Route path="/tasks"               element={<TasksPage />} />
+                  <Route path="/task-dashboard"      element={<TaskDashboardPage />} />
                   <Route path="/today"               element={<TodayPage />} />
                   <Route path="/profile"             element={<ProfilePage />} />
                 </Route>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, CalendarClock, AlertTriangle, CheckCircle, X } from "lucide-react";
+import { Bell, CalendarClock, AlertTriangle, CheckCircle, ListTodo, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { restGet } from "@/lib/restClient";
 import { addDays, format } from "date-fns";
@@ -7,10 +7,20 @@ import { useNavigate } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { CURRENCY, LOCALE } from "@/lib/constants";
+import { useAuth } from "@/hooks/useAuth";
 
 type Notification =
   | { kind: "hearing"; id: string; label: string; sub: string; date: string }
-  | { kind: "invoice"; id: string; label: string; sub: string; amount: number; dueDate: string };
+  | { kind: "invoice"; id: string; label: string; sub: string; amount: number; dueDate: string }
+  | { kind: "task"; id: string; label: string; sub: string; dueDate: string | null; overdue: boolean };
+
+interface TaskNoticeRow {
+  id: string;
+  title: string;
+  due_date: string | null;
+  status: string;
+  cases: { case_number: string } | null;
+}
 
 interface CaseRow {
   id: string;
@@ -28,9 +38,9 @@ interface InvoiceRow {
   client_id: string | null;
 }
 
-function useNotifications() {
+function useNotifications(userId: string | undefined) {
   return useQuery({
-    queryKey: ["notifications"],
+    queryKey: ["notifications", userId],
     queryFn: async (): Promise<Notification[]> => {
       const now = new Date();
       const soon = addDays(now, 3);
@@ -38,7 +48,7 @@ function useNotifications() {
       const soonStr = soon.toISOString().split("T")[0];
 
       // Hearing data lives on cases.next_hearing_date (the hearings table is empty)
-      const [caseRows, invoiceRows] = await Promise.all([
+      const [caseRows, invoiceRows, taskRows] = await Promise.all([
         restGet<CaseRow>(
           `cases?select=id,case_number,title,court_name,next_hearing_date` +
             `&next_hearing_date=gte.${todayStr}&next_hearing_date=lte.${soonStr}` +
@@ -49,6 +59,12 @@ function useNotifications() {
             `&due_date=lt.${todayStr}&status=neq.paid&status=neq.cancelled` +
             `&order=due_date.asc&limit=10`,
         ),
+        userId
+          ? restGet<TaskNoticeRow>(
+              `tasks?select=id,title,due_date,status,cases(case_number)` +
+                `&assigned_to=eq.${userId}&status=neq.done&order=due_date.asc.nullslast&limit=10`,
+            ).catch(() => [] as TaskNoticeRow[])
+          : Promise.resolve([] as TaskNoticeRow[]),
       ]);
 
       // Resolve client names separately — there is no FK join exposed on invoices
@@ -78,7 +94,16 @@ function useNotifications() {
         dueDate: inv.due_date,
       }));
 
-      return [...hearings, ...invoices];
+      const tasks: Notification[] = taskRows.map(t => ({
+        kind: "task",
+        id: t.id,
+        label: t.title,
+        sub: t.cases?.case_number ? `Assigned to you · ${t.cases.case_number}` : "Assigned to you",
+        dueDate: t.due_date,
+        overdue: !!t.due_date && t.due_date < todayStr,
+      }));
+
+      return [...tasks, ...hearings, ...invoices];
     },
     refetchInterval: 5 * 60 * 1000,
     retry: false,
@@ -88,13 +113,15 @@ function useNotifications() {
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { data: notifications = [] } = useNotifications();
+  const { user } = useAuth();
+  const { data: notifications = [] } = useNotifications(user?.id);
 
   const count = notifications.length;
 
   const handleClick = (n: Notification) => {
     setOpen(false);
     if (n.kind === "hearing") navigate(`/cases/${n.id}`);
+    else if (n.kind === "task") navigate("/tasks");
     else navigate("/invoices");
   };
 
@@ -135,7 +162,7 @@ export function NotificationBell() {
             <div className="py-10 flex flex-col items-center justify-center text-muted-foreground">
               <CheckCircle className="w-8 h-8 mb-2 opacity-30" />
               <p className="text-sm font-medium">All caught up!</p>
-              <p className="text-xs mt-0.5">No upcoming hearings or overdue invoices.</p>
+              <p className="text-xs mt-0.5">No open tasks, upcoming hearings or overdue invoices.</p>
             </div>
           ) : (
             notifications.map(n => (
@@ -145,21 +172,25 @@ export function NotificationBell() {
                 className="w-full flex items-start gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left"
               >
                 <div className={`mt-0.5 p-1.5 rounded-md flex-shrink-0 ${
-                  n.kind === "hearing" ? "bg-amber-500/10" : "bg-rose-500/10"
+                  n.kind === "hearing" ? "bg-amber-500/10" : n.kind === "task" ? "bg-sky-500/10" : "bg-rose-500/10"
                 }`}>
                   {n.kind === "hearing"
                     ? <CalendarClock className="w-3.5 h-3.5 text-amber-600" />
-                    : <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />}
+                    : n.kind === "task"
+                      ? <ListTodo className="w-3.5 h-3.5 text-sky-600" />
+                      : <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">{n.label}</p>
                   <p className="text-xs text-muted-foreground truncate">{n.sub}</p>
                   <p className={`text-[10px] font-semibold mt-1 ${
-                    n.kind === "hearing" ? "text-amber-600" : "text-rose-600"
+                    n.kind === "hearing" ? "text-amber-600" : n.kind === "task" ? (n.overdue ? "text-rose-600" : "text-sky-600") : "text-rose-600"
                   }`}>
                     {n.kind === "hearing"
                       ? format(new Date(n.date), "EEE, MMM d · h:mm a")
-                      : `${CURRENCY}${n.amount.toLocaleString(LOCALE)} — Due ${n.dueDate}`}
+                      : n.kind === "task"
+                        ? (n.dueDate ? `${n.overdue ? "Overdue" : "Due"} ${format(new Date(n.dueDate + "T00:00:00"), "MMM d")}` : "No due date")
+                        : `${CURRENCY}${n.amount.toLocaleString(LOCALE)} — Due ${n.dueDate}`}
                   </p>
                 </div>
               </button>

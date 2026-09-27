@@ -116,7 +116,8 @@ lawmind/
 | `clients` | Client directory | id, name, email, phone, city, state, user_id |
 | `advocates` | Advocate directory | id, name, email, phone, specialization, user_id |
 | `hearings` | Court hearings | id, case_id, hearing_date, court_name, judge_name, purpose, status, notes, user_id |
-| `tasks` | Task management | id, case_id, title, description, status (todo/in_progress/done), priority (high/medium/low), due_date, user_id |
+| `tasks` | Task management | id, case_id, title, description, status (todo/in_progress/done), priority (high/medium/low), progress (0–100), due_date, assigned_to, assigned_by, assigned_at, completed_at, created_by |
+| `task_updates` | Task activity log (progress, status, assign/unassign, notes) | id, task_id, case_id, user_id, kind, note, progress, status, assignee, created_at |
 | `invoices` | Billing | id, case_id, client_id, invoice_number, amount, tax, total, status (draft/sent/paid/overdue), due_date, user_id |
 | `expenses` | Expense tracking | id, case_id, title, amount, category, expense_date, user_id |
 | `documents` | File records | id, case_id, title, description, document_type, file_url, user_id |
