@@ -55,7 +55,7 @@ function validateRows(
 
   return rows.map((row, idx) => {
     const errors: ValidationError[] = [];
-    const data: Record<string, string | null> = { user_id: userId };
+    const data: Record<string, string | null> = { created_by: userId };
 
     fields.forEach(f => {
       const value = row[f] ?? row[f.replace(/_/g, " ")] ?? "";

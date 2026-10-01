@@ -37,5 +37,5 @@ export type UserRole = (typeof USER_ROLES)[number];
 
 export const ITEMS_PER_PAGE = 10;
 export const MIN_LOADER_MS = 2000;
-export const CURRENCY = "Γé╣";
+export const CURRENCY = "₹";
 export const LOCALE = "en-IN";

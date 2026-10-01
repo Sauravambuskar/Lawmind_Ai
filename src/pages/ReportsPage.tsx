@@ -6,9 +6,10 @@ import { format, subMonths } from "date-fns";
 import { IndianRupee, Briefcase, Users, FileText, Scale, Calendar } from "lucide-react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { PageLoader } from "@/components/PageLoader";
+import { CURRENCY } from "@/lib/constants";
 
 function formatINR(n: number) {
-  return "Γé╣" + n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return CURRENCY + n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 interface CaseStatRow {

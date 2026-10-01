@@ -25,7 +25,7 @@ export type Database = {
           status: string
           subject: string
           updated_at: string
-          user_id: string
+          created_by: string
         }
         Insert: {
           advice_date?: string
@@ -37,7 +37,7 @@ export type Database = {
           status?: string
           subject: string
           updated_at?: string
-          user_id: string
+          created_by: string
         }
         Update: {
           advice_date?: string
@@ -49,7 +49,7 @@ export type Database = {
           status?: string
           subject?: string
           updated_at?: string
-          user_id?: string
+          created_by?: string
         }
         Relationships: [
           {
@@ -79,7 +79,7 @@ export type Database = {
           specialization: string | null
           status: string
           updated_at: string
-          user_id: string
+          created_by: string
         }
         Insert: {
           bar_number?: string | null
@@ -91,7 +91,7 @@ export type Database = {
           specialization?: string | null
           status?: string
           updated_at?: string
-          user_id: string
+          created_by: string
         }
         Update: {
           bar_number?: string | null
@@ -103,7 +103,7 @@ export type Database = {
           specialization?: string | null
           status?: string
           updated_at?: string
-          user_id?: string
+          created_by?: string
         }
         Relationships: []
       }
@@ -229,7 +229,7 @@ export type Database = {
           phone: string | null
           state: string | null
           updated_at: string
-          user_id: string
+          created_by: string
         }
         Insert: {
           city?: string | null
@@ -241,7 +241,7 @@ export type Database = {
           phone?: string | null
           state?: string | null
           updated_at?: string
-          user_id: string
+          created_by: string
         }
         Update: {
           city?: string | null
@@ -253,7 +253,7 @@ export type Database = {
           phone?: string | null
           state?: string | null
           updated_at?: string
-          user_id?: string
+          created_by?: string
         }
         Relationships: []
       }

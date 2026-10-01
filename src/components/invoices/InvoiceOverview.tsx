@@ -3,6 +3,7 @@ import { Search, FileText, Wallet, Receipt, Clock, AlertCircle, CalendarDays, Tr
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { subDays, isAfter } from "date-fns";
+import { CURRENCY } from "@/lib/constants";
 
 const periodOptions = [
   { value: "7", label: "Last 7 days" },
@@ -15,13 +16,13 @@ const periodOptions = [
 
 function formatCurrency(n: number) {
   if (n >= 100000) {
-    return "Γé╣" + (n / 100000).toFixed(2) + "L";
+    return CURRENCY + (n / 100000).toFixed(2) + "L";
   }
-  return "Γé╣" + n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return CURRENCY + n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function formatCurrencyFull(n: number) {
-  return "Γé╣" + n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return CURRENCY + n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 interface Props {

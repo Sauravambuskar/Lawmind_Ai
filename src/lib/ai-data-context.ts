@@ -39,8 +39,8 @@ async function fetchSummaryStats(): Promise<string> {
 
 async function fetchActiveCases() {
   const [open, pending] = await Promise.all([
-    fetchFromRest(`cases?select=case_number,title,status,court_name,case_type,filing_date&status=eq.open&order=created_at.desc&limit=20`),
-    fetchFromRest(`cases?select=case_number,title,status,court_name,case_type,filing_date&status=eq.pending&order=created_at.desc&limit=20`),
+    fetchFromRest(`cases?select=case_number,title,status,court_name,court_type,filing_date&status=eq.open&order=created_at.desc&limit=20`),
+    fetchFromRest(`cases?select=case_number,title,status,court_name,court_type,filing_date&status=eq.pending&order=created_at.desc&limit=20`),
   ]);
   return [...open, ...pending];
 }
@@ -51,13 +51,13 @@ async function fetchDisposedCases() {
 
 async function fetchUpcomingHearings() {
   const today = new Date().toISOString().split("T")[0];
-  return fetchFromRest(`hearings?select=hearing_date,court_name,judge_name,purpose,status&hearing_date=gte.${today}&status=neq.cancelled&order=hearing_date.asc&limit=15`);
+  return fetchFromRest(`hearings?select=hearing_date,court_name,judge_name:judge,purpose:title,status&hearing_date=gte.${today}&status=neq.cancelled&order=hearing_date.asc&limit=15`);
 }
 
 async function fetchTodayHearings() {
   const today = new Date().toISOString().split("T")[0];
   const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
-  return fetchFromRest(`hearings?select=hearing_date,court_name,judge_name,purpose,status&hearing_date=gte.${today}&hearing_date=lt.${tomorrow}&order=hearing_date.asc`);
+  return fetchFromRest(`hearings?select=hearing_date,court_name,judge_name:judge,purpose:title,status&hearing_date=gte.${today}&hearing_date=lt.${tomorrow}&order=hearing_date.asc`);
 }
 
 async function fetchClients() {
@@ -65,7 +65,7 @@ async function fetchClients() {
 }
 
 async function fetchInvoices() {
-  return fetchFromRest(`invoices?select=invoice_number,amount,total,status,due_date&order=created_at.desc&limit=20`);
+  return fetchFromRest(`invoices?select=invoice_number,amount,total:total_amount,status,due_date&order=created_at.desc&limit=20`);
 }
 
 async function fetchExpenses() {
@@ -81,7 +81,7 @@ async function fetchTasks() {
 }
 
 async function fetchDocuments() {
-  return fetchFromRest(`documents?select=title,document_type,created_at&order=created_at.desc&limit=15`);
+  return fetchFromRest(`documents?select=title:name,document_type:category,created_at&order=created_at.desc&limit=15`);
 }
 
 // ── Compact table (key columns only, no wrap) ─────────────────────────────────
@@ -175,7 +175,7 @@ export function getSystemPrompt(dataContext: string): string {
   return `You are LawMind AI — legal practice assistant for Advocate Manmohan D. Sarda, Akola/Washim, Maharashtra.
 
 **DB SCHEMA:**
-- cases: case_number, title, status (open/pending/disposed/closed), case_type, court_name, filing_date
+- cases: case_number, title, status (open/pending/disposed/closed), court_type, court_name, filing_date
 - hearings: hearing_date, court_name, judge_name, purpose, status
 - clients: name, email, phone, city
 - invoices: invoice_number, amount, total, status, due_date
