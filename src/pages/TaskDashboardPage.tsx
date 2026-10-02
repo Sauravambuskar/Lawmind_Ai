@@ -53,6 +53,7 @@ import {
 } from "@/components/tasks/TaskBits";
 import { TaskFormDialog } from "@/components/tasks/TaskFormDialog";
 import { TaskProgressDialog } from "@/components/tasks/TaskProgressDialog";
+import { TaskProgressCylinderChart } from "@/components/tasks/TaskProgressCylinderChart";
 
 const ALL = "all";
 
@@ -88,6 +89,15 @@ export default function TaskDashboardPage() {
   const unassignedTasks = openTasks.filter(task => !task.assigned_to);
   const doneThisWeek = tasks.filter(task => task.completed_at && new Date(task.completed_at) >= weekAgo);
   const overallProgress = aggregateProgress(tasks) ?? 0;
+  const teamProgressChart = useMemo(() => members.map(member => {
+    const assigned = tasks.filter(task => task.assigned_to === member.user_id);
+    return {
+      name: member.full_name || "Unnamed member",
+      progress: aggregateProgress(assigned) ?? 0,
+      openTasks: assigned.filter(task => task.status !== "done").length,
+      completedTasks: assigned.filter(task => task.status === "done").length,
+    };
+  }), [members, tasks]);
 
   const filteredTasks = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -185,6 +195,21 @@ export default function TaskDashboardPage() {
         <Kpi icon={CheckCircle2} label="Done this week" value={doneThisWeek.length} detail="last 7 days" tone="green" />
         <Kpi icon={AlertTriangle} label="Overdue" value={overdueTasks.length} detail="needs follow-up" tone="red" />
         <Kpi icon={UserX} label="Unassigned" value={unassignedTasks.length} detail="owner required" tone="amber" />
+      </section>
+
+      <section className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+        <div className="flex flex-col gap-1 border-b border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-bold">
+              <LayoutDashboard className="h-4 w-4 text-primary" />Team task progress
+            </h2>
+            <p className="text-xs text-muted-foreground">Completion percentage by assigned team member</p>
+          </div>
+          <span className="text-xs font-semibold text-muted-foreground">TP / 100%</span>
+        </div>
+        <div className="px-2 pb-2 pt-1 sm:px-4">
+          <TaskProgressCylinderChart data={teamProgressChart} />
+        </div>
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
