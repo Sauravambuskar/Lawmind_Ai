@@ -74,6 +74,132 @@ function availableSteps(steps: DriveStep[]): DriveStep[] {
   });
 }
 
+function controlLabel(element: HTMLElement): string {
+  const input = element as HTMLInputElement;
+  return (
+    element.getAttribute("aria-label") ||
+    element.getAttribute("title") ||
+    input.placeholder ||
+    element.textContent ||
+    ""
+  ).replace(/\s+/g, " ").trim().slice(0, 80);
+}
+
+function explainControl(element: HTMLElement, label: string) {
+  const normalized = label.toLowerCase();
+  const tag = element.tagName.toLowerCase();
+  const role = element.getAttribute("role");
+
+  if (tag === "table") return {
+    key: "records-table",
+    title: "Records table",
+    english: "Read each record across the row. Use the last column for actions such as view, edit or progress update.",
+    hindi: "हर रिकॉर्ड को पंक्ति में पढ़ें। आखिरी कॉलम से देखें, बदलें या प्रगति अपडेट करें।",
+  };
+  if (role === "tab") return {
+    key: `tab-${normalized}`,
+    title: `${label} tab`,
+    english: `Select ${label} to switch this workspace to that section without leaving the page.`,
+    hindi: `${label} भाग देखने के लिए इस टैब को दबाएं; पेज छोड़े बिना जानकारी बदल जाएगी।`,
+  };
+  if (role === "combobox") return {
+    key: `filter-${normalized}`,
+    title: label || "Selection menu",
+    english: "Open this menu and choose one option to narrow the list or set the required value.",
+    hindi: "यह मेन्यू खोलकर एक विकल्प चुनें। इससे सूची फिल्टर होगी या जरूरी मान सेट होगा।",
+  };
+  if (tag === "input" || tag === "textarea") {
+    const isSearch = normalized.includes("search") || (element as HTMLInputElement).type === "search";
+    return isSearch ? {
+      key: "page-search",
+      title: "Search records",
+      english: "Type a name, number or keyword here. The visible list updates to show matching records.",
+      hindi: "यहां नाम, नंबर या शब्द लिखें। नीचे की सूची केवल मिलते हुए रिकॉर्ड दिखाएगी।",
+    } : {
+      key: `field-${normalized}`,
+      title: label || "Information field",
+      english: "Enter the requested information here. Check the value before saving the form.",
+      hindi: "यहां मांगी गई जानकारी भरें। फॉर्म सेव करने से पहले जानकारी जांच लें।",
+    };
+  }
+  if (normalized.includes("export") || normalized.includes("download")) return {
+    key: "export-action",
+    title: label || "Export records",
+    english: "Download the currently available records for reporting or offline review.",
+    hindi: "रिपोर्ट या बाद में जांच के लिए मौजूदा रिकॉर्ड डाउनलोड करें।",
+  };
+  if (/new|add|create/.test(normalized)) return {
+    key: "create-action",
+    title: label || "Create new record",
+    english: "Open the entry form, complete the required fields and use Save to create the record.",
+    hindi: "नया फॉर्म खोलें, जरूरी जानकारी भरें और Save दबाकर रिकॉर्ड बनाएं।",
+  };
+  if (normalized.includes("progress")) return {
+    key: "progress-action",
+    title: label || "Update progress",
+    english: "Record how much work is complete and add the latest work update for the assigned task.",
+    hindi: "सौंपे गए काम की पूर्णता और नया कार्य अपडेट यहां दर्ज करें।",
+  };
+  if (normalized.includes("edit")) return {
+    key: "edit-action",
+    title: label || "Edit record",
+    english: "Open the selected record for correction or update, then save the changes.",
+    hindi: "चुने हुए रिकॉर्ड को सुधारने या अपडेट करने के लिए खोलें, फिर बदलाव सेव करें।",
+  };
+  if (normalized.includes("view") || normalized.includes("open")) return {
+    key: "view-action",
+    title: label || "Open details",
+    english: "Open the selected record to review its complete details and linked activity.",
+    hindi: "चुने हुए रिकॉर्ड की पूरी जानकारी और संबंधित गतिविधि देखने के लिए खोलें।",
+  };
+  if (/previous|next|page/.test(normalized)) return {
+    key: "page-navigation",
+    title: "List pages",
+    english: "Move through additional result pages when all records do not fit in the current list.",
+    hindi: "जब सभी रिकॉर्ड एक सूची में न दिखें, तो अगले या पिछले पेज पर जाएं।",
+  };
+  return {
+    key: `action-${normalized}`,
+    title: label || "Page action",
+    english: `Use ${label || "this control"} to perform the indicated action on this page.`,
+    hindi: `इस पेज पर बताया गया काम करने के लिए ${label || "इस नियंत्रण"} का उपयोग करें।`,
+  };
+}
+
+function microGuideSteps(): DriveStep[] {
+  const page = document.querySelector<HTMLElement>('[data-guide="page-content"]');
+  if (!page) return [];
+
+  const candidates = Array.from(page.querySelectorAll<HTMLElement>(
+    'input, textarea, button, [role="combobox"], [role="tab"], table, nav[aria-label="pagination"]',
+  ));
+  const seen = new Set<string>();
+  const steps: DriveStep[] = [];
+
+  for (const element of candidates) {
+    if (element.closest('[data-guide="guide-button"]') || element.disabled || element.getAttribute("aria-hidden") === "true") continue;
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    if (rect.width < 12 || rect.height < 12 || style.display === "none" || style.visibility === "hidden") continue;
+
+    const label = controlLabel(element);
+    if (!label && element.tagName.toLowerCase() !== "table") continue;
+    const explanation = explainControl(element, label);
+    if (seen.has(explanation.key)) continue;
+    seen.add(explanation.key);
+    steps.push({
+      element,
+      popover: {
+        title: explanation.title,
+        description: bilingual(explanation.english, explanation.hindi),
+      },
+    });
+    if (steps.length >= 18) break;
+  }
+
+  return steps;
+}
+
 export function GuideButton() {
   const location = useLocation();
   const pageGuide = useMemo(() => getPageGuide(location.pathname), [location.pathname]);
@@ -91,6 +217,7 @@ export function GuideButton() {
       { element: '[data-guide="sidebar"]', popover: { title: "Main navigation", description: bilingual("Move between cases, hearings, tasks, documents, billing and administration.", "केस, सुनवाई, काम, दस्तावेज, बिलिंग और सेटिंग में जाने के लिए इसका उपयोग करें।") } },
       { element: '[data-guide="page-content"]', popover: { title: pageGuide.title, description: bilingual(pageGuide.description, pageGuide.hindiDescription) } },
       ...(pageGuide.steps ?? []),
+      ...microGuideSteps(),
       { element: '[data-guide="guide-button"]', popover: { title: "Guide is always available", description: bilingual("Use this corner button whenever you need guidance on the current page.", "इस पेज पर मदद चाहिए तो कोने में यह Guide बटन कभी भी दबाएं।"), side: "left", align: "end" } },
     ];
 
