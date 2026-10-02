@@ -339,7 +339,7 @@ export function GuideButton() {
         speechProgress = chunks.length > 1 ? ` - speaking ${index + 1}/${chunks.length}` : " - speaking";
         const utterance = new SpeechSynthesisUtterance(chunks[index]);
         utterance.lang = "hi-IN";
-        utterance.rate = 0.9;
+        utterance.rate = 1.05;
         utterance.pitch = 1.02;
         utterance.volume = 1;
         if (selectedHindiVoice) utterance.voice = selectedHindiVoice;
@@ -369,6 +369,7 @@ export function GuideButton() {
       }
 
       const audio = new Audio(`/audio/guide/${narration.audioId}.mp3`);
+      audio.playbackRate = 1.12;
       let fallbackStarted = false;
       const useFallback = () => {
         if (fallbackStarted || session !== speechSession) return;
