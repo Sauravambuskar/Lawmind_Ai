@@ -87,6 +87,13 @@ function controlLabel(element: HTMLElement): string {
 
 function explainControl(element: HTMLElement, label: string) {
   const normalized = label.toLowerCase();
+  const safeLabel = label.replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  })[character] ?? character);
   const tag = element.tagName.toLowerCase();
   const role = element.getAttribute("role");
 
@@ -98,13 +105,13 @@ function explainControl(element: HTMLElement, label: string) {
   };
   if (role === "tab") return {
     key: `tab-${normalized}`,
-    title: `${label} tab`,
-    english: `Select ${label} to switch this workspace to that section without leaving the page.`,
-    hindi: `${label} भाग देखने के लिए इस टैब को दबाएं; पेज छोड़े बिना जानकारी बदल जाएगी।`,
+    title: `${safeLabel} tab`,
+    english: `Select ${safeLabel} to switch this workspace to that section without leaving the page.`,
+    hindi: `${safeLabel} भाग देखने के लिए इस टैब को दबाएं; पेज छोड़े बिना जानकारी बदल जाएगी।`,
   };
   if (role === "combobox") return {
     key: `filter-${normalized}`,
-    title: label || "Selection menu",
+    title: safeLabel || "Selection menu",
     english: "Open this menu and choose one option to narrow the list or set the required value.",
     hindi: "यह मेन्यू खोलकर एक विकल्प चुनें। इससे सूची फिल्टर होगी या जरूरी मान सेट होगा।",
   };
@@ -117,38 +124,38 @@ function explainControl(element: HTMLElement, label: string) {
       hindi: "यहां नाम, नंबर या शब्द लिखें। नीचे की सूची केवल मिलते हुए रिकॉर्ड दिखाएगी।",
     } : {
       key: `field-${normalized}`,
-      title: label || "Information field",
+      title: safeLabel || "Information field",
       english: "Enter the requested information here. Check the value before saving the form.",
       hindi: "यहां मांगी गई जानकारी भरें। फॉर्म सेव करने से पहले जानकारी जांच लें।",
     };
   }
   if (normalized.includes("export") || normalized.includes("download")) return {
     key: "export-action",
-    title: label || "Export records",
+    title: safeLabel || "Export records",
     english: "Download the currently available records for reporting or offline review.",
     hindi: "रिपोर्ट या बाद में जांच के लिए मौजूदा रिकॉर्ड डाउनलोड करें।",
   };
   if (/new|add|create/.test(normalized)) return {
     key: "create-action",
-    title: label || "Create new record",
+    title: safeLabel || "Create new record",
     english: "Open the entry form, complete the required fields and use Save to create the record.",
     hindi: "नया फॉर्म खोलें, जरूरी जानकारी भरें और Save दबाकर रिकॉर्ड बनाएं।",
   };
   if (normalized.includes("progress")) return {
     key: "progress-action",
-    title: label || "Update progress",
+    title: safeLabel || "Update progress",
     english: "Record how much work is complete and add the latest work update for the assigned task.",
     hindi: "सौंपे गए काम की पूर्णता और नया कार्य अपडेट यहां दर्ज करें।",
   };
   if (normalized.includes("edit")) return {
     key: "edit-action",
-    title: label || "Edit record",
+    title: safeLabel || "Edit record",
     english: "Open the selected record for correction or update, then save the changes.",
     hindi: "चुने हुए रिकॉर्ड को सुधारने या अपडेट करने के लिए खोलें, फिर बदलाव सेव करें।",
   };
   if (normalized.includes("view") || normalized.includes("open")) return {
     key: "view-action",
-    title: label || "Open details",
+    title: safeLabel || "Open details",
     english: "Open the selected record to review its complete details and linked activity.",
     hindi: "चुने हुए रिकॉर्ड की पूरी जानकारी और संबंधित गतिविधि देखने के लिए खोलें।",
   };
@@ -160,9 +167,9 @@ function explainControl(element: HTMLElement, label: string) {
   };
   return {
     key: `action-${normalized}`,
-    title: label || "Page action",
-    english: `Use ${label || "this control"} to perform the indicated action on this page.`,
-    hindi: `इस पेज पर बताया गया काम करने के लिए ${label || "इस नियंत्रण"} का उपयोग करें।`,
+    title: safeLabel || "Page action",
+    english: `Use ${safeLabel || "this control"} to perform the indicated action on this page.`,
+    hindi: `इस पेज पर बताया गया काम करने के लिए ${safeLabel || "इस नियंत्रण"} का उपयोग करें।`,
   };
 }
 
@@ -205,6 +212,55 @@ export function GuideButton() {
   const pageGuide = useMemo(() => getPageGuide(location.pathname), [location.pathname]);
 
   const openGuide = () => {
+    const speechAvailable = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+    let voiceEnabled = localStorage.getItem("lawmind-guide-voice") !== "off";
+
+    const narrationForStep = (step?: DriveStep) => {
+      const source = step?.popover?.description;
+      if (!source) return "";
+      const content = document.createElement("div");
+      content.innerHTML = source;
+      return content.querySelector(".lawmind-guide-hindi")?.textContent?.trim() || content.textContent?.trim() || "";
+    };
+
+    const updateVoiceControls = () => {
+      document.querySelectorAll<HTMLElement>(".lawmind-guide-voice-toggle").forEach(button => {
+        button.textContent = voiceEnabled ? "Voice: On" : "Voice: Off";
+        button.dataset.active = String(voiceEnabled);
+      });
+      document.querySelectorAll<HTMLElement>(".lawmind-guide-voice-pause").forEach(button => {
+        button.textContent = window.speechSynthesis?.paused ? "Resume" : "Pause";
+      });
+      document.querySelectorAll<HTMLElement>(".lawmind-guide-voice-status").forEach(status => {
+        status.textContent = !speechAvailable ? "Voice is not supported in this browser" : voiceEnabled ? "Hindi voice guidance is on" : "Voice guidance is off";
+      });
+    };
+
+    const stopNarration = () => {
+      if (!speechAvailable) return;
+      window.speechSynthesis.cancel();
+      updateVoiceControls();
+    };
+
+    const speakStep = (step?: DriveStep) => {
+      if (!speechAvailable || !voiceEnabled) return;
+      const narration = narrationForStep(step);
+      if (!narration) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(narration);
+      utterance.lang = "hi-IN";
+      utterance.rate = 0.88;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      const hindiVoice = window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith("hi"));
+      if (hindiVoice) utterance.voice = hindiVoice;
+      utterance.onstart = updateVoiceControls;
+      utterance.onend = updateVoiceControls;
+      utterance.onerror = updateVoiceControls;
+      window.speechSynthesis.speak(utterance);
+      updateVoiceControls();
+    };
+
     const sharedSteps: DriveStep[] = [
       {
         popover: {
@@ -239,6 +295,38 @@ export function GuideButton() {
       prevBtnText: "Back / पीछे",
       doneBtnText: "Done / पूर्ण",
       steps: availableSteps(sharedSteps),
+      onPopoverRender: (popover, { driver: guideDriver }) => {
+        const controls = document.createElement("div");
+        controls.className = "lawmind-guide-voice-controls";
+        controls.innerHTML = `
+          <button type="button" class="lawmind-guide-voice-toggle" aria-label="Turn voice guidance on or off"></button>
+          <button type="button" class="lawmind-guide-voice-pause" aria-label="Pause or resume voice guidance">Pause</button>
+          <button type="button" class="lawmind-guide-voice-replay" aria-label="Replay this guidance">Replay</button>
+          <span class="lawmind-guide-voice-status" aria-live="polite"></span>
+        `;
+        controls.querySelector<HTMLButtonElement>(".lawmind-guide-voice-toggle")?.addEventListener("click", () => {
+          voiceEnabled = !voiceEnabled;
+          localStorage.setItem("lawmind-guide-voice", voiceEnabled ? "on" : "off");
+          if (voiceEnabled) speakStep(guideDriver.getActiveStep());
+          else stopNarration();
+          updateVoiceControls();
+        });
+        controls.querySelector<HTMLButtonElement>(".lawmind-guide-voice-pause")?.addEventListener("click", () => {
+          if (!speechAvailable || !voiceEnabled) return;
+          if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+          else if (window.speechSynthesis.speaking) window.speechSynthesis.pause();
+          else speakStep(guideDriver.getActiveStep());
+          updateVoiceControls();
+        });
+        controls.querySelector<HTMLButtonElement>(".lawmind-guide-voice-replay")?.addEventListener("click", () => {
+          speakStep(guideDriver.getActiveStep());
+        });
+        popover.description.appendChild(controls);
+        updateVoiceControls();
+      },
+      onHighlighted: (_element, step) => speakStep(step),
+      onDeselected: stopNarration,
+      onDestroyed: stopNarration,
     }).drive();
   };
 

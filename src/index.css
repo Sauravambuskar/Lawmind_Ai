@@ -271,6 +271,41 @@ tbody tr {
   font-weight: 600;
   line-height: 1.55;
 }
+.lawmind-guide-voice-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid hsl(var(--border));
+}
+.lawmind-guide-voice-controls button {
+  min-height: 30px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  padding: 5px 9px;
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.lawmind-guide-voice-controls button:hover,
+.lawmind-guide-voice-controls button[data-active="true"] {
+  border-color: #d6a537;
+  background: rgba(214, 165, 55, 0.14);
+}
+.lawmind-guide-voice-controls button:focus-visible {
+  outline: 2px solid #d6a537;
+  outline-offset: 2px;
+}
+.lawmind-guide-voice-status {
+  flex-basis: 100%;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.68rem;
+}
 .lawmind-guide-popover .driver-popover-progress-text {
   color: hsl(var(--muted-foreground));
   font-size: 0.7rem;
