@@ -2,6 +2,7 @@
 import { Outlet } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
+import { GuideButton } from "./GuideButton";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export function AppLayout() {
@@ -31,12 +32,13 @@ export function AppLayout() {
 
       <div className={`transition-all duration-300 ease-in-out ${isMobile ? "ml-0" : collapsed ? "ml-[64px]" : "ml-60"} flex flex-col min-h-screen`}>
         <AppHeader onToggleSidebar={() => isMobile ? setMobileOpen(!mobileOpen) : setCollapsed(!collapsed)} />
-        <main className="flex-1 p-4 md:p-6 xl:p-8">
+        <main className="flex-1 p-4 md:p-6 xl:p-8" data-guide="page-content">
           <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>
         </main>
       </div>
+      <GuideButton />
     </div>
   );
 }

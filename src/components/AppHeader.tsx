@@ -20,7 +20,7 @@ export function AppHeader({ onToggleSidebar }: { onToggleSidebar: () => void }) 
   const today = format(new Date(), "EEE, dd MMM yyyy");
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-background border-b border-border/70 flex items-center justify-between px-4 md:px-6"
+    <header data-guide="header" className="sticky top-0 z-30 h-16 bg-background border-b border-border/70 flex items-center justify-between px-4 md:px-6"
       style={{ borderTop: "2px solid hsl(42 58% 52% / 0.35)" }}>
 
       {/* Left — toggle + search + AI */}
@@ -30,13 +30,14 @@ export function AppHeader({ onToggleSidebar }: { onToggleSidebar: () => void }) 
           <Menu className="w-4.5 h-4.5" />
         </Button>
 
-        <div className="w-48 sm:w-64 md:w-80">
+        <div className="w-48 sm:w-64 md:w-80" data-guide="global-search">
           <GlobalSearch />
         </div>
 
         <Tooltip>
           <TooltipTrigger asChild>
             <button
+              data-guide="ai-agent"
               onClick={() => navigate("/ai-agent")}
               className="hidden sm:flex items-center gap-2.5 px-3.5 py-2 ml-2 rounded-xl
               bg-violet-100/90 border border-violet-300 hover:bg-violet-200/80 hover:border-violet-400 transition-all duration-150

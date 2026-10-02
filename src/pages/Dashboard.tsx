@@ -129,7 +129,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden bg-card border border-border shadow-sm rounded-2xl p-8 lg:p-10">
+      <div data-guide="dashboard-actions" className="relative overflow-hidden bg-card border border-border shadow-sm rounded-2xl p-8 lg:p-10">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
 
         {/* Courthouse Illustration */}
@@ -172,7 +172,7 @@ export default function Dashboard() {
 
 
       {/* KPI Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div data-guide="dashboard-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map(stat => (
           <div key={stat.label} className="bg-card border border-border shadow-sm rounded-xl p-5 hover:shadow-md transition-all group">
             <div className="flex items-start justify-between mb-4">
@@ -194,7 +194,7 @@ export default function Dashboard() {
       </div>
 
       {/* Client Directory */}
-      <div className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
+      <div data-guide="dashboard-clients" className="bg-card border border-border shadow-sm rounded-xl overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-border bg-muted/10">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-primary/10 rounded-md">
@@ -275,7 +275,7 @@ export default function Dashboard() {
       )}
 
       {/* Main Charts & Quick Actions Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div data-guide="dashboard-insights" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Left Column: Charts */}
         <div className="lg:col-span-2 space-y-6">

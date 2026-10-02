@@ -262,7 +262,7 @@ export function AppSidebar({ collapsed, onToggle, isMobile, mobileOpen, onMobile
 
   if (isMobile) {
     return (
-      <aside className={`fixed left-0 top-0 h-full bg-sidebar z-50 w-64 flex flex-col shadow-2xl transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside data-guide="sidebar" className={`fixed left-0 top-0 h-full bg-sidebar z-50 w-64 flex flex-col shadow-2xl transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="absolute inset-0 bg-[url('https://img.magnific.com/premium-photo/american-legal-system-law-concept-statue-lady-justice-with-scales-justice-american-flag_1158146-909.jpg?semt=ais_hybrid&w=740&q=80')] bg-cover bg-center opacity-25 pointer-events-none" />
         <div className="relative z-10 flex flex-col h-full w-full">
           <div className="flex items-center justify-between border-b border-amber-400/[0.15]">
@@ -281,7 +281,7 @@ export function AppSidebar({ collapsed, onToggle, isMobile, mobileOpen, onMobile
   }
 
   return (
-    <aside className={`fixed left-0 top-0 h-full bg-sidebar z-40 transition-all duration-300 ease-in-out ${collapsed ? "w-[64px]" : "w-60"} flex flex-col`}>
+    <aside data-guide="sidebar" className={`fixed left-0 top-0 h-full bg-sidebar z-40 transition-all duration-300 ease-in-out ${collapsed ? "w-[64px]" : "w-60"} flex flex-col`}>
       <div className="absolute inset-0 bg-[url('https://img.magnific.com/premium-photo/american-legal-system-law-concept-statue-lady-justice-with-scales-justice-american-flag_1158146-909.jpg?semt=ais_hybrid&w=740&q=80')] bg-cover bg-center opacity-25 pointer-events-none" />
       <div className="relative z-10 flex flex-col h-full w-full">
         <SidebarLogo collapsed={collapsed} />

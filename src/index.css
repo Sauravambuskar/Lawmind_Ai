@@ -235,3 +235,62 @@ tbody tr {
 .voice-bar:nth-child(5) { animation-delay: 180ms; }
 .voice-ripple-1 { animation: voice-ripple 1.4s ease-out infinite; }
 .voice-ripple-2 { animation: voice-ripple 1.4s ease-out infinite 0.5s; }
+
+/* Driver.js product guide */
+.driver-popover.lawmind-guide-popover {
+  max-width: 340px;
+  padding: 18px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.22);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+.lawmind-guide-popover .driver-popover-title {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  color: hsl(var(--foreground));
+}
+.lawmind-guide-popover .driver-popover-description {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+.lawmind-guide-popover .driver-popover-progress-text {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.7rem;
+}
+.lawmind-guide-popover .driver-popover-next-btn,
+.lawmind-guide-popover .driver-popover-prev-btn {
+  min-width: 64px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  padding: 6px 12px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  text-shadow: none;
+  font-size: 0.75rem;
+}
+.lawmind-guide-popover .driver-popover-prev-btn {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+}
+.lawmind-guide-popover .driver-popover-close-btn {
+  color: hsl(var(--muted-foreground));
+}
+.lawmind-guide-intro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.lawmind-guide-intro img {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+.lawmind-guide-intro p {
+  margin: 0;
+}

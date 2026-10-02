@@ -188,7 +188,7 @@ export default function TaskDashboardPage() {
         </div>
       </div>
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" aria-label="Task summary">
+      <section data-guide="task-summary" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" aria-label="Task summary">
         <Kpi icon={ListTodo} label="Open work" value={openTasks.length} detail={`${tasks.length} total tasks`} tone="blue" />
         <Kpi icon={UserRoundCheck} label="Assigned" value={openTasks.length - unassignedTasks.length} detail="active ownership" tone="violet" />
         <Kpi icon={CircleDot} label="Completion" value={`${overallProgress}%`} detail="all task progress" tone="green" />
@@ -197,7 +197,7 @@ export default function TaskDashboardPage() {
         <Kpi icon={UserX} label="Unassigned" value={unassignedTasks.length} detail="owner required" tone="amber" />
       </section>
 
-      <section className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+      <section data-guide="task-progress-chart" className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
         <div className="flex flex-col gap-1 border-b border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold">
@@ -213,7 +213,7 @@ export default function TaskDashboardPage() {
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <section className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+        <section data-guide="team-assignments" className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
           <div className="border-b border-border bg-muted/20 p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -328,7 +328,7 @@ export default function TaskDashboardPage() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-border bg-card shadow-sm">
+          <section data-guide="task-attention" className="rounded-lg border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between border-b border-border p-4">
               <h2 className="flex items-center gap-2 text-lg font-bold">
                 <AlertTriangle className="h-4 w-4 text-rose-500" />Needs attention
