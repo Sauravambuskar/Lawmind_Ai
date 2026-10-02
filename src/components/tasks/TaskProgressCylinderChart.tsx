@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 import Highcharts from "highcharts";
 import Highcharts3D from "highcharts/highcharts-3d";
+import HighchartsCylinder from "highcharts/modules/cylinder";
 
-const ChartEngine = Highcharts3D || Highcharts;
+const ChartEngine = HighchartsCylinder || Highcharts3D || Highcharts;
 
 const CHART_COLORS = [
   "#2563eb",
