@@ -258,6 +258,19 @@ tbody tr {
   font-size: 0.82rem;
   line-height: 1.55;
 }
+.lawmind-guide-english,
+.lawmind-guide-hindi {
+  display: block;
+}
+.lawmind-guide-hindi {
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.55;
+}
 .lawmind-guide-popover .driver-popover-progress-text {
   color: hsl(var(--muted-foreground));
   font-size: 0.7rem;
@@ -286,11 +299,22 @@ tbody tr {
   gap: 12px;
 }
 .lawmind-guide-intro img {
-  width: 72px;
-  height: 72px;
+  width: 92px;
+  height: 92px;
   flex: 0 0 auto;
   object-fit: contain;
 }
 .lawmind-guide-intro p {
   margin: 0;
+}
+@keyframes lawmind-guide-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(-1.5deg); }
+}
+.lawmind-guide-mascot {
+  animation: lawmind-guide-float 3.6s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lawmind-guide-mascot { animation: none; }
 }
