@@ -11,8 +11,17 @@ interface PageGuide {
   steps?: DriveStep[];
 }
 
+const guideAudioId = (text: string) => {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+};
+
 const bilingual = (english: string, hindi: string) =>
-  `<span class="lawmind-guide-english">${english}</span><span class="lawmind-guide-hindi" lang="hi">${hindi}</span>`;
+  `<span class="lawmind-guide-english">${english}</span><span class="lawmind-guide-hindi" lang="hi" data-guide-audio="${guideAudioId(hindi)}">${hindi}</span>`;
 
 const PAGE_GUIDES: Array<{ match: (path: string) => boolean; guide: PageGuide }> = [
   {
@@ -215,8 +224,11 @@ export function GuideButton() {
     const speechAvailable = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
     let voiceEnabled = localStorage.getItem("lawmind-guide-voice") !== "off";
     let selectedHindiVoice: SpeechSynthesisVoice | undefined;
+    let activeAudio: HTMLAudioElement | undefined;
+    let usingNaturalAudio = false;
     let speechSession = 0;
     let speechProgress = "";
+    const missingAudio = new Set<string>();
 
     const selectBestHindiVoice = () => {
       if (!speechAvailable) return undefined;
@@ -251,10 +263,14 @@ export function GuideButton() {
 
     const narrationForStep = (step?: DriveStep) => {
       const source = step?.popover?.description;
-      if (!source) return "";
+      if (!source) return { text: "", audioId: "" };
       const content = document.createElement("div");
       content.innerHTML = source;
-      return content.querySelector(".lawmind-guide-hindi")?.textContent?.trim() || content.textContent?.trim() || "";
+      const hindi = content.querySelector<HTMLElement>(".lawmind-guide-hindi");
+      return {
+        text: hindi?.textContent?.trim() || content.textContent?.trim() || "",
+        audioId: hindi?.dataset.guideAudio || "",
+      };
     };
 
     const narrationChunks = (text: string) => {
@@ -281,30 +297,36 @@ export function GuideButton() {
         button.dataset.active = String(voiceEnabled);
       });
       document.querySelectorAll<HTMLElement>(".lawmind-guide-voice-pause").forEach(button => {
-        button.textContent = window.speechSynthesis?.paused ? "Resume" : "Pause";
+        const paused = activeAudio ? activeAudio.paused && activeAudio.currentTime > 0 : window.speechSynthesis?.paused;
+        button.textContent = paused ? "Resume" : "Pause";
       });
       document.querySelectorAll<HTMLElement>(".lawmind-guide-voice-status").forEach(status => {
         const voiceName = selectedHindiVoice?.name || "device Hindi voice";
-        status.textContent = !speechAvailable ? "Voice is not supported in this browser" : voiceEnabled ? `Hindi voice: ${voiceName}${speechProgress}` : "Voice guidance is off";
+        const source = usingNaturalAudio ? "Natural Hindi: Swara" : `Hindi fallback: ${voiceName}`;
+        status.textContent = voiceEnabled ? `${source}${speechProgress}` : "Voice guidance is off";
       });
     };
 
     const stopNarration = () => {
-      if (!speechAvailable) return;
       speechSession += 1;
       speechProgress = "";
-      window.speechSynthesis.cancel();
+      usingNaturalAudio = false;
+      if (activeAudio) {
+        activeAudio.pause();
+        activeAudio.removeAttribute("src");
+        activeAudio.load();
+        activeAudio = undefined;
+      }
+      if (speechAvailable) window.speechSynthesis.cancel();
       updateVoiceControls();
     };
 
-    const speakStep = (step?: DriveStep) => {
-      if (!speechAvailable || !voiceEnabled) return;
-      const narration = narrationForStep(step);
-      if (!narration) return;
+    const speakWithDeviceVoice = (narration: string, session: number) => {
+      if (!speechAvailable || session !== speechSession || !voiceEnabled) return;
       const chunks = narrationChunks(narration);
-      const session = ++speechSession;
       window.speechSynthesis.cancel();
       selectedHindiVoice ??= selectBestHindiVoice();
+      usingNaturalAudio = false;
 
       const speakChunk = (index: number) => {
         if (session !== speechSession || !voiceEnabled) return;
@@ -332,6 +354,48 @@ export function GuideButton() {
       };
 
       speakChunk(0);
+    };
+
+    const speakStep = (step?: DriveStep) => {
+      if (!voiceEnabled) return;
+      const narration = narrationForStep(step);
+      if (!narration.text) return;
+
+      stopNarration();
+      const session = ++speechSession;
+      if (!narration.audioId || missingAudio.has(narration.audioId)) {
+        speakWithDeviceVoice(narration.text, session);
+        return;
+      }
+
+      const audio = new Audio(`/audio/guide/${narration.audioId}.mp3`);
+      let fallbackStarted = false;
+      const useFallback = () => {
+        if (fallbackStarted || session !== speechSession) return;
+        fallbackStarted = true;
+        activeAudio = undefined;
+        speakWithDeviceVoice(narration.text, session);
+      };
+      activeAudio = audio;
+      audio.preload = "auto";
+      audio.onplay = () => {
+        if (session !== speechSession) return;
+        usingNaturalAudio = true;
+        speechProgress = " - speaking";
+        updateVoiceControls();
+      };
+      audio.onended = () => {
+        if (session !== speechSession) return;
+        activeAudio = undefined;
+        speechProgress = " - completed";
+        updateVoiceControls();
+      };
+      audio.onerror = () => {
+        if (session !== speechSession) return;
+        missingAudio.add(narration.audioId);
+        useFallback();
+      };
+      void audio.play().catch(useFallback);
     };
 
     if (speechAvailable) {
@@ -390,9 +454,12 @@ export function GuideButton() {
           updateVoiceControls();
         });
         controls.querySelector<HTMLButtonElement>(".lawmind-guide-voice-pause")?.addEventListener("click", () => {
-          if (!speechAvailable || !voiceEnabled) return;
-          if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-          else if (window.speechSynthesis.speaking) window.speechSynthesis.pause();
+          if (!voiceEnabled) return;
+          if (activeAudio) {
+            if (activeAudio.paused) void activeAudio.play();
+            else activeAudio.pause();
+          } else if (speechAvailable && window.speechSynthesis.paused) window.speechSynthesis.resume();
+          else if (speechAvailable && window.speechSynthesis.speaking) window.speechSynthesis.pause();
           else speakStep(guideDriver.getActiveStep());
           updateVoiceControls();
         });
