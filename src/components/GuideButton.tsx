@@ -215,6 +215,8 @@ export function GuideButton() {
     const speechAvailable = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
     let voiceEnabled = localStorage.getItem("lawmind-guide-voice") !== "off";
     let selectedHindiVoice: SpeechSynthesisVoice | undefined;
+    let speechSession = 0;
+    let speechProgress = "";
 
     const selectBestHindiVoice = () => {
       if (!speechAvailable) return undefined;
@@ -255,6 +257,24 @@ export function GuideButton() {
       return content.querySelector(".lawmind-guide-hindi")?.textContent?.trim() || content.textContent?.trim() || "";
     };
 
+    const narrationChunks = (text: string) => {
+      const sentences = text.match(/[^।.!?]+[।.!?]?/g)?.map(sentence => sentence.trim()).filter(Boolean) ?? [text];
+      const chunks: string[] = [];
+      sentences.forEach(sentence => {
+        let remaining = sentence;
+        while (remaining.length > 110) {
+          const searchFrom = Math.min(110, remaining.length - 1);
+          const commaBreak = Math.max(remaining.lastIndexOf(",", searchFrom), remaining.lastIndexOf("،", searchFrom));
+          const spaceBreak = remaining.lastIndexOf(" ", searchFrom);
+          const breakAt = commaBreak >= 55 ? commaBreak + 1 : spaceBreak >= 55 ? spaceBreak : 110;
+          chunks.push(remaining.slice(0, breakAt).trim());
+          remaining = remaining.slice(breakAt).trim();
+        }
+        if (remaining) chunks.push(remaining);
+      });
+      return chunks;
+    };
+
     const updateVoiceControls = () => {
       document.querySelectorAll<HTMLElement>(".lawmind-guide-voice-toggle").forEach(button => {
         button.textContent = voiceEnabled ? "Voice: On" : "Voice: Off";
@@ -265,12 +285,14 @@ export function GuideButton() {
       });
       document.querySelectorAll<HTMLElement>(".lawmind-guide-voice-status").forEach(status => {
         const voiceName = selectedHindiVoice?.name || "device Hindi voice";
-        status.textContent = !speechAvailable ? "Voice is not supported in this browser" : voiceEnabled ? `Hindi voice: ${voiceName}` : "Voice guidance is off";
+        status.textContent = !speechAvailable ? "Voice is not supported in this browser" : voiceEnabled ? `Hindi voice: ${voiceName}${speechProgress}` : "Voice guidance is off";
       });
     };
 
     const stopNarration = () => {
       if (!speechAvailable) return;
+      speechSession += 1;
+      speechProgress = "";
       window.speechSynthesis.cancel();
       updateVoiceControls();
     };
@@ -279,19 +301,37 @@ export function GuideButton() {
       if (!speechAvailable || !voiceEnabled) return;
       const narration = narrationForStep(step);
       if (!narration) return;
+      const chunks = narrationChunks(narration);
+      const session = ++speechSession;
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(narration);
-      utterance.lang = "hi-IN";
-      utterance.rate = 0.9;
-      utterance.pitch = 1.02;
-      utterance.volume = 1;
       selectedHindiVoice ??= selectBestHindiVoice();
-      if (selectedHindiVoice) utterance.voice = selectedHindiVoice;
-      utterance.onstart = updateVoiceControls;
-      utterance.onend = updateVoiceControls;
-      utterance.onerror = updateVoiceControls;
-      window.speechSynthesis.speak(utterance);
-      updateVoiceControls();
+
+      const speakChunk = (index: number) => {
+        if (session !== speechSession || !voiceEnabled) return;
+        if (index >= chunks.length) {
+          speechProgress = " - completed";
+          updateVoiceControls();
+          return;
+        }
+
+        speechProgress = chunks.length > 1 ? ` - speaking ${index + 1}/${chunks.length}` : " - speaking";
+        const utterance = new SpeechSynthesisUtterance(chunks[index]);
+        utterance.lang = "hi-IN";
+        utterance.rate = 0.9;
+        utterance.pitch = 1.02;
+        utterance.volume = 1;
+        if (selectedHindiVoice) utterance.voice = selectedHindiVoice;
+        utterance.onstart = updateVoiceControls;
+        utterance.onend = () => speakChunk(index + 1);
+        utterance.onerror = event => {
+          if (session !== speechSession) return;
+          if (event.error !== "canceled" && event.error !== "interrupted") speakChunk(index + 1);
+        };
+        window.speechSynthesis.speak(utterance);
+        updateVoiceControls();
+      };
+
+      speakChunk(0);
     };
 
     if (speechAvailable) {
