@@ -37,7 +37,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { jsPDF } from "jspdf";
 import { toast } from "sonner";
 const aiBotGif = "https://static.naukimg.com/s/0/0/i/job-agent/pwa/v0/agent_icon.gif";
 
@@ -221,20 +220,10 @@ export default function AIAgentPage() {
     window.open(url, "_self");
   };
 
-  const handleSharePDF = (content: string) => {
+  const handleSharePDF = async (content: string) => {
     try {
-      const doc = new jsPDF();
-      const lines = doc.splitTextToSize(content, 180);
-      let y = 10;
-      lines.forEach((line: string) => {
-        if (y > 280) {
-          doc.addPage();
-          y = 10;
-        }
-        doc.text(line, 10, y);
-        y += 7;
-      });
-      doc.save(`ai-chat-${new Date().getTime()}.pdf`);
+      const { downloadAiChatPdf } = await import("@/lib/aiChatPdf");
+      await downloadAiChatPdf(content);
       toast.success("PDF generated successfully");
     } catch (error) {
       toast.error("Failed to generate PDF");
@@ -485,7 +474,7 @@ export default function AIAgentPage() {
                             Share via Email
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleSharePDF(msg.content)} className="gap-2 cursor-pointer text-xs">
+                          <DropdownMenuItem onClick={() => void handleSharePDF(msg.content)} className="gap-2 cursor-pointer text-xs">
                             <Download className="w-3.5 h-3.5" />
                             Download as PDF
                           </DropdownMenuItem>
