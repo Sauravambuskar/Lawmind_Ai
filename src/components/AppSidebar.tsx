@@ -54,7 +54,7 @@ const navSections = [
       { label: "Contacts", icon: Phone, path: "/contacts" },
       { label: "Notes", icon: StickyNote, path: "/notes" },
       { label: "Tasks", icon: ListTodo, path: "/tasks" },
-      { label: "Task Dashboard", icon: GaugeCircle, path: "/task-dashboard" },
+      { label: "Sarda Sir Dashboard", icon: GaugeCircle, path: "/sarda-sir-dashboard" },
       { label: "AI Agent", icon: AIAgentIcon, path: "/ai-agent" },
     ],
   },
@@ -144,7 +144,7 @@ function NavItems({
             {section.items.filter(item => {
               if (item.label === 'Staff Management') return isAdminOrAbove;
               if (item.label === 'Permissions') return isAdminOrAbove;
-              if (item.path === '/task-dashboard') return canViewDashboard;
+              if (item.path === '/sarda-sir-dashboard') return canViewDashboard;
               return canAccess(item.path);
             }).map(item => (
               <div key={item.label} className="relative">

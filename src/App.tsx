@@ -110,6 +110,7 @@ const App = () => (
                   <Route path="/ai-agent"            element={<AIAgentPage />} />
                   <Route path="/tasks"               element={<TasksPage />} />
                   <Route path="/task-dashboard"      element={<TaskDashboardPage />} />
+                  <Route path="/sarda-sir-dashboard" element={<TaskDashboardPage />} />
                   <Route path="/today"               element={<TodayPage />} />
                   <Route path="/profile"             element={<ProfilePage />} />
                 </Route>
