@@ -214,6 +214,38 @@ export function GuideButton() {
   const openGuide = () => {
     const speechAvailable = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
     let voiceEnabled = localStorage.getItem("lawmind-guide-voice") !== "off";
+    let selectedHindiVoice: SpeechSynthesisVoice | undefined;
+
+    const selectBestHindiVoice = () => {
+      if (!speechAvailable) return undefined;
+      const voices = window.speechSynthesis.getVoices();
+      const hindiVoices = voices.filter(voice => voice.lang.toLowerCase().startsWith("hi"));
+      const preferredNames: Array<[string, number]> = [
+        ["swara", 1000],
+        ["madhur", 950],
+        ["google हिन्दी", 925],
+        ["google hindi", 925],
+        ["heera", 875],
+        ["lekha", 850],
+        ["kalpana", 825],
+        ["hemant", 800],
+      ];
+
+      return hindiVoices
+        .map(voice => {
+          const name = voice.name.toLowerCase();
+          const preferred = preferredNames.find(([candidate]) => name.includes(candidate))?.[1] ?? 0;
+          const natural = name.includes("natural") || name.includes("online") ? 180 : 0;
+          const exactLocale = voice.lang.toLowerCase() === "hi-in" ? 100 : 0;
+          return { voice, score: preferred + natural + exactLocale };
+        })
+        .sort((a, b) => b.score - a.score)[0]?.voice;
+    };
+
+    const refreshHindiVoice = () => {
+      selectedHindiVoice = selectBestHindiVoice();
+      updateVoiceControls();
+    };
 
     const narrationForStep = (step?: DriveStep) => {
       const source = step?.popover?.description;
@@ -232,7 +264,8 @@ export function GuideButton() {
         button.textContent = window.speechSynthesis?.paused ? "Resume" : "Pause";
       });
       document.querySelectorAll<HTMLElement>(".lawmind-guide-voice-status").forEach(status => {
-        status.textContent = !speechAvailable ? "Voice is not supported in this browser" : voiceEnabled ? "Hindi voice guidance is on" : "Voice guidance is off";
+        const voiceName = selectedHindiVoice?.name || "device Hindi voice";
+        status.textContent = !speechAvailable ? "Voice is not supported in this browser" : voiceEnabled ? `Hindi voice: ${voiceName}` : "Voice guidance is off";
       });
     };
 
@@ -249,17 +282,22 @@ export function GuideButton() {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(narration);
       utterance.lang = "hi-IN";
-      utterance.rate = 0.88;
-      utterance.pitch = 1;
+      utterance.rate = 0.9;
+      utterance.pitch = 1.02;
       utterance.volume = 1;
-      const hindiVoice = window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith("hi"));
-      if (hindiVoice) utterance.voice = hindiVoice;
+      selectedHindiVoice ??= selectBestHindiVoice();
+      if (selectedHindiVoice) utterance.voice = selectedHindiVoice;
       utterance.onstart = updateVoiceControls;
       utterance.onend = updateVoiceControls;
       utterance.onerror = updateVoiceControls;
       window.speechSynthesis.speak(utterance);
       updateVoiceControls();
     };
+
+    if (speechAvailable) {
+      selectedHindiVoice = selectBestHindiVoice();
+      window.speechSynthesis.addEventListener("voiceschanged", refreshHindiVoice);
+    }
 
     const sharedSteps: DriveStep[] = [
       {
@@ -326,7 +364,10 @@ export function GuideButton() {
       },
       onHighlighted: (_element, step) => speakStep(step),
       onDeselected: stopNarration,
-      onDestroyed: stopNarration,
+      onDestroyed: () => {
+        stopNarration();
+        if (speechAvailable) window.speechSynthesis.removeEventListener("voiceschanged", refreshHindiVoice);
+      },
     }).drive();
   };
 
