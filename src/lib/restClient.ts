@@ -1,5 +1,7 @@
 ﻿import { supabase } from "@/integrations/supabase/client";
 
+import { fetchReadWithRetry, fetchWithTimeout } from "@/lib/http";
+
 /**
  * Authenticated REST client for Supabase PostgREST.
  *
@@ -14,6 +16,11 @@
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const REST_TIMEOUT_MS = 15_000;
+
+if (!SUPABASE_URL || !ANON_KEY) {
+  throw new Error("Missing Supabase environment configuration");
+}
 
 export class NotAuthenticatedError extends Error {
   constructor() {
@@ -34,26 +41,36 @@ async function authHeaders(extra: Record<string, string> = {}): Promise<Record<s
   };
 }
 
+async function errorMessage(res: Response, fallback: string): Promise<string> {
+  const body = await res.json().catch(() => null) as { message?: string; error?: string } | null;
+  return body?.message || body?.error || fallback;
+}
+
+async function restRequest(path: string, init: RequestInit = {}): Promise<Response> {
+  const method = (init.method || "GET").toUpperCase();
+  const headers = { ...(await authHeaders()), ...(init.headers as Record<string, string> | undefined) };
+  const url = `${SUPABASE_URL}/rest/v1/${path}`;
+
+  if (method === "GET") {
+    return fetchReadWithRetry(url, { ...init, headers }, { attempts: 2, timeoutMs: REST_TIMEOUT_MS });
+  }
+  return fetchWithTimeout(url, { ...init, headers }, REST_TIMEOUT_MS);
+}
+
 /** GET rows. `path` is everything after /rest/v1/ e.g. `cases?select=*&limit=10` */
 export async function restGet<T = unknown>(path: string): Promise<T[]> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: await authHeaders(),
-  });
+  const res = await restRequest(path);
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(body.message || `Request failed (${res.status})`);
+    throw new Error(await errorMessage(res, `Request failed (${res.status})`));
   }
   return res.json();
 }
 
 /** GET a single row (throws if not exactly one). */
 export async function restGetOne<T = unknown>(path: string): Promise<T> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: await authHeaders({ Accept: "application/vnd.pgrst.object+json" }),
-  });
+  const res = await restRequest(path, { headers: { Accept: "application/vnd.pgrst.object+json" } });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(body.message || `Request failed (${res.status})`);
+    throw new Error(await errorMessage(res, `Request failed (${res.status})`));
   }
   return res.json();
 }
@@ -87,49 +104,43 @@ export async function restInsert<T = unknown>(
     opts.ignoreDuplicates ? "resolution=ignore-duplicates" : null,
   ].filter(Boolean).join(",");
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+  const res = await restRequest(table, {
     method: "POST",
-    headers: await authHeaders({ "Content-Type": "application/json", Prefer: prefer }),
+    headers: { "Content-Type": "application/json", Prefer: prefer },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message || `Insert failed (${res.status})`);
+    throw new Error(await errorMessage(res, `Insert failed (${res.status})`));
   }
   return opts.returning ? res.json() : [];
 }
 
 /** UPDATE rows matching `filter` (e.g. `id=eq.123`). */
 export async function restUpdate(table: string, filter: string, body: unknown): Promise<void> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filter}`, {
+  const res = await restRequest(`${table}?${filter}`, {
     method: "PATCH",
-    headers: await authHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+    headers: { "Content-Type": "application/json", Prefer: "return=minimal" },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message || `Update failed (${res.status})`);
+    throw new Error(await errorMessage(res, `Update failed (${res.status})`));
   }
 }
 
 /** DELETE rows matching `filter` (e.g. `id=eq.123`). */
 export async function restDelete(table: string, filter: string): Promise<void> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filter}`, {
+  const res = await restRequest(`${table}?${filter}`, {
     method: "DELETE",
-    headers: await authHeaders(),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message || `Delete failed (${res.status})`);
+    throw new Error(await errorMessage(res, `Delete failed (${res.status})`));
   }
 }
 
 /** Exact row count for a table + optional filter, without downloading rows. */
 export async function restCount(table: string, filter = ""): Promise<number> {
   const q = filter ? `${table}?select=id&${filter}&limit=1` : `${table}?select=id&limit=1`;
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${q}`, {
-    headers: await authHeaders({ Prefer: "count=exact" }),
-  });
+  const res = await restRequest(q, { headers: { Prefer: "count=exact" } });
   if (!res.ok) return 0;
   const range = res.headers.get("content-range") || "*/0";
   return Number(range.split("/")[1]) || 0;

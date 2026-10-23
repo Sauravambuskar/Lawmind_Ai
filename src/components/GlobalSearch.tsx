@@ -65,8 +65,8 @@ export function GlobalSearch() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Search cases, clients, invoices..."
-          className="pl-9 pr-8 w-64 lg:w-80 h-9 bg-muted/50 border-border"
+          placeholder="Search..."
+          className="h-9 w-full min-w-0 pl-9 pr-8 bg-muted/50 border-border"
           value={query}
           onChange={e => { setQuery(e.target.value); setShowResults(true); }}
           onFocus={() => query.length >= 2 && setShowResults(true)}
@@ -78,7 +78,7 @@ export function GlobalSearch() {
         )}
       </div>
       {showResults && query.length >= 2 && (
-        <div className="absolute top-full mt-1 left-0 w-full bg-card border border-border rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+        <div className="fixed left-3 right-3 top-[4.25rem] z-50 max-h-[70vh] overflow-y-auto rounded-lg border border-border bg-card shadow-lg sm:absolute sm:left-0 sm:right-auto sm:top-full sm:mt-1 sm:w-full sm:max-h-80">
           {loading ? (
             <p className="p-4 text-sm text-muted-foreground text-center">Searching...</p>
           ) : results.length === 0 ? (

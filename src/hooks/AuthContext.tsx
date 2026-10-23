@@ -36,6 +36,8 @@ export const AuthContext = createContext<AuthContextType>({
   refreshProfile: async () => {},
 });
 
+const PROFILE_SELECT = "id,user_id,full_name,email,phone,avatar_url,role,status,created_at,sections";
+
 function buildProfile(data: Record<string, unknown>): UserProfile {
   return {
     id: data.id as string,
@@ -47,6 +49,7 @@ function buildProfile(data: Record<string, unknown>): UserProfile {
     role: (data.role as UserRole) || 'agent',
     status: (data.status as 'active' | 'inactive') || 'active',
     created_at: data.created_at as string,
+    sections: Array.isArray(data.sections) ? data.sections as string[] : null,
   };
 }
 
@@ -70,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     supabase
       .from("profiles")
-      .select("*")
+      .select(PROFILE_SELECT)
       .eq("user_id", session.user.id)
       .single()
       .then(({ data }) => {
@@ -82,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session?.user?.id) return;
     const { data } = await supabase
       .from("profiles")
-      .select("*")
+      .select(PROFILE_SELECT)
       .eq("user_id", session.user.id)
       .single();
     if (data) setProfile(buildProfile(data));

@@ -193,7 +193,7 @@ function microGuideSteps(): DriveStep[] {
   const steps: DriveStep[] = [];
 
   for (const element of candidates) {
-    if (element.closest('[data-guide="guide-button"]') || element.disabled || element.getAttribute("aria-hidden") === "true") continue;
+    if (element.closest('[data-guide="guide-button"]') || (element as HTMLInputElement).disabled || element.getAttribute("aria-hidden") === "true") continue;
     const rect = element.getBoundingClientRect();
     const style = window.getComputedStyle(element);
     if (rect.width < 12 || rect.height < 12 || style.display === "none" || style.visibility === "hidden") continue;

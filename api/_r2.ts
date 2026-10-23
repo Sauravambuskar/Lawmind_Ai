@@ -1,7 +1,21 @@
-import type { VercelRequest } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { S3Client } from '@aws-sdk/client-s3';
 
 export const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || '';
+
+export function isR2Configured(): boolean {
+  return Boolean(
+    R2_BUCKET_NAME &&
+    process.env.R2_ACCOUNT_ID &&
+    process.env.R2_ACCESS_KEY_ID &&
+    process.env.R2_SECRET_ACCESS_KEY,
+  );
+}
+
+export function setPrivateApiHeaders(res: VercelResponse): void {
+  res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+}
 
 export const ALLOWED_FOLDERS = [
   'evidence',
@@ -32,10 +46,19 @@ export async function getUserId(req: VercelRequest): Promise<string | null> {
   const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
   if (!auth?.startsWith('Bearer ') || !url || !anonKey) return null;
 
-  const res = await fetch(`${url}/auth/v1/user`, {
-    headers: { apikey: anonKey, Authorization: auth },
-  });
-  if (!res.ok) return null;
-  const user = await res.json();
-  return user?.id ?? null;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const res = await fetch(`${url}/auth/v1/user`, {
+      headers: { apikey: anonKey, Authorization: auth },
+      signal: controller.signal,
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return user?.id ?? null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
 }

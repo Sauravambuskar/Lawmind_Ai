@@ -8,11 +8,7 @@ interface TinyFishConfig {
 interface TinyFishRequest {
   url: string;
   goal: string;
-  output_schema?: {
-    type: "object";
-    properties: Record<string, { type: string; description?: string }>;
-    required?: string[];
-  };
+  output_schema?: Record<string, unknown>;
   max_steps?: number;
   max_duration_seconds?: number;
 }

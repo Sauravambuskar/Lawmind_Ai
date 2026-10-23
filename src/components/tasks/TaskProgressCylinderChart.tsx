@@ -34,7 +34,7 @@ export function TaskProgressCylinderChart({ data }: { data: TaskProgressChartIte
     const mutedColor = dark ? "#94a3b8" : "#64748b";
     const gridColor = dark ? "rgba(148, 163, 184, 0.16)" : "rgba(100, 116, 139, 0.16)";
 
-    const chart = ChartEngine.chart(containerRef.current, {
+    const chart = (ChartEngine as any).chart(containerRef.current, {
       chart: {
         type: "cylinder",
         backgroundColor: "transparent",
@@ -91,7 +91,7 @@ export function TaskProgressCylinderChart({ data }: { data: TaskProgressChartIte
       tooltip: {
         useHTML: true,
         headerFormat: "<b>{category}</b><br/>",
-        pointFormatter: function () {
+        pointFormatter: function (this: any) {
           const item = data[this.index];
           return `<span style="color:${this.color}">●</span> <b>${this.y}% complete</b><br/>${item.openTasks} open / ${item.completedTasks} done`;
         },

@@ -1,11 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { R2_BUCKET_NAME, isAllowedKey, s3Client } from './_r2.js';
+import { R2_BUCKET_NAME, isAllowedKey, isR2Configured, s3Client } from './_r2.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+  if (!isR2Configured()) {
+    return res.status(503).json({ error: 'File storage is not configured' });
   }
 
   const raw = req.query.key;
@@ -18,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const url = await getSignedUrl(
       s3Client,
       new GetObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }),
-      { expiresIn: 3600 },
+      { expiresIn: 300 },
     );
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Location', url);

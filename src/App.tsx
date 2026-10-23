@@ -53,7 +53,12 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 2,      // 2 min before refetch
+      gcTime: 1000 * 60 * 15,
       retry: 1,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 0,
     },
   },
 });
@@ -64,7 +69,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <BrowserRouter>
           <AuthProvider>
             <Suspense fallback={<PageLoader />}>
               <Routes>

@@ -16,7 +16,7 @@ export function AppLayout() {
   }, [isMobile]);
 
   return (
-    <div className="min-h-screen bg-background font-sans text-foreground">
+    <div className="min-h-screen overflow-x-hidden bg-background font-sans text-foreground">
       {/* Mobile overlay */}
       {isMobile && mobileOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 transition-opacity" onClick={() => setMobileOpen(false)} />
@@ -30,10 +30,10 @@ export function AppLayout() {
         onMobileClose={() => setMobileOpen(false)}
       />
 
-      <div className={`transition-all duration-300 ease-in-out ${isMobile ? "ml-0" : collapsed ? "ml-[64px]" : "ml-60"} flex flex-col min-h-screen`}>
+      <div className={`transition-all duration-300 ease-in-out ${isMobile ? "ml-0" : collapsed ? "ml-[64px]" : "ml-60"} flex min-w-0 flex-col min-h-screen`}>
         <AppHeader onToggleSidebar={() => isMobile ? setMobileOpen(!mobileOpen) : setCollapsed(!collapsed)} />
-        <main className="flex-1 p-4 md:p-6 xl:p-8" data-guide="page-content">
-          <div className="mx-auto max-w-7xl">
+        <main className="flex-1 min-w-0 px-3 py-4 sm:px-4 md:p-6 xl:p-8" data-guide="page-content">
+          <div className="mx-auto w-full max-w-7xl min-w-0">
             <Outlet />
           </div>
         </main>

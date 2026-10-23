@@ -1,13 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { R2_BUCKET_NAME, getUserId, isAllowedKey, s3Client } from './_r2.js';
+import { R2_BUCKET_NAME, getUserId, isAllowedKey, isR2Configured, s3Client, setPrivateApiHeaders } from './_r2.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  setPrivateApiHeaders(res);
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   if (!(await getUserId(req))) {
     return res.status(401).json({ error: 'Please sign in again' });
+  }
+  if (!isR2Configured()) {
+    return res.status(503).json({ error: 'File storage is not configured' });
   }
 
   const key = String(req.body?.key || '');

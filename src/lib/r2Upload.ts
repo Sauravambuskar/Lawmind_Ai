@@ -3,6 +3,7 @@
  * returns a short-lived presigned PUT URL, and files are read back via /files/*.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { fetchWithTimeout } from "@/lib/http";
 
 export type R2Folder = "evidence" | "documents" | "case-documents" | "receipts" | "important-docs";
 
@@ -23,11 +24,11 @@ async function authHeader(): Promise<Record<string, string>> {
 export async function uploadToR2(file: File, folder: R2Folder = "evidence"): Promise<R2UploadResult> {
   const contentType = file.type || "application/octet-stream";
 
-  const response = await fetch("/api/r2-upload", {
+  const response = await fetchWithTimeout("/api/r2-upload", {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await authHeader()) },
     body: JSON.stringify({ filename: file.name, contentType, folder }),
-  });
+  }, 15_000);
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error || `Could not start upload (${response.status})`);
@@ -35,11 +36,11 @@ export async function uploadToR2(file: File, folder: R2Folder = "evidence"): Pro
 
   const { uploadUrl, publicUrl, key } = await response.json();
 
-  const uploadResponse = await fetch(uploadUrl, {
+  const uploadResponse = await fetchWithTimeout(uploadUrl, {
     method: "PUT",
     body: file,
     headers: { "Content-Type": contentType },
-  });
+  }, 120_000);
   if (!uploadResponse.ok) {
     throw new Error(`Upload failed (${uploadResponse.status})`);
   }
@@ -55,11 +56,11 @@ export async function uploadToR2(file: File, folder: R2Folder = "evidence"): Pro
 export async function deleteR2File(url: string | null | undefined): Promise<void> {
   if (!url?.startsWith("/files/")) return;
   try {
-    await fetch("/api/r2-delete", {
+    await fetchWithTimeout("/api/r2-delete", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(await authHeader()) },
       body: JSON.stringify({ key: decodeURIComponent(url.slice("/files/".length)) }),
-    });
+    }, 15_000);
   } catch (err) {
     console.warn("Could not delete stored file:", err);
   }

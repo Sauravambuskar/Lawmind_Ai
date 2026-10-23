@@ -14,7 +14,7 @@ import { usePagination } from "@/hooks/usePagination";
 import { TablePagination } from "@/components/TablePagination";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { exportToCSV } from "@/lib/export";
-import { downloadInvoicePdf } from "@/lib/invoicePdf";
+import { useDeferredSearch } from "@/hooks/useDeferredSearch";
 
 const emptyForm = { invoice_number: "", amount: "", tax: "", client_id: "", case_id: "", due_date: "", notes: "", status: "draft" };
 const invoiceStatuses = ["all", "draft", "sent", "partial", "paid", "overdue", "cancelled"];
@@ -34,6 +34,7 @@ export function InvoiceList({ invoices, clients, cases, payments }: Props) {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const deferredSearch = useDeferredSearch(search);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -75,8 +76,18 @@ export function InvoiceList({ invoices, clients, cases, payments }: Props) {
     setOpen(true);
   };
 
+  const handleDownloadPdf = async (invoice: any) => {
+    try {
+      const { downloadInvoicePdf } = await import("@/lib/invoicePdf");
+      await downloadInvoicePdf(invoice);
+    } catch (error) {
+      console.error("Invoice PDF generation failed:", error);
+      toast.error("Could not generate the invoice PDF");
+    }
+  };
+
   const filtered = invoices
-    .filter(inv => inv.invoice_number.toLowerCase().includes(search.toLowerCase()) || ((inv as any).clients?.name || "").toLowerCase().includes(search.toLowerCase()))
+    .filter(inv => inv.invoice_number.toLowerCase().includes(deferredSearch) || ((inv as any).clients?.name || "").toLowerCase().includes(deferredSearch))
     .filter(inv => statusFilter === "all" || inv.status === statusFilter);
   
   const statusColor = (s: string) => s === "paid" ? "default" : s === "sent" ? "secondary" : s === "partial" ? "outline" : s === "overdue" ? "destructive" : "outline";
@@ -186,7 +197,7 @@ export function InvoiceList({ invoices, clients, cases, payments }: Props) {
                 </td>
                 <td className="py-4 px-6">
                   <div className="flex items-center justify-center gap-1.5">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => downloadInvoicePdf(inv)} title="Download PDF">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => void handleDownloadPdf(inv)} title="Download PDF">
                       <FileDown className="w-4 h-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted transition-colors" onClick={() => openEdit(inv)}>

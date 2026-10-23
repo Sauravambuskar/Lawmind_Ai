@@ -18,7 +18,6 @@ import {
   Plus, Check, ChevronRight, FileSignature, ArrowLeftRight, UserCheck, Scale
 } from "lucide-react";
 import { toast } from "sonner";
-import { jsPDF } from "jspdf";
 
 interface NoticeDraft {
   id: string;
@@ -395,7 +394,7 @@ Response Format:
   // Save to supabase document center
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const pdf = buildNoticePdf().output("blob");
+      const pdf = (await buildNoticePdf()).output("blob");
       const { url } = await uploadToR2(
         new File([pdf], noticeFileName(), { type: "application/pdf" }),
         "documents",
@@ -424,7 +423,8 @@ Response Format:
   const noticeFileName = () =>
     `legal_notice_${formData.clientName.replace(/\s+/g, "_").slice(0, 15)}.pdf`;
 
-  const buildNoticePdf = () => {
+  const buildNoticePdf = async () => {
+      const { jsPDF } = await import("jspdf");
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -559,9 +559,9 @@ Response Format:
   };
 
   // PDF Export handler
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
-      buildNoticePdf().save(noticeFileName());
+      (await buildNoticePdf()).save(noticeFileName());
       toast.success("PDF notice downloaded successfully");
     } catch (error) {
       console.error(error);

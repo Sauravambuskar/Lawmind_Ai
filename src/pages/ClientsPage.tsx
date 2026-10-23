@@ -17,6 +17,7 @@ import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { exportToCSV } from "@/lib/export";
 import { CSVImport } from "@/components/CSVImport";
 import { PageLoader } from "@/components/PageLoader";
+import { useDeferredSearch } from "@/hooks/useDeferredSearch";
 
 const emptyForm = { name: "", email: "", phone: "", city: "", state: "", country: "" };
 const fields = [
@@ -36,11 +37,12 @@ export default function ClientsPage() {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const deferredSearch = useDeferredSearch(search);
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("clients").select("id,name,email,phone,city,state,country,created_at,updated_at,created_by").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -75,7 +77,7 @@ export default function ClientsPage() {
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };
   const openEdit = (client: any) => { setEditId(client.id); setForm({ name: client.name, email: client.email || "", phone: client.phone || "", city: client.city || "", state: client.state || "", country: client.country || "" }); setOpen(true); };
 
-  const filtered = clients.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || (c.email || "").toLowerCase().includes(search.toLowerCase()));
+  const filtered = clients.filter(c => c.name.toLowerCase().includes(deferredSearch) || (c.email || "").toLowerCase().includes(deferredSearch));
   const { paginatedItems, currentPage, totalPages, totalItems, startIndex, nextPage, prevPage, goToPage } = usePagination(filtered);
 
   const showLoader = useMinLoader(isLoading);

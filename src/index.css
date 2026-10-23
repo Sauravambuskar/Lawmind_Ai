@@ -101,6 +101,11 @@
     line-height: 1.6;
     letter-spacing: -0.005em;
     color: hsl(var(--foreground));
+    overflow-x: hidden;
+  }
+
+  img, video, canvas, svg {
+    max-width: 100%;
   }
 
   /* ── Headings — EB Garamond (legal serif) ── */
@@ -341,6 +346,81 @@ tbody tr {
 }
 .lawmind-guide-intro p {
   margin: 0;
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    min-width: 0;
+  }
+
+  .grid.grid-cols-2,
+  .grid.grid-cols-3,
+  .grid.grid-cols-4,
+  .grid.grid-cols-5,
+  .grid.grid-cols-6 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .overflow-x-auto,
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 640px;
+  }
+
+  th,
+  td {
+    white-space: nowrap;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  [data-guide="page-content"] .rounded-xl,
+  [data-guide="page-content"] .rounded-2xl {
+    border-radius: 0.5rem;
+  }
+
+  [data-guide="page-content"] .p-6 {
+    padding: 1rem;
+  }
+
+  [data-guide="page-content"] .px-6 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  [data-guide="page-content"] .py-6 {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .driver-popover.lawmind-guide-popover {
+    max-width: calc(100vw - 24px);
+  }
+
+  .lawmind-guide-intro {
+    align-items: flex-start;
+  }
+
+  .lawmind-guide-intro img {
+    width: 64px;
+    height: 64px;
+  }
+
+  button[data-guide="guide-button"],
+  [data-guide="guide-button"] {
+    max-width: calc(100vw - 24px);
+  }
 }
 @keyframes lawmind-guide-float {
   0%, 100% { transform: translateY(0) rotate(0deg); }

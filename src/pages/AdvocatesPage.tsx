@@ -16,6 +16,7 @@ import { TablePagination } from "@/components/TablePagination";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { exportToCSV } from "@/lib/export";
 import { PageLoader } from "@/components/PageLoader";
+import { useDeferredSearch } from "@/hooks/useDeferredSearch";
 
 const emptyForm = { name: "", email: "", phone: "", specialization: "", bar_number: "" };
 
@@ -27,11 +28,12 @@ export default function AdvocatesPage() {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const deferredSearch = useDeferredSearch(search);
 
   const { data: advocates = [], isLoading } = useQuery({
     queryKey: ["advocates"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("advocates").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("advocates").select("id,name,email,phone,specialization,bar_number,status,created_at,updated_at,created_by").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -63,7 +65,7 @@ export default function AdvocatesPage() {
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };
   const openEdit = (a: any) => { setEditId(a.id); setForm({ name: a.name, email: a.email || "", phone: a.phone || "", specialization: a.specialization || "", bar_number: a.bar_number || "" }); setOpen(true); };
 
-  const filtered = advocates.filter(a => a.name.toLowerCase().includes(search.toLowerCase()) || (a.email || "").toLowerCase().includes(search.toLowerCase()));
+  const filtered = advocates.filter(a => a.name.toLowerCase().includes(deferredSearch) || (a.email || "").toLowerCase().includes(deferredSearch));
   const { paginatedItems, currentPage, totalPages, totalItems, startIndex, nextPage, prevPage, goToPage } = usePagination(filtered);
 
   const showLoader = useMinLoader(isLoading);

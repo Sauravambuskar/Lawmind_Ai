@@ -23,7 +23,11 @@ const AIAgentIcon = ({ className, strokeWidth, ...props }: { className?: string;
   />
 );
 
-const navSections = [
+interface NavChild { label: string; path: string }
+interface NavItem { label: string; icon: any; path: string; children?: NavChild[] }
+interface NavSection { title: string; items: NavItem[] }
+
+const navSections: NavSection[] = [
   {
     title: "Home",
     items: [

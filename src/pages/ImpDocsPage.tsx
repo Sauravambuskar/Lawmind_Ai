@@ -12,7 +12,6 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import mammoth from "mammoth";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -135,6 +134,7 @@ const ImpDocsPage = () => {
       if (type === "DOCX") {
         const response = await fetch(fileUrl);
         const arrayBuffer = await response.arrayBuffer();
+        const { default: mammoth } = await import("mammoth");
         const result = await mammoth.convertToHtml({ arrayBuffer });
         setDocHtml(result.value);
       } else {

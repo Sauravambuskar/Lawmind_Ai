@@ -17,6 +17,7 @@ import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { exportToCSV } from "@/lib/export";
 import { CSVImport } from "@/components/CSVImport";
 import { PageLoader } from "@/components/PageLoader";
+import { useDeferredSearch } from "@/hooks/useDeferredSearch";
 
 const emptyForm = { name: "", email: "", phone: "", company: "", designation: "", contact_type: "general", notes: "" };
 const contactTypes = ["general", "client", "witness", "expert", "court", "other"];
@@ -28,11 +29,12 @@ export default function ContactsPage() {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const deferredSearch = useDeferredSearch(search);
 
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ["contacts"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("contacts").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("contacts").select("id,name,email,phone,company,designation,contact_type,notes,created_at,updated_at").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -60,7 +62,7 @@ export default function ContactsPage() {
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };
   const openEdit = (c: any) => { setEditId(c.id); setForm({ name: c.name, email: c.email || "", phone: c.phone || "", company: c.company || "", designation: c.designation || "", contact_type: c.contact_type, notes: c.notes || "" }); setOpen(true); };
 
-  const filtered = contacts.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || (c.email || "").toLowerCase().includes(search.toLowerCase()) || (c.company || "").toLowerCase().includes(search.toLowerCase()));
+  const filtered = contacts.filter(c => c.name.toLowerCase().includes(deferredSearch) || (c.email || "").toLowerCase().includes(deferredSearch) || (c.company || "").toLowerCase().includes(deferredSearch));
   const { paginatedItems, currentPage, totalPages, totalItems, startIndex, nextPage, prevPage, goToPage } = usePagination(filtered);
 
   const showLoader = useMinLoader(isLoading);

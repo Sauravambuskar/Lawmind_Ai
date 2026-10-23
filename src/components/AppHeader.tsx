@@ -20,17 +20,17 @@ export function AppHeader({ onToggleSidebar }: { onToggleSidebar: () => void }) 
   const today = format(new Date(), "EEE, dd MMM yyyy");
 
   return (
-    <header data-guide="header" className="sticky top-0 z-30 h-16 bg-background border-b border-border/70 flex items-center justify-between px-4 md:px-6"
+    <header data-guide="header" className="sticky top-0 z-30 min-h-16 bg-background border-b border-border/70 flex items-center justify-between gap-2 px-2.5 py-2 sm:px-4 md:px-6"
       style={{ borderTop: "2px solid hsl(42 58% 52% / 0.35)" }}>
 
       {/* Left — toggle + search + AI */}
-      <div className="flex items-center gap-2 md:gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2 md:gap-3">
         <Button variant="ghost" size="icon" onClick={onToggleSidebar}
           className="text-muted-foreground hover:bg-muted hover:text-foreground shrink-0 rounded-md">
           <Menu className="w-4.5 h-4.5" />
         </Button>
 
-        <div className="w-48 sm:w-64 md:w-80" data-guide="global-search">
+        <div className="min-w-0 flex-1 sm:max-w-64 md:max-w-80" data-guide="global-search">
           <GlobalSearch />
         </div>
 
@@ -57,14 +57,14 @@ export function AppHeader({ onToggleSidebar }: { onToggleSidebar: () => void }) 
       </div>
 
       {/* Right — date + user + actions */}
-      <div className="flex items-center gap-2 md:gap-3">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 md:gap-3">
 
         {/* Date */}
         <div className="hidden lg:block text-right mr-1">
           <span className="text-[11px] text-muted-foreground font-medium tracking-wide">{today}</span>
         </div>
 
-        <div className="h-6 w-px bg-border hidden sm:block" />
+        <div className="h-6 w-px bg-border hidden md:block" />
 
         {/* User info */}
         <div className="hidden md:flex flex-col items-end gap-0.5">

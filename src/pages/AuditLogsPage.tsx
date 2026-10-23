@@ -11,18 +11,20 @@ import { useMinLoader } from "@/hooks/useMinLoader";
 import { PageLoader } from "@/components/PageLoader";
 import { TablePagination } from "@/components/TablePagination";
 import { usePagination } from "@/hooks/usePagination";
+import { useDeferredSearch } from "@/hooks/useDeferredSearch";
 
 export default function AuditLogsPage() {
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
   const [tableFilter, setTableFilter] = useState("all");
+  const deferredSearch = useDeferredSearch(search);
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["audit_logs"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("audit_logs")
-        .select("*")
+        .select("id,user_id,action,table_name,record_id,old_data,new_data,created_at")
         .order("created_at", { ascending: false })
         .limit(1000);
 
@@ -42,9 +44,9 @@ export default function AuditLogsPage() {
 
   const filteredLogs = logs
     .filter(l => 
-      (l.table_name || "").toLowerCase().includes(search.toLowerCase()) || 
-      (l.record_id || "").toLowerCase().includes(search.toLowerCase()) ||
-      ((l as any).profiles?.full_name || "").toLowerCase().includes(search.toLowerCase())
+      (l.table_name || "").toLowerCase().includes(deferredSearch) ||
+      (l.record_id || "").toLowerCase().includes(deferredSearch) ||
+      ((l as any).profiles?.full_name || "").toLowerCase().includes(deferredSearch)
     )
     .filter(l => actionFilter === "all" || l.action === actionFilter)
     .filter(l => tableFilter === "all" || l.table_name === tableFilter);

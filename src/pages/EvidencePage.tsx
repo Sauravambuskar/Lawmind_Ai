@@ -277,7 +277,7 @@ export default function EvidencePage() {
                     <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       {e.file_url && (
                         <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-rose-500/10 hover:text-rose-600 transition-colors" title="View File" onClick={() => {
-                          window.open(e.file_url, '_blank');
+                          window.open(e.file_url!, '_blank');
                         }}>
                           <Eye className="w-4 h-4" />
                         </Button>

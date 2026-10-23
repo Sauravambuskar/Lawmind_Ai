@@ -19,6 +19,7 @@ import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { exportToCSV } from "@/lib/export";
 import { PageLoader } from "@/components/PageLoader";
 import { format } from "date-fns";
+import { useDeferredSearch } from "@/hooks/useDeferredSearch";
 
 const emptyForm = { subject: "", description: "", client_id: "", case_id: "", status: "pending" };
 
@@ -29,11 +30,12 @@ export default function AdvicePage() {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const deferredSearch = useDeferredSearch(search);
 
   const { data: advice = [], isLoading } = useQuery({
     queryKey: ["advice"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("advice").select("*, clients(name)").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("advice").select("id,subject,description,client_id,case_id,status,advice_date,created_at,updated_at,created_by,clients(name)").order("created_at", { ascending: false });
       if (error) throw error;
       // advice.case_id has no FK to cases, so PostgREST can't embed it.
       const { data: caseRows } = await supabase.from("cases").select("id, title");
@@ -73,7 +75,7 @@ export default function AdvicePage() {
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };
   const openEdit = (a: any) => { setEditId(a.id); setForm({ subject: a.subject, description: a.description || "", client_id: a.client_id || "", case_id: a.case_id || "", status: a.status }); setOpen(true); };
 
-  const filtered = advice.filter(a => (a.subject || "").toLowerCase().includes(search.toLowerCase()) || (a as any).clients?.name?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = advice.filter(a => (a.subject || "").toLowerCase().includes(deferredSearch) || (a as any).clients?.name?.toLowerCase().includes(deferredSearch));
   const { paginatedItems, currentPage, totalPages, totalItems, startIndex, nextPage, prevPage, goToPage } = usePagination(filtered);
 
   const showLoader = useMinLoader(isLoading);

@@ -2,21 +2,28 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomUUID } from 'crypto';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { ALLOWED_FOLDERS, R2_BUCKET_NAME, getUserId, s3Client } from './_r2.js';
+import { ALLOWED_FOLDERS, R2_BUCKET_NAME, getUserId, isR2Configured, s3Client, setPrivateApiHeaders } from './_r2.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  setPrivateApiHeaders(res);
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   if (!(await getUserId(req))) {
     return res.status(401).json({ error: 'Please sign in again to upload files' });
   }
+  if (!isR2Configured()) {
+    return res.status(503).json({ error: 'File storage is not configured' });
+  }
 
   try {
     const { filename, contentType, folder = 'evidence' } = req.body || {};
 
-    if (!filename) {
+    if (!filename || typeof filename !== 'string' || filename.length > 255) {
       return res.status(400).json({ error: 'Filename is required' });
+    }
+    if (typeof contentType !== 'undefined' && (typeof contentType !== 'string' || contentType.length > 150)) {
+      return res.status(400).json({ error: 'Invalid content type' });
     }
     if (!(ALLOWED_FOLDERS as readonly string[]).includes(folder)) {
       return res.status(400).json({ error: 'Invalid folder' });
@@ -34,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         Key: key,
         ContentType: contentType || 'application/octet-stream',
       }),
-      { expiresIn: 3600 },
+      { expiresIn: 900 },
     );
 
     // The bucket is private; files are read through /files/* (see api/r2-file.ts).

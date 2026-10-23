@@ -262,6 +262,7 @@ export type Database = {
           company: string | null
           contact_type: string
           created_at: string
+          created_by: string
           designation: string | null
           email: string | null
           id: string
@@ -275,6 +276,7 @@ export type Database = {
           company?: string | null
           contact_type?: string
           created_at?: string
+          created_by?: string
           designation?: string | null
           email?: string | null
           id?: string
@@ -282,12 +284,13 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           company?: string | null
           contact_type?: string
           created_at?: string
+          created_by?: string
           designation?: string | null
           email?: string | null
           id?: string
@@ -347,6 +350,7 @@ export type Database = {
         Row: {
           case_id: string
           created_at: string
+          created_by: string
           description: string | null
           evidence_type: string | null
           file_url: string | null
@@ -359,6 +363,7 @@ export type Database = {
         Insert: {
           case_id: string
           created_at?: string
+          created_by?: string
           description?: string | null
           evidence_type?: string | null
           file_url?: string | null
@@ -366,11 +371,12 @@ export type Database = {
           submitted_date?: string | null
           title: string
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           case_id?: string
           created_at?: string
+          created_by?: string
           description?: string | null
           evidence_type?: string | null
           file_url?: string | null
@@ -393,6 +399,7 @@ export type Database = {
       expense_types: {
         Row: {
           created_at: string
+          created_by: string
           description: string | null
           id: string
           name: string
@@ -400,13 +407,15 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string
           description?: string | null
           id?: string
           name: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           created_at?: string
+          created_by?: string
           description?: string | null
           id?: string
           name?: string
@@ -420,6 +429,7 @@ export type Database = {
           case_id: string | null
           category: string | null
           created_at: string
+          created_by: string
           description: string | null
           expense_date: string
           id: string
@@ -433,19 +443,21 @@ export type Database = {
           case_id?: string | null
           category?: string | null
           created_at?: string
+          created_by?: string
           description?: string | null
           expense_date?: string
           id?: string
           receipt_url?: string | null
           title: string
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           amount?: number
           case_id?: string | null
           category?: string | null
           created_at?: string
+          created_by?: string
           description?: string | null
           expense_date?: string
           id?: string
@@ -527,7 +539,9 @@ export type Database = {
           paid_date: string | null
           status: string
           tax: number
+          tax_amount: number
           total: number
+          total_amount: number
           updated_at: string
           user_id: string
         }
@@ -543,7 +557,9 @@ export type Database = {
           paid_date?: string | null
           status?: string
           tax?: number
+          tax_amount?: number
           total?: number
+          total_amount?: number
           updated_at?: string
           user_id: string
         }
@@ -559,7 +575,9 @@ export type Database = {
           paid_date?: string | null
           status?: string
           tax?: number
+          tax_amount?: number
           total?: number
+          total_amount?: number
           updated_at?: string
           user_id?: string
         }
@@ -616,6 +634,7 @@ export type Database = {
           client_id: string | null
           content: string | null
           created_at: string
+          created_by: string
           id: string
           title: string
           updated_at: string
@@ -626,20 +645,225 @@ export type Database = {
           client_id?: string | null
           content?: string | null
           created_at?: string
+          created_by?: string
           id?: string
           title: string
           updated_at?: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           case_id?: string | null
           client_id?: string | null
           content?: string | null
           created_at?: string
+          created_by?: string
           id?: string
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          id: string
+          user_id: string
+          action: string
+          table_name: string
+          record_id: string | null
+          old_data: Json | null
+          new_data: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          action: string
+          table_name: string
+          record_id?: string | null
+          old_data?: Json | null
+          new_data?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          action?: string
+          table_name?: string
+          record_id?: string | null
+          old_data?: Json | null
+          new_data?: Json | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      error_logs: {
+        Row: {
+          id: string
+          message: string
+          stack: string | null
+          context: Json | null
+          user_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message: string
+          stack?: string | null
+          context?: Json | null
+          user_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          message?: string
+          stack?: string | null
+          context?: Json | null
+          user_id?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      ai_config: {
+        Row: {
+          id: string
+          provider: string
+          api_key: string
+          base_url: string | null
+          model: string | null
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          provider: string
+          api_key: string
+          base_url?: string | null
+          model?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          provider?: string
+          api_key?: string
+          base_url?: string | null
+          model?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          id: string
+          key: string
+          value: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          value: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          value?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      case_templates: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          category: string | null
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          category?: string | null
+          created_by?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          category?: string | null
+          created_by?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      case_template_tasks: {
+        Row: {
+          id: string
+          template_id: string
+          title: string
+          description: string | null
+          days_offset: number
+          priority: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          template_id: string
+          title: string
+          description?: string | null
+          days_offset?: number
+          priority?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          template_id?: string
+          title?: string
+          description?: string | null
+          days_offset?: number
+          priority?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_template_tasks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "case_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      important_documents: {
+        Row: {
+          id: string
+          name: string
+          file_url: string | null
+          file_type: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          file_url?: string | null
+          file_type?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          file_url?: string | null
+          file_type?: string | null
+          created_at?: string
         }
         Relationships: []
       }
@@ -652,6 +876,7 @@ export type Database = {
           id: string
           phone: string | null
           role: 'super_admin' | 'admin' | 'agent' | 'lawyer'
+          sections: string[] | null
           status: 'active' | 'inactive'
           updated_at: string
           user_id: string
@@ -664,6 +889,7 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: 'super_admin' | 'admin' | 'agent' | 'lawyer'
+          sections?: string[] | null
           status?: 'active' | 'inactive'
           updated_at?: string
           user_id: string
@@ -676,6 +902,7 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: 'super_admin' | 'admin' | 'agent' | 'lawyer'
+          sections?: string[] | null
           status?: 'active' | 'inactive'
           updated_at?: string
           user_id?: string
@@ -686,6 +913,7 @@ export type Database = {
         Row: {
           color: string | null
           created_at: string
+          created_by: string
           id: string
           name: string
           user_id: string
@@ -693,13 +921,15 @@ export type Database = {
         Insert: {
           color?: string | null
           created_at?: string
+          created_by?: string
           id?: string
           name: string
-          user_id: string
+          user_id?: string
         }
         Update: {
           color?: string | null
           created_at?: string
+          created_by?: string
           id?: string
           name?: string
           user_id?: string

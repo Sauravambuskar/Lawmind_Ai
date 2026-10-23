@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Download, Sparkles, FileSignature, ScrollText, Pencil, Copy, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { jsPDF } from "jspdf";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { restInsert } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -679,7 +678,8 @@ export default function QuickDocsPage() {
   const queryClient = useQueryClient();
   const pdfFileName = () => `${template?.label || "document"}.pdf`;
 
-  const buildPdf = (content: string) => {
+  const buildPdf = async (content: string) => {
+    const { jsPDF } = await import("jspdf");
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -783,18 +783,24 @@ export default function QuickDocsPage() {
     return doc;
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const content = isEditing ? editedDoc : (generatedDoc || "");
     if (!content) return;
-    buildPdf(content).save(pdfFileName());
-    toast.success("PDF downloaded!");
+    try {
+      const pdf = await buildPdf(content);
+      pdf.save(pdfFileName());
+      toast.success("PDF downloaded!");
+    } catch (error) {
+      console.error("Quick document PDF generation failed:", error);
+      toast.error("Could not generate the PDF");
+    }
   };
 
   const saveToDocuments = useMutation({
     mutationFn: async () => {
       const content = isEditing ? editedDoc : (generatedDoc || "");
       if (!content) throw new Error("Generate the document first");
-      const pdf = buildPdf(content).output("blob");
+      const pdf = (await buildPdf(content)).output("blob");
       const { url } = await uploadToR2(new File([pdf], pdfFileName(), { type: "application/pdf" }), "documents");
       await restInsert("documents", {
         name: template?.label || "Quick document",
