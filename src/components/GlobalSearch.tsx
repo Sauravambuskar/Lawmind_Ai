@@ -44,14 +44,14 @@ export function GlobalSearch() {
         supabase.from("cases").select("id, title, case_number").ilike("title", q).limit(5),
         supabase.from("clients").select("id, name, email").ilike("name", q).limit(5),
         supabase.from("advocates").select("id, name, specialization").ilike("name", q).limit(5),
-        supabase.from("hearings").select("id, purpose, court_name").ilike("purpose", q).limit(5),
+        (supabase.from("hearings") as any).select("id, title, court_name").ilike("title", q).limit(5),
         supabase.from("invoices").select("id, invoice_number, status").ilike("invoice_number", q).limit(5),
       ]);
       const items: SearchResult[] = [
-        ...(cases.data || []).map(c => ({ type: "case" as const, label: c.title, sub: c.case_number, path: "/cases" })),
-        ...(clients.data || []).map(c => ({ type: "client" as const, label: c.name, sub: c.email || "", path: "/clients" })),
-        ...(advocates.data || []).map(a => ({ type: "advocate" as const, label: a.name, sub: a.specialization || "", path: "/advocates" })),
-        ...(hearings.data || []).map(h => ({ type: "hearing" as const, label: h.purpose || "Hearing", sub: h.court_name || "", path: "/hearings" })),
+        ...(cases.data || []).map(c => ({ type: "case" as const, label: c.title, sub: c.case_number, path: `/cases/${c.id}` })),
+        ...(clients.data || []).map(c => ({ type: "client" as const, label: c.name, sub: c.email || "", path: `/clients/${c.id}` })),
+        ...(advocates.data || []).map(a => ({ type: "advocate" as const, label: a.name, sub: a.specialization || "", path: `/advocates/${a.id}` })),
+        ...(hearings.data || []).map((h: any) => ({ type: "hearing" as const, label: h.title || "Hearing", sub: h.court_name || "", path: "/hearings" })),
         ...(invoices.data || []).map(i => ({ type: "invoice" as const, label: i.invoice_number, sub: i.status, path: "/invoices" })),
       ];
       setResults(items);

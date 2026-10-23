@@ -62,7 +62,7 @@ function useNotifications(userId: string | undefined) {
         userId
           ? restGet<TaskNoticeRow>(
               `tasks?select=id,title,due_date,status,cases(case_number)` +
-                `&assigned_to=eq.${userId}&status=neq.done&order=due_date.asc.nullslast&limit=10`,
+                `&or=(assigned_to.eq.${userId},created_by.eq.${userId})&status=neq.done&order=due_date.asc.nullslast&limit=10`,
             ).catch(() => [] as TaskNoticeRow[])
           : Promise.resolve([] as TaskNoticeRow[]),
       ]);

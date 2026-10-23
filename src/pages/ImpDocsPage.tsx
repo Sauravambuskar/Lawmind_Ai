@@ -131,9 +131,18 @@ const ImpDocsPage = () => {
         return;
       }
 
-      if (type === "DOCX") {
+      if (type === "DOCX" || type === "DOC") {
         const response = await fetch(fileUrl);
+        if (!response.ok) throw new Error("File not found on server");
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("text/html")) {
+          throw new Error("This template is not available online yet. Please upload it via 'Add New' to enable preview.");
+        }
         const arrayBuffer = await response.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4B) {
+          throw new Error("The file appears to be corrupted or is not a valid Word document. Try re-uploading it.");
+        }
         const { default: mammoth } = await import("mammoth");
         const result = await mammoth.convertToHtml({ arrayBuffer });
         setDocHtml(result.value);

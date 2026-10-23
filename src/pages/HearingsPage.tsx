@@ -42,11 +42,47 @@ export default function HearingsPage() {
 
   const { data: hearings = [], isLoading } = useQuery({
     queryKey: ["hearings"],
-    queryFn: () =>
-      // DB columns are `title` and `judge`; alias to the UI's purpose/judge_name
-      restGetAll<any>(
-        "hearings?select=id,case_id,hearing_date,court_name,purpose:title,judge_name:judge,notes,status,cases(title,case_number)&order=hearing_date.asc",
-      ),
+    queryFn: async () => {
+      const [hearingsData, caseHearings] = await Promise.all([
+        restGetAll<any>(
+          "hearings?select=id,case_id,hearing_date,court_name,purpose:title,judge_name:judge,notes,status,cases(title,case_number)&order=hearing_date.asc",
+        ),
+        restGetAll<any>(
+          "cases?select=id,case_number,title,next_hearing_date,court_name,case_stage&next_hearing_date=not.is.null&order=next_hearing_date.asc",
+        ),
+      ]);
+
+      const seen = new Set<string>();
+      const all: any[] = [];
+
+      hearingsData.forEach((h: any) => {
+        const dateStr = h.hearing_date ? h.hearing_date.split("T")[0] : "";
+        seen.add(`${dateStr}_${h.case_id || h.id}`);
+        all.push({ ...h, _source: "hearing" });
+      });
+
+      caseHearings.forEach((c: any) => {
+        const key = `${c.next_hearing_date}_${c.id}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          all.push({
+            id: `case_${c.id}`,
+            case_id: c.id,
+            hearing_date: c.next_hearing_date + "T10:00:00",
+            court_name: c.court_name || null,
+            purpose: c.title || null,
+            judge_name: null,
+            notes: null,
+            status: c.case_stage || "scheduled",
+            cases: { title: c.title, case_number: c.case_number },
+            _source: "case",
+          });
+        }
+      });
+
+      all.sort((a, b) => new Date(a.hearing_date).getTime() - new Date(b.hearing_date).getTime());
+      return all;
+    },
   });
 
   const { data: cases = [] } = useQuery({
@@ -244,10 +280,16 @@ export default function HearingsPage() {
                     </td>
                     <td className="py-4 px-5 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(h)} className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors">
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <DeleteConfirm onConfirm={() => deleteMutation.mutate(h.id)} />
+                        {h._source !== "case" ? (
+                          <>
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(h)} className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors">
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <DeleteConfirm onConfirm={() => deleteMutation.mutate(h.id)} />
+                          </>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground font-medium px-2 py-1 bg-muted/50 rounded">From Case</span>
+                        )}
                       </div>
                     </td>
                   </tr>

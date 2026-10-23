@@ -62,21 +62,50 @@ export default function TodayPage() {
   const todayStr = new Date().toISOString().split("T")[0];
   const weekEnd = addDays(new Date(), 7).toISOString().split("T")[0];
 
-  // Today's & upcoming hearings from cases.next_hearing_date (real data)
+  // Today's & upcoming hearings from both cases.next_hearing_date AND hearings table
   const { data: hearings = [], isLoading: loadingH } = useQuery({
     queryKey: ["today-hearings"],
     queryFn: async () => {
-      const cases = await restGet<any>(`cases?select=id,case_number,title,next_hearing_date,court_name,case_stage&next_hearing_date=gte.${todayStr}&next_hearing_date=lte.${weekEnd}&order=next_hearing_date.asc&limit=100`);
-      // Map to HearingRow format
-      return cases.map((c: any) => ({
-        id: c.id,
-        purpose: c.title,
-        hearing_date: c.next_hearing_date + "T10:00:00",
-        court_name: c.court_name,
-        judge_name: null,
-        status: "scheduled",
-        cases: { title: c.title, case_number: c.case_number },
-      })) as HearingRow[];
+      const [caseRows, hearingRows] = await Promise.all([
+        restGet<any>(`cases?select=id,case_number,title,next_hearing_date,court_name,case_stage&next_hearing_date=gte.${todayStr}&next_hearing_date=lte.${weekEnd}&order=next_hearing_date.asc&limit=100`),
+        restGet<any>(`hearings?select=id,case_id,hearing_date,court_name,title,judge:judge,status,cases(title,case_number)&hearing_date=gte.${todayStr}&hearing_date=lte.${weekEnd}&order=hearing_date.asc&limit=100`).catch(() => []),
+      ]);
+
+      const seen = new Set<string>();
+      const all: HearingRow[] = [];
+
+      hearingRows.forEach((h: any) => {
+        const dateStr = h.hearing_date ? h.hearing_date.split("T")[0] : "";
+        seen.add(`${dateStr}_${h.case_id || h.id}`);
+        all.push({
+          id: h.id,
+          purpose: h.title || "Hearing",
+          hearing_date: h.hearing_date,
+          court_name: h.court_name,
+          judge_name: h.judge || null,
+          status: h.status || "scheduled",
+          cases: h.cases || null,
+        });
+      });
+
+      caseRows.forEach((c: any) => {
+        const key = `${c.next_hearing_date}_${c.id}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          all.push({
+            id: c.id,
+            purpose: c.title,
+            hearing_date: c.next_hearing_date + "T10:00:00",
+            court_name: c.court_name,
+            judge_name: null,
+            status: "scheduled",
+            cases: { title: c.title, case_number: c.case_number },
+          });
+        }
+      });
+
+      all.sort((a, b) => new Date(a.hearing_date).getTime() - new Date(b.hearing_date).getTime());
+      return all;
     },
     refetchInterval: 5 * 60 * 1000,
   });
