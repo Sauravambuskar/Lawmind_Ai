@@ -31,9 +31,13 @@ LawMind AI is a **legal practice management system** for advocates practising in
 ```env
 VITE_SUPABASE_URL=https://xfbbxtrzyeocbpwnjhcz.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon-key>
+ECOURTS_API_KEY=<server-only-key>
+SUPABASE_SERVICE_ROLE_KEY=<server-only-service-role-key>
+CRON_SECRET=<random-server-only-secret>
+ECOURTS_CRON_BATCH_SIZE=10
 ```
 
-These are in `.env` at the project root. For Vercel, set them in the dashboard under Environment Variables.
+The `VITE_` values are in `.env` at the project root. Set all production values in the Vercel dashboard. Never expose the three server-only secrets in browser code or commit them to Git.
 
 ---
 
@@ -302,6 +306,9 @@ npm run preview      # Preview production build locally
 4. Output directory: `dist`
 5. Environment variables set in Vercel dashboard
 6. `vercel.json` handles SPA routing (all paths → index.html)
+7. Vercel Cron calls `/api/ecourts-cron` daily at `02:30 UTC` (about 08:00 IST)
+
+The daily cron always performs a Supabase database health query. When the eCourts and Supabase service-role secrets are configured, it also refreshes up to `ECOURTS_CRON_BATCH_SIZE` active cases, records old-to-new changes in `audit_logs`, and skips disposed cases. Case rows are atomically claimed before refresh so overlapping cron deliveries do not normally process the same case twice.
 
 ---
 

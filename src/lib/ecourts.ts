@@ -66,6 +66,7 @@ export interface ECourtsSyncLog {
     changes?: ECourtsChange[];
     requestId?: string | null;
     refreshStatus?: string;
+    automatic?: boolean;
   } | null;
 }
 
@@ -267,6 +268,7 @@ export async function syncCaseWithECourts(localCase: LocalCase, userId: string):
       changes,
       requestId: details.meta?.request_id || null,
       refreshStatus,
+      automatic: false,
     },
   });
 

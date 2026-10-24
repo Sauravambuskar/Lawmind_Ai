@@ -176,7 +176,12 @@ function ChangeTimeline({ logs }: { logs: ECourtsSyncLog[] }) {
             <div key={log.id} className="relative border-l-2 border-primary/25 pl-5">
               <span className="absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-primary bg-background" />
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-bold text-foreground">{safeDate(log.created_at, true)}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-bold text-foreground">{safeDate(log.created_at, true)}</p>
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
+                    {log.new_data?.automatic ? "Automatic sync" : "Manual sync"}
+                  </span>
+                </div>
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
                   {changes.length ? `${changes.length} change${changes.length === 1 ? "" : "s"}` : "No change"}
                 </span>
