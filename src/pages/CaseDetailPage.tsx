@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import {
   Gavel, ListTodo, Receipt, FileText, DollarSign, Clock, Plus, Trash2,
   CalendarDays, ChevronLeft, AlertCircle, Bell, Scale, StickyNote, Pencil,
-  Sparkles, ExternalLink, BookOpen, AlarmClock, Check, X
+  Sparkles, ExternalLink, BookOpen, AlarmClock, Check, X, Database
 } from "lucide-react";
 import { CASE_STATUS_CONFIG, CASE_STATUSES, type CaseStatus, CURRENCY } from "@/lib/constants";
 import { R2Upload } from "@/components/R2Upload";
@@ -29,8 +29,10 @@ import { sendAIMessageWithFailover } from "@/lib/ai-providers";
 import { CaseTasksPanel } from "@/components/tasks/CaseTasksPanel";
 import { ProgressBar } from "@/components/tasks/TaskBits";
 import { aggregateProgress, type TaskRow } from "@/lib/tasks";
+import { ECourtsCasePanel } from "@/components/cases/ECourtsCasePanel";
 
 const TABS = [
+  { id: "ecourts", label: "eCourts Status", icon: Database },
   { id: "history", label: "Case History", icon: Clock },
   { id: "documents", label: "Case Documents", icon: FileText },
   { id: "notes", label: "Notes", icon: StickyNote },
@@ -49,7 +51,7 @@ export default function CaseDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<TabId>("history");
+  const [activeTab, setActiveTab] = useState<TabId>("ecourts");
 
   const { data: caseData, isLoading } = useQuery({
     queryKey: ["case-detail", id],
@@ -111,6 +113,7 @@ export default function CaseDetailPage() {
 
       {/* Tab Content */}
       <div className="bg-card border border-border shadow-sm rounded-xl p-6 min-h-[400px]">
+        {activeTab === "ecourts" && <ECourtsCasePanel caseData={caseData} userId={user?.id || ""} queryClient={queryClient} />}
         {activeTab === "history" && <TabHistory hearings={hearings} tasks={tasks} invoices={invoices} expenses={expenses} documents={documents} />}
         {activeTab === "documents" && <TabDocuments caseId={id!} userId={user?.id || ""} documents={documents} qc={queryClient} />}
         {activeTab === "notes" && <TabNotes caseId={id!} userId={user?.id || ""} caseData={caseData} qc={queryClient} />}

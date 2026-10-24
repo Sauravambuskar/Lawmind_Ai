@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Plus, Search, Pencil, Download, BriefcaseBusiness, Filter, Trash2, CheckSquare, Eye } from "lucide-react";
+import { Plus, Search, Pencil, Download, BriefcaseBusiness, Filter, Trash2, CheckSquare, Eye, RefreshCw } from "lucide-react";
 import { CaseFileImport } from "@/components/CaseFileImport";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import { writeAuditLog } from "@/lib/auditLog";
 import { logCaughtError } from "@/lib/errorLog";
 import { CASE_STATUSES, CASE_STATUS_FILTER, CASE_STATUS_CONFIG, type CaseStatus } from "@/lib/constants";
 import { restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
+import { isValidCnr, syncCaseWithECourts } from "@/lib/ecourts";
 
 type CaseRow = {
   id: string;
@@ -188,6 +189,44 @@ export default function CasesPage() {
       queryClient.invalidateQueries({ queryKey: ["dashboard-cases"] });
     },
     onSuccess: (_, ids) => toast.success(`${ids.length} case(s) deleted`),
+  });
+
+  const ecourtsRefreshMutation = useMutation({
+    mutationFn: async (rows: CaseRow[]) => {
+      if (!user?.id) throw new Error("Please sign in again");
+      const validRows = rows.filter(row => isValidCnr(row.cnr_number));
+      if (!validRows.length) throw new Error("Selected cases do not have a valid CNR number");
+
+      const results: Array<{ row: CaseRow; error?: string }> = [];
+      let cursor = 0;
+      const worker = async () => {
+        while (cursor < validRows.length) {
+          const row = validRows[cursor++];
+          try {
+            await syncCaseWithECourts(row, user.id);
+            results.push({ row });
+          } catch (error: unknown) {
+            results.push({ row, error: error instanceof Error ? error.message : "Refresh failed" });
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(2, validRows.length) }, worker));
+      return {
+        successCount: results.filter(result => !result.error).length,
+        failed: results.filter(result => result.error),
+        skippedCount: rows.length - validRows.length,
+      };
+    },
+    onSuccess: ({ successCount, failed, skippedCount }) => {
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-cases"] });
+      setSelectedIds(new Set());
+      if (successCount) toast.success(`${successCount} case${successCount === 1 ? "" : "s"} refreshed from eCourts`);
+      if (failed.length || skippedCount) {
+        toast.warning(`${failed.length} failed, ${skippedCount} skipped without valid CNR`);
+      }
+    },
+    onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "eCourts refresh failed"),
   });
 
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };
@@ -442,6 +481,15 @@ export default function CasesPage() {
             <CheckSquare className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold text-primary">{selectedIds.size} selected</span>
             <div className="flex items-center gap-2 ml-auto">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={ecourtsRefreshMutation.isPending}
+                onClick={() => ecourtsRefreshMutation.mutate(cases.filter(c => selectedIds.has(c.id)))}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${ecourtsRefreshMutation.isPending ? "animate-spin" : ""}`} />
+                {ecourtsRefreshMutation.isPending ? "Checking court..." : "Refresh eCourts"}
+              </Button>
               <Button size="sm" variant="outline" onClick={handleBulkExport}>
                 <Download className="w-3.5 h-3.5 mr-1.5" /> Export Selected
               </Button>
@@ -541,6 +589,16 @@ export default function CasesPage() {
                     </td>
                     <td className="py-4 px-5 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={!isValidCnr(c.cnr_number) || ecourtsRefreshMutation.isPending}
+                          onClick={() => ecourtsRefreshMutation.mutate([c])}
+                          className="h-8 w-8 hover:bg-emerald-500/10 hover:text-emerald-600 transition-colors"
+                          title={isValidCnr(c.cnr_number) ? "Refresh from eCourts" : "Add a valid CNR to enable refresh"}
+                        >
+                          <RefreshCw className={`w-4 h-4 ${ecourtsRefreshMutation.isPending && ecourtsRefreshMutation.variables?.some(row => row.id === c.id) ? "animate-spin" : ""}`} />
+                        </Button>
                         <Link to={`/cases/${c.id}`} className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground">
                           <Eye className="w-4 h-4" />
                         </Link>

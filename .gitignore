@@ -9,6 +9,7 @@ dist/
 # Environment files
 .env.local
 .env.*.local
+!.env.example
 
 # Logs & OS/editor noise
 *.log
@@ -18,3 +19,4 @@ Thumbs.db
 
 .vercel
 .env*
+!.env.example
