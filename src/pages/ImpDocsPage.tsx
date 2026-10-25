@@ -25,6 +25,45 @@ async function resolveDocUrl(filename: string): Promise<string | null> {
   return `/impdocs/${encodeURIComponent(filename)}`;
 }
 
+function stripUtf8Bom(buffer: ArrayBuffer): ArrayBuffer {
+  const bytes = new Uint8Array(buffer);
+  return bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
+    ? buffer.slice(3)
+    : buffer;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function rtfToHtml(buffer: ArrayBuffer): string {
+  const rtf = new TextDecoder("windows-1252").decode(buffer);
+  const documentStart = rtf.indexOf("\\pard\\plain", rtf.indexOf("\\sectd"));
+  const body = documentStart >= 0 ? rtf.slice(documentStart) : rtf;
+  const text = body
+    .replace(/\\'[0-9a-fA-F]{2}/g, match =>
+      String.fromCharCode(Number.parseInt(match.slice(2), 16)),
+    )
+    .replace(/\\u(-?\d+)\??/g, (_match, value) =>
+      String.fromCharCode(Number(value) < 0 ? Number(value) + 65536 : Number(value)),
+    )
+    .replace(/\\(par|line)\b\s?/g, "\n")
+    .replace(/\\tab\b\s?/g, "\t")
+    .replace(/\\[{}\\]/g, match => match.slice(1))
+    .replace(/\\[a-zA-Z]+-?\d*\s?/g, "")
+    .replace(/[{}]/g, "")
+    .replace(/\r/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return `<div style="white-space: pre-wrap">${escapeHtml(text)}</div>`;
+}
+
 const FALLBACK_DOCS = [
   { name: "Adjournment Application", filename: "I am sharing 'Adjournment application' with you.docx", type: "DOCX" },
   { name: "Personal Exception", filename: "I am sharing 'Personal Exception' with you.docx", type: "DOCX" },
@@ -138,10 +177,20 @@ const ImpDocsPage = () => {
         if (contentType.includes("text/html")) {
           throw new Error("This template is not available online yet. Please upload it via 'Add New' to enable preview.");
         }
-        const arrayBuffer = await response.arrayBuffer();
+        const arrayBuffer = stripUtf8Bom(await response.arrayBuffer());
         const bytes = new Uint8Array(arrayBuffer);
-        if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4B) {
-          throw new Error("The file appears to be corrupted or is not a valid Word document. Try re-uploading it.");
+
+        if (type === "DOC") {
+          const signature = new TextDecoder("ascii").decode(bytes.slice(0, 5));
+          if (signature !== "{\\rtf") {
+            throw new Error("Preview is available for RTF-based .doc files only. Please download this document to open it.");
+          }
+          setDocHtml(rtfToHtml(arrayBuffer));
+          return;
+        }
+
+        if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
+          throw new Error("This file is not a valid DOCX document. Please re-upload it.");
         }
         const { default: mammoth } = await import("mammoth");
         const result = await mammoth.convertToHtml({ arrayBuffer });
@@ -152,7 +201,7 @@ const ImpDocsPage = () => {
       }
     } catch (error) {
       console.error("Error loading document:", error);
-      toast.error("Failed to load document content.");
+      toast.error(error instanceof Error ? error.message : "Failed to load document content.");
       setIsModalOpen(false);
     } finally {
       setProcLoading(false);
