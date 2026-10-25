@@ -270,7 +270,7 @@ export function ECourtsCasePanel({ caseData, userId, queryClient }: Props) {
 
       {syncMutation.isPending && (
         <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300">
-          eCourts is refreshing the official record. This normally takes 5-20 seconds; please keep this page open.
+          eCourts is checking the official court source. This usually takes 2-10 minutes. You may leave this page; reopening the case and clicking Refresh again will resume status checking without sending a duplicate refresh.
         </div>
       )}
 

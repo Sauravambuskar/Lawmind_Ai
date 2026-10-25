@@ -3,8 +3,11 @@ import { fetchWithTimeout } from "@/lib/http";
 import { restGet, restInsert, restUpdate } from "@/lib/restClient";
 
 const CNR_PATTERN = /^[A-Z]{4}\d{12}$/;
-const POLL_INTERVAL_MS = 2_500;
-const MAX_STATUS_POLLS = 8;
+const FIRST_STATUS_POLL_MS = 15_000;
+const POLL_INTERVAL_MS = 30_000;
+const MAX_REFRESH_WAIT_MS = 10 * 60_000;
+const RECENT_COMPLETION_WINDOW_MS = 20 * 60_000;
+const REFRESH_MARKER_PREFIX = "lawmind:ecourts-refresh:";
 
 export interface ECourtsHearing {
   judge?: string;
@@ -87,6 +90,15 @@ type LocalCase = {
 };
 
 type ApiEnvelope<T = any> = { data?: T; meta?: { request_id?: string }; error?: string };
+
+type RefreshStatusResult = {
+  cnr?: string;
+  status?: string;
+  requestedAt?: string | null;
+  completedAt?: string | null;
+  failureReason?: string | null;
+  refunded?: boolean;
+};
 
 const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 
@@ -224,18 +236,82 @@ async function latestSync(caseId: string): Promise<ECourtsSyncLog | undefined> {
   return rows[0];
 }
 
-async function waitForRefresh(cnr: string): Promise<string> {
-  for (let attempt = 0; attempt < MAX_STATUS_POLLS; attempt += 1) {
-    await wait(POLL_INTERVAL_MS);
-    const envelope = await callApi<{ results?: Array<{ status?: string; failureReason?: string }> }>("refresh-status", cnr);
-    const result = envelope.data?.results?.[0];
-    const status = String(result?.status || "").toUpperCase();
-    if (status === "COMPLETED") return status;
+function markerKey(cnr: string): string {
+  return `${REFRESH_MARKER_PREFIX}${cnr}`;
+}
+
+function readRefreshMarker(cnr: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(markerKey(cnr));
+  } catch {
+    return null;
+  }
+}
+
+function saveRefreshMarker(cnr: string, requestedAt?: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(markerKey(cnr), requestedAt || new Date().toISOString());
+  } catch {
+    // Status preflight still prevents duplicate requests while the refresh is pending.
+  }
+}
+
+function clearRefreshMarker(cnr: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(markerKey(cnr));
+  } catch {
+    // Storage may be disabled in strict privacy modes; completion is still safe.
+  }
+}
+
+function timestamp(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+async function getRefreshStatus(cnr: string): Promise<RefreshStatusResult> {
+  const envelope = await callApi<{ results?: RefreshStatusResult[] }>("refresh-status", cnr);
+  return envelope.data?.results?.[0] || {};
+}
+
+function isUnconsumedCompletion(
+  result: RefreshStatusResult,
+  latestSyncedAt: string | undefined,
+  queuedAt: string | null,
+): boolean {
+  if (String(result.status || "").toUpperCase() !== "COMPLETED") return false;
+  const completedAt = timestamp(result.completedAt);
+  if (completedAt === null) return false;
+
+  const lastSyncAt = timestamp(latestSyncedAt);
+  if (lastSyncAt !== null && completedAt > lastSyncAt) return true;
+
+  const markerAt = timestamp(queuedAt);
+  if (markerAt !== null && completedAt >= markerAt - 60_000) return true;
+
+  return lastSyncAt === null && Date.now() - completedAt <= RECENT_COMPLETION_WINDOW_MS;
+}
+
+async function waitForRefresh(cnr: string): Promise<RefreshStatusResult> {
+  const deadline = Date.now() + MAX_REFRESH_WAIT_MS;
+  let nextDelay = FIRST_STATUS_POLL_MS;
+
+  while (Date.now() < deadline) {
+    await wait(nextDelay);
+    nextDelay = POLL_INTERVAL_MS;
+    const result = await getRefreshStatus(cnr);
+    const status = String(result.status || "").toUpperCase();
+    if (status === "COMPLETED") return result;
     if (status === "FAILED" || status === "INVALID") {
-      throw new Error(result?.failureReason || `eCourts refresh ${status.toLowerCase()}`);
+      clearRefreshMarker(cnr);
+      throw new Error(result.failureReason || `eCourts refresh ${status.toLowerCase()}`);
     }
   }
-  throw new Error("Refresh is still processing. Please try again in a minute.");
+  throw new Error("Official refresh is still processing. No duplicate refresh was sent; open this case later and click Refresh again to resume checking.");
 }
 
 export async function syncCaseWithECourts(localCase: LocalCase, userId: string): Promise<{
@@ -245,15 +321,29 @@ export async function syncCaseWithECourts(localCase: LocalCase, userId: string):
   const cnr = normalizeCnr(localCase.cnr_number);
   if (!isValidCnr(cnr)) throw new Error("Add a valid 16-character CNR number before refreshing");
 
-  await callApi("refresh", cnr);
-  const refreshStatus = await waitForRefresh(cnr);
+  const previousLog = await latestSync(localCase.id);
+  const previousSnapshot = previousLog?.new_data?.snapshot;
+  const existingStatus = await getRefreshStatus(cnr);
+  const existingState = String(existingStatus.status || "").toUpperCase();
+  const queuedAt = readRefreshMarker(cnr);
+  let refreshResult: RefreshStatusResult;
+
+  if (existingState === "PENDING") {
+    saveRefreshMarker(cnr, existingStatus.requestedAt);
+    refreshResult = await waitForRefresh(cnr);
+  } else if (isUnconsumedCompletion(existingStatus, previousLog?.created_at, queuedAt)) {
+    refreshResult = existingStatus;
+  } else {
+    await callApi("refresh", cnr);
+    saveRefreshMarker(cnr);
+    refreshResult = await waitForRefresh(cnr);
+  }
+
   const details = await callApi("details", cnr);
   const snapshot = toSnapshot(details);
   if (!snapshot.cnr) snapshot.cnr = cnr;
   if (snapshot.cnr !== cnr) throw new Error("eCourts returned a different CNR than requested");
 
-  const previousLog = await latestSync(localCase.id);
-  const previousSnapshot = previousLog?.new_data?.snapshot;
   const changes = findChanges(previousSnapshot, snapshot);
 
   await restUpdate("cases", `id=eq.${localCase.id}`, mapCaseUpdate(snapshot));
@@ -267,10 +357,12 @@ export async function syncCaseWithECourts(localCase: LocalCase, userId: string):
       snapshot,
       changes,
       requestId: details.meta?.request_id || null,
-      refreshStatus,
+      refreshStatus: String(refreshResult.status || "COMPLETED").toUpperCase(),
       automatic: false,
     },
   });
+
+  clearRefreshMarker(cnr);
 
   return { snapshot, changes };
 }

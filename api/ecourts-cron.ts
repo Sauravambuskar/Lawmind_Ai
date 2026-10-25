@@ -317,34 +317,72 @@ async function saveSync(
   return changes.length;
 }
 
-const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+function parsedTimestamp(value: unknown): number | null {
+  if (typeof value !== "string" || !value) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
-async function refreshBatch(cnrs: string[]): Promise<Set<string>> {
-  const refresh = await ecourtsRequest("/api/partner/case/bulk-refresh", {
+async function refreshBatch(rows: CaseCandidate[]): Promise<{
+  ready: Set<string>;
+  queued: Set<string>;
+  failed: Set<string>;
+}> {
+  const byCnr = new Map(rows.map(row => [row.cnr_number.trim().toUpperCase(), row]));
+  const cnrs = Array.from(byCnr.keys());
+  const ready = new Set<string>();
+  const queued = new Set<string>();
+  const failed = new Set<string>();
+  const needsRefresh = new Set<string>();
+
+  // Poll first. A prior cron/manual request may still be running, and submitting it
+  // again would create a second paid refresh for the same CNR.
+  const status = await ecourtsRequest("/api/partner/case/bulk-refresh-status", {
     method: "POST",
     body: JSON.stringify({ cnrs }),
   });
-  const ready = new Set<string>((refresh.body?.data?.refreshed || []).map((value: string) => value.toUpperCase()));
-  const pending = new Set<string>((refresh.body?.data?.queued || []).map((value: string) => value.toUpperCase()));
-
-  for (let attempt = 0; attempt < 4 && pending.size; attempt += 1) {
-    await wait(2_500);
-    const status = await ecourtsRequest("/api/partner/case/bulk-refresh-status", {
-      method: "POST",
-      body: JSON.stringify({ cnrs: Array.from(pending) }),
-    });
-    for (const result of status.body?.data?.results || []) {
-      const cnr = String(result?.cnr || "").toUpperCase();
-      const state = String(result?.status || "").toUpperCase();
-      if (state === "COMPLETED") {
+  const seen = new Set<string>();
+  for (const result of status.body?.data?.results || []) {
+    const cnr = String(result?.cnr || "").toUpperCase();
+    const row = byCnr.get(cnr);
+    if (!row) continue;
+    seen.add(cnr);
+    const state = String(result?.status || "").toUpperCase();
+    if (state === "PENDING") {
+      queued.add(cnr);
+      continue;
+    }
+    if (state === "COMPLETED") {
+      const completedAt = parsedTimestamp(result?.completedAt);
+      const lastCaseUpdate = parsedTimestamp(row.updated_at);
+      if (completedAt !== null && (lastCaseUpdate === null || completedAt > lastCaseUpdate)) {
         ready.add(cnr);
-        pending.delete(cnr);
-      } else if (state === "FAILED" || state === "INVALID") {
-        pending.delete(cnr);
+        continue;
       }
     }
+    needsRefresh.add(cnr);
   }
-  return ready;
+  for (const cnr of cnrs) {
+    if (!seen.has(cnr)) needsRefresh.add(cnr);
+  }
+
+  if (needsRefresh.size) {
+    const refresh = await ecourtsRequest("/api/partner/case/bulk-refresh", {
+      method: "POST",
+      body: JSON.stringify({ cnrs: Array.from(needsRefresh) }),
+    });
+    for (const value of refresh.body?.data?.refreshed || []) {
+      ready.add(String(value).toUpperCase());
+    }
+    for (const value of refresh.body?.data?.queued || []) {
+      queued.add(String(value).toUpperCase());
+    }
+    for (const value of refresh.body?.data?.invalid || []) {
+      failed.add(String(value).toUpperCase());
+    }
+  }
+
+  return { ready, queued, failed };
 }
 
 async function mapWithConcurrency<T, R>(items: T[], concurrency: number, task: (item: T) => Promise<R>): Promise<R[]> {
@@ -403,8 +441,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const byCnr = new Map(claimed.map(row => [row.cnr_number.trim().toUpperCase(), row]));
-    const ready = await refreshBatch(Array.from(byCnr.keys()));
-    const syncResults = await mapWithConcurrency(Array.from(ready), 5, async cnr => {
+    const refreshState = await refreshBatch(claimed);
+    const syncResults = await mapWithConcurrency(Array.from(refreshState.ready), 5, async cnr => {
       const row = byCnr.get(cnr);
       if (!row) return { ok: false, changes: 0 };
       try {
@@ -429,7 +467,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       caseSync: "complete",
       claimed: claimed.length,
       checked: syncResults.filter(result => result.ok).length,
-      failed: syncResults.filter(result => !result.ok).length + claimed.length - ready.size,
+      queued: refreshState.queued.size,
+      failed: syncResults.filter(result => !result.ok).length + refreshState.failed.size,
       changed: syncResults.filter(result => result.changes > 0).length,
       durationMs: Date.now() - startedAt,
     });
