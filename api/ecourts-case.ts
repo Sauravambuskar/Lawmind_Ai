@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { getIntegrationSettings } from "./_integration-settings.js";
 
 const ECOURTS_BASE_URL = "https://webapi.ecourtsindia.com";
 const CNR_PATTERN = /^[A-Z]{4}\d{12}$/;
@@ -67,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: "Please sign in again to check eCourts" });
   }
 
-  const apiKey = process.env.ECOURTS_API_KEY;
+  const apiKey = (await getIntegrationSettings()).ecourtsApiKey;
   if (!apiKey) {
     return res.status(503).json({ error: "eCourts integration is not configured" });
   }

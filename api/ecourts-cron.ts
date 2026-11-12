@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { getIntegrationSettings } from "./_integration-settings.js";
 
 const ECOURTS_BASE_URL = "https://webapi.ecourtsindia.com";
 const CNR_PATTERN = /^[A-Z]{4}\d{12}$/;
@@ -79,8 +80,7 @@ function secureEqual(actual: string, expected: string): boolean {
   return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
-function isAuthorizedCron(req: VercelRequest): boolean {
-  const cronSecret = process.env.CRON_SECRET;
+function isAuthorizedCron(req: VercelRequest, cronSecret: string): boolean {
   const authorization = Array.isArray(req.headers.authorization)
     ? req.headers.authorization[0]
     : req.headers.authorization;
@@ -124,8 +124,7 @@ async function supabaseRequest(
   return result;
 }
 
-async function ecourtsRequest(path: string, init: RequestInit = {}): Promise<{ status: number; body: any }> {
-  const apiKey = process.env.ECOURTS_API_KEY;
+async function ecourtsRequest(path: string, apiKey: string, init: RequestInit = {}): Promise<{ status: number; body: any }> {
   if (!apiKey) throw new Error("Missing ECOURTS_API_KEY");
   const result = await requestJson(`${ECOURTS_BASE_URL}${path}`, {
     ...init,
@@ -237,8 +236,8 @@ function mapCaseUpdate(snapshot: ECourtsSnapshot, syncedAt: string): JsonObject 
   };
 }
 
-function batchSize(): number {
-  const configured = Number(process.env.ECOURTS_CRON_BATCH_SIZE || DEFAULT_BATCH_SIZE);
+function batchSize(configuredValue: number): number {
+  const configured = Number(configuredValue || DEFAULT_BATCH_SIZE);
   if (!Number.isFinite(configured)) return DEFAULT_BATCH_SIZE;
   return Math.max(1, Math.min(MAX_BATCH_SIZE, Math.floor(configured)));
 }
@@ -247,7 +246,7 @@ async function healthCheck(key: string): Promise<void> {
   await supabaseRequest("cases?select=id&limit=1", key);
 }
 
-async function loadCandidates(serviceKey: string): Promise<CaseCandidate[]> {
+async function loadCandidates(serviceKey: string, configuredBatchSize: number): Promise<CaseCandidate[]> {
   const cutoff = new Date(Date.now() - SYNC_COOLDOWN_HOURS * 60 * 60 * 1000).toISOString();
   const params = new URLSearchParams({
     select: "id,cnr_number,created_by,updated_at",
@@ -256,7 +255,7 @@ async function loadCandidates(serviceKey: string): Promise<CaseCandidate[]> {
     status: "in.(open,pending,in-progress)",
     or: `(updated_at.is.null,updated_at.lt.${cutoff})`,
     order: "updated_at.asc.nullsfirst",
-    limit: String(batchSize()),
+    limit: String(batchSize(configuredBatchSize)),
   });
   const result = await supabaseRequest(`cases?${params}`, serviceKey);
   return (Array.isArray(result.body) ? result.body : []).filter((row: CaseCandidate) =>
@@ -323,7 +322,7 @@ function parsedTimestamp(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-async function refreshBatch(rows: CaseCandidate[]): Promise<{
+async function refreshBatch(rows: CaseCandidate[], apiKey: string): Promise<{
   ready: Set<string>;
   queued: Set<string>;
   failed: Set<string>;
@@ -337,7 +336,7 @@ async function refreshBatch(rows: CaseCandidate[]): Promise<{
 
   // Poll first. A prior cron/manual request may still be running, and submitting it
   // again would create a second paid refresh for the same CNR.
-  const status = await ecourtsRequest("/api/partner/case/bulk-refresh-status", {
+  const status = await ecourtsRequest("/api/partner/case/bulk-refresh-status", apiKey, {
     method: "POST",
     body: JSON.stringify({ cnrs }),
   });
@@ -367,7 +366,7 @@ async function refreshBatch(rows: CaseCandidate[]): Promise<{
   }
 
   if (needsRefresh.size) {
-    const refresh = await ecourtsRequest("/api/partner/case/bulk-refresh", {
+    const refresh = await ecourtsRequest("/api/partner/case/bulk-refresh", apiKey, {
       method: "POST",
       body: JSON.stringify({ cnrs: Array.from(needsRefresh) }),
     });
@@ -404,10 +403,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader("Allow", "GET");
     return res.status(405).json({ error: "Method not allowed" });
   }
-  if (!process.env.CRON_SECRET) {
+  const settings = await getIntegrationSettings();
+  if (!settings.cronSecret) {
     return res.status(503).json({ error: "Cron protection is not configured" });
   }
-  if (!isAuthorizedCron(req)) {
+  if (!isAuthorizedCron(req, settings.cronSecret)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
@@ -420,7 +420,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // A successful database query creates real project activity even when no cases need syncing.
     await healthCheck(serviceKey || anonKey);
 
-    if (!serviceKey || !process.env.ECOURTS_API_KEY) {
+    if (!serviceKey || !settings.ecourtsApiKey) {
       return res.status(200).json({
         ok: true,
         database: "healthy",
@@ -429,7 +429,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const candidates = await loadCandidates(serviceKey);
+    const candidates = await loadCandidates(serviceKey, settings.ecourtsBatchSize);
     const claimedAt = new Date().toISOString();
     const claimResults = await Promise.all(candidates.map(async row => ({
       row,
@@ -441,12 +441,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const byCnr = new Map(claimed.map(row => [row.cnr_number.trim().toUpperCase(), row]));
-    const refreshState = await refreshBatch(claimed);
+    const refreshState = await refreshBatch(claimed, settings.ecourtsApiKey);
     const syncResults = await mapWithConcurrency(Array.from(refreshState.ready), 5, async cnr => {
       const row = byCnr.get(cnr);
       if (!row) return { ok: false, changes: 0 };
       try {
-        const details = await ecourtsRequest(`/api/partner/case/${encodeURIComponent(cnr)}`);
+        const details = await ecourtsRequest(`/api/partner/case/${encodeURIComponent(cnr)}`, settings.ecourtsApiKey);
         const snapshot = toSnapshot(details.body, cnr);
         const changes = await saveSync(
           row,

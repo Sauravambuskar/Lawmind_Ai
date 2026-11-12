@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { R2_BUCKET_NAME, getUserId, isAllowedKey, isR2Configured, s3Client, setPrivateApiHeaders } from './_r2.js';
+import { getR2Context, getUserId, isAllowedKey, setPrivateApiHeaders } from './_r2.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setPrivateApiHeaders(res);
@@ -10,7 +10,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!(await getUserId(req))) {
     return res.status(401).json({ error: 'Please sign in again' });
   }
-  if (!isR2Configured()) {
+  const r2 = await getR2Context();
+  if (!r2) {
     return res.status(503).json({ error: 'File storage is not configured' });
   }
 
@@ -20,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await s3Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }));
+    await r2.client.send(new DeleteObjectCommand({ Bucket: r2.bucketName, Key: key }));
     return res.status(200).json({ deleted: key });
   } catch (error: any) {
     console.error('R2 delete failed:', error);

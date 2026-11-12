@@ -1,15 +1,21 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { S3Client } from '@aws-sdk/client-s3';
+import { getIntegrationSettings, hasR2Settings } from './_integration-settings.js';
 
-export const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || '';
-
-export function isR2Configured(): boolean {
-  return Boolean(
-    R2_BUCKET_NAME &&
-    process.env.R2_ACCOUNT_ID &&
-    process.env.R2_ACCESS_KEY_ID &&
-    process.env.R2_SECRET_ACCESS_KEY,
-  );
+export async function getR2Context() {
+  const settings = await getIntegrationSettings();
+  if (!hasR2Settings(settings)) return null;
+  return {
+    bucketName: settings.r2BucketName,
+    client: new S3Client({
+      region: 'auto',
+      endpoint: `https://${settings.r2AccountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: settings.r2AccessKeyId,
+        secretAccessKey: settings.r2SecretAccessKey,
+      },
+    }),
+  };
 }
 
 export function setPrivateApiHeaders(res: VercelResponse): void {
@@ -24,15 +30,6 @@ export const ALLOWED_FOLDERS = [
   'receipts',
   'important-docs',
 ] as const;
-
-export const s3Client = new S3Client({
-  region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID || ''}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
-  },
-});
 
 export function isAllowedKey(key: string): boolean {
   if (!key || key.includes('..') || key.startsWith('/')) return false;

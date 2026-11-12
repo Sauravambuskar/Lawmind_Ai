@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomUUID } from 'crypto';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { ALLOWED_FOLDERS, R2_BUCKET_NAME, getUserId, isR2Configured, s3Client, setPrivateApiHeaders } from './_r2.js';
+import { ALLOWED_FOLDERS, getR2Context, getUserId, setPrivateApiHeaders } from './_r2.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setPrivateApiHeaders(res);
@@ -12,7 +12,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!(await getUserId(req))) {
     return res.status(401).json({ error: 'Please sign in again to upload files' });
   }
-  if (!isR2Configured()) {
+  const r2 = await getR2Context();
+  if (!r2) {
     return res.status(503).json({ error: 'File storage is not configured' });
   }
 
@@ -35,9 +36,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const key = `${folder}/${month}/${randomUUID()}_${sanitizedName}`;
 
     const uploadUrl = await getSignedUrl(
-      s3Client,
+      r2.client,
       new PutObjectCommand({
-        Bucket: R2_BUCKET_NAME,
+        Bucket: r2.bucketName,
         Key: key,
         ContentType: contentType || 'application/octet-stream',
       }),

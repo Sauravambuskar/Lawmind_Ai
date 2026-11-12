@@ -38,6 +38,14 @@ interface IntegrationStatus {
   ecourts: boolean;
   scheduledSync: boolean;
   ecourtsBatchSize: number;
+  masked: {
+    r2AccountId: string | null;
+    r2AccessKeyId: string | null;
+    r2SecretAccessKey: string | null;
+    r2BucketName: string | null;
+    ecourtsApiKey: string | null;
+    cronSecret: string | null;
+  };
 }
 
 const sections = [
@@ -127,7 +135,7 @@ export default function ApiSettingsPage() {
           {section === "automation" && <TinyFishPanel />}
           {section === "email" && <EmailSettingsPage embedded />}
           {section === "infrastructure" && (
-            <InfrastructurePanel token={session?.access_token || ""} />
+            <EditableInfrastructurePanel token={session?.access_token || ""} />
           )}
         </main>
       </div>
@@ -307,4 +315,124 @@ function InfrastructurePanel({ token }: { token: string }) {
       </footer>
     </section>
   );
+}
+
+function EditableInfrastructurePanel({ token }: { token: string }) {
+  const [form, setForm] = useState({
+    r2AccountId: "", r2AccessKeyId: "", r2SecretAccessKey: "", r2BucketName: "",
+    ecourtsApiKey: "", ecourtsBatchSize: "10",
+  });
+  const [saving, setSaving] = useState(false);
+  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+  const statusQuery = useQuery({
+    queryKey: ["integration-status-editable"],
+    queryFn: async () => {
+      const response = await fetch("/api/integration-status", { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) throw new Error("Could not read server integration status");
+      return response.json() as Promise<IntegrationStatus>;
+    },
+    enabled: Boolean(token),
+  });
+  const status = statusQuery.data;
+
+  useEffect(() => {
+    if (!status) return;
+    setForm((current) => ({ ...current, r2BucketName: status.masked.r2BucketName || "", ecourtsBatchSize: String(status.ecourtsBatchSize || 10) }));
+  }, [status]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch("/api/integration-status", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          r2_account_id: form.r2AccountId,
+          r2_access_key_id: form.r2AccessKeyId,
+          r2_secret_access_key: form.r2SecretAccessKey,
+          r2_bucket_name: form.r2BucketName,
+          ecourts_api_key: form.ecourtsApiKey,
+          ecourts_batch_size: Number(form.ecourtsBatchSize),
+        }),
+      });
+      const result = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(result.error || "Could not save server settings");
+      setForm((current) => ({ ...current, r2AccountId: "", r2AccessKeyId: "", r2SecretAccessKey: "", ecourtsApiKey: "" }));
+      toast.success("Server integration settings saved");
+      await statusQuery.refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save server settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const secretInput = (id: string, label: string, value: string, placeholder: string | null | undefined, update: (value: string) => void) => (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="relative">
+        <Input id={id} type={showSecrets[id] ? "text" : "password"} value={value} onChange={(event) => update(event.target.value)} placeholder={placeholder || "Not configured"} autoComplete="new-password" className="pr-10" />
+        <button type="button" onClick={() => setShowSecrets((current) => ({ ...current, [id]: !current[id] }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={showSecrets[id] ? `Hide ${label}` : `Show ${label}`}>
+          {showSecrets[id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+      {placeholder && <p className="text-[11px] text-muted-foreground">Saved value: {placeholder}. Leave blank to keep it.</p>}
+    </div>
+  );
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <header className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div><h2 className="font-semibold text-foreground">Server integrations</h2><p className="mt-1 text-sm text-muted-foreground">Configure storage, official case sync and scheduled refresh from one place.</p></div>
+        <Button variant="outline" size="sm" onClick={() => statusQuery.refetch()} disabled={statusQuery.isFetching}><RefreshCw className={`mr-2 h-3.5 w-3.5 ${statusQuery.isFetching ? "animate-spin" : ""}`} /> Refresh status</Button>
+      </header>
+
+      {statusQuery.isError ? <div className="m-5 flex items-center gap-3 rounded-lg border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-600 dark:text-red-300"><XCircle className="h-5 w-5 shrink-0" /> Server status could not be loaded. Apply the integration settings migration first.</div>
+      : <div className="divide-y divide-border">
+        <div className="flex items-center gap-4 bg-muted/20 px-5 py-4">
+          <div className="rounded-lg bg-background p-2.5"><Database className="h-4 w-4 text-foreground" /></div>
+          <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-foreground">Supabase system foundation</p><p className="text-xs text-muted-foreground">Authentication and secure settings storage. Bootstrap credentials stay in Vercel.</p></div>
+          <IntegrationStatusBadge ready={status?.supabase} loading={statusQuery.isLoading} />
+        </div>
+
+        <div className="space-y-5 px-5 py-5">
+          <IntegrationHeading icon={Cloud} title="Cloudflare R2" detail="Private documents, evidence and receipt storage" ready={status?.cloudflareR2} />
+          <div className="grid gap-4 md:grid-cols-2">
+            {secretInput("r2-account", "Account ID", form.r2AccountId, status?.masked.r2AccountId, (value) => setForm((current) => ({ ...current, r2AccountId: value })))}
+            <div className="space-y-2"><Label htmlFor="r2-bucket">Bucket name</Label><Input id="r2-bucket" value={form.r2BucketName} onChange={(event) => setForm((current) => ({ ...current, r2BucketName: event.target.value }))} placeholder="lawmind-documents" /></div>
+            {secretInput("r2-access", "Access key ID", form.r2AccessKeyId, status?.masked.r2AccessKeyId, (value) => setForm((current) => ({ ...current, r2AccessKeyId: value })))}
+            {secretInput("r2-secret", "Secret access key", form.r2SecretAccessKey, status?.masked.r2SecretAccessKey, (value) => setForm((current) => ({ ...current, r2SecretAccessKey: value })))}
+          </div>
+        </div>
+
+        <div className="space-y-5 px-5 py-5">
+          <IntegrationHeading icon={Landmark} title="eCourts partner API" detail="Official case details and refresh operations" ready={status?.ecourts} />
+          {secretInput("ecourts-key", "eCourts API key", form.ecourtsApiKey, status?.masked.ecourtsApiKey, (value) => setForm((current) => ({ ...current, ecourtsApiKey: value })))}
+        </div>
+
+        <div className="space-y-5 px-5 py-5">
+          <IntegrationHeading icon={RefreshCw} title="Scheduled case sync" detail="Daily protected refresh at the configured Vercel schedule" ready={status?.scheduledSync} />
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2"><Label>Cron authorization</Label><div className="flex h-10 items-center rounded-md border border-input bg-muted/30 px-3 text-sm text-muted-foreground">{status?.masked.cronSecret || "Not configured in Vercel"}</div><p className="text-[11px] text-muted-foreground">Deployment-managed so scheduled requests cannot be locked out.</p></div>
+            <div className="space-y-2"><Label htmlFor="batch-size">Cases per run</Label><Input id="batch-size" type="number" min={1} max={20} value={form.ecourtsBatchSize} onChange={(event) => setForm((current) => ({ ...current, ecourtsBatchSize: event.target.value }))} /><p className="text-[11px] text-muted-foreground">Allowed range: 1–20 active cases.</p></div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 bg-muted/20 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground">Secrets are stored in a server-only table. Browsers receive only masked values and health status after saving.</p>
+          <Button onClick={save} disabled={saving || statusQuery.isLoading} className="shrink-0"><Save className="mr-2 h-4 w-4" />{saving ? "Saving..." : "Save server settings"}</Button>
+        </div>
+      </div>}
+    </section>
+  );
+}
+
+function IntegrationStatusBadge({ ready, loading }: { ready?: boolean; loading?: boolean }) {
+  if (loading) return <span className="text-xs text-muted-foreground">Checking...</span>;
+  return ready ? <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400"><CheckCircle2 className="h-4 w-4" /> Configured</span>
+    : <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400"><XCircle className="h-4 w-4" /> Needs setup</span>;
+}
+
+function IntegrationHeading({ icon: Icon, title, detail, ready }: { icon: typeof Cloud; title: string; detail: string; ready?: boolean }) {
+  return <div className="flex items-center gap-3"><div className="rounded-lg bg-muted p-2.5"><Icon className="h-4 w-4 text-foreground" /></div><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-foreground">{title}</p><p className="text-xs text-muted-foreground">{detail}</p></div><IntegrationStatusBadge ready={ready} /></div>;
 }
