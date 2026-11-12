@@ -5,6 +5,7 @@ import {
   hasR2Settings,
   masked,
 } from "./_integration-settings.js";
+import { encryptSecret } from "./_secret-crypto.js";
 
 function privateHeaders(res: VercelResponse) {
   res.setHeader("Cache-Control", "private, no-store, max-age=0");
@@ -44,6 +45,8 @@ const editableFields = [
   "ecourts_api_key",
 ] as const;
 
+const encryptedFields = new Set(["r2_account_id", "r2_access_key_id", "r2_secret_access_key", "ecourts_api_key"]);
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   privateHeaders(res);
   if (req.method !== "GET" && req.method !== "PUT") {
@@ -72,7 +75,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       };
       for (const field of editableFields) {
         const value = body[field];
-        if (typeof value === "string" && value.trim()) update[field] = value.trim();
+        if (typeof value === "string" && value.trim()) {
+          const clean = value.trim();
+          if (clean.length > 1024) return res.status(400).json({ error: `${field} is too long` });
+          update[field] = encryptedFields.has(field) ? encryptSecret(clean) : clean;
+        }
+      }
+      if (typeof update.r2_bucket_name === "string" && !/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(update.r2_bucket_name)) {
+        return res.status(400).json({ error: "Enter a valid Cloudflare R2 bucket name" });
       }
       if (typeof body.ecourts_batch_size !== "undefined") {
         const batchSize = Number(body.ecourts_batch_size);
@@ -95,6 +105,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!saveResponse.ok) {
         return res.status(500).json({ error: "Could not save server integration settings" });
       }
+
+      const changedFields = Object.keys(update).filter((field) => !["id", "updated_by", "updated_at"].includes(field));
+      await fetch(`${supabaseUrl}/rest/v1/audit_logs`, {
+        method: "POST",
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          user_id: superAdminId,
+          action: "update",
+          table_name: "integration_settings",
+          new_data: { changed_fields: changedFields },
+        }),
+      }).catch(() => undefined);
       clearIntegrationSettingsCache();
     }
 

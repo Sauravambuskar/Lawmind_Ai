@@ -1,3 +1,5 @@
+import { decryptSecret } from "./_secret-crypto.js";
+
 export interface RuntimeIntegrationSettings {
   r2AccountId: string;
   r2AccessKeyId: string;
@@ -52,11 +54,11 @@ export async function getIntegrationSettings(): Promise<RuntimeIntegrationSettin
     if (!row) return fallback;
 
     const value: RuntimeIntegrationSettings = {
-      r2AccountId: row.r2_account_id || fallback.r2AccountId,
-      r2AccessKeyId: row.r2_access_key_id || fallback.r2AccessKeyId,
-      r2SecretAccessKey: row.r2_secret_access_key || fallback.r2SecretAccessKey,
+      r2AccountId: row.r2_account_id ? decryptSecret(row.r2_account_id) : fallback.r2AccountId,
+      r2AccessKeyId: row.r2_access_key_id ? decryptSecret(row.r2_access_key_id) : fallback.r2AccessKeyId,
+      r2SecretAccessKey: row.r2_secret_access_key ? decryptSecret(row.r2_secret_access_key) : fallback.r2SecretAccessKey,
       r2BucketName: row.r2_bucket_name || fallback.r2BucketName,
-      ecourtsApiKey: row.ecourts_api_key || fallback.ecourtsApiKey,
+      ecourtsApiKey: row.ecourts_api_key ? decryptSecret(row.ecourts_api_key) : fallback.ecourtsApiKey,
       // Vercel Cron signs requests with the deployment CRON_SECRET. Keeping
       // this environment-owned prevents a dashboard edit from locking out jobs.
       cronSecret: fallback.cronSecret,
