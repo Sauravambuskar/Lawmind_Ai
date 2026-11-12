@@ -248,7 +248,7 @@ export default function NoticeMakerPage() {
       return;
     }
     if (!hasActiveKey) {
-      toast.error("AI is not configured. Please add an API key in AI Settings first.");
+      toast.error("AI is not configured. Ask the Super Admin to update API Settings.");
       return;
     }
 

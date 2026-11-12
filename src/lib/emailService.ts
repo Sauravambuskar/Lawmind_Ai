@@ -6,7 +6,7 @@
  * 2. Add email service (Gmail/Outlook/SMTP)
  * 3. Create email template
  * 4. Get Service ID, Template ID, Public Key
- * 5. Save in Admin → Email Settings
+ * 5. Save in Super Admin > API Settings > Email delivery
  */
 
 import { supabase } from "@/integrations/supabase/client";
@@ -47,7 +47,7 @@ export async function loadEmailConfig(): Promise<EmailConfig | null> {
  */
 async function sendViaEmailJS(config: EmailConfig, params: SendEmailParams): Promise<boolean> {
   if (!config.emailjs_service_id || !config.emailjs_template_id || !config.emailjs_public_key) {
-    throw new Error("EmailJS not configured. Go to Admin → Email Settings.");
+    throw new Error("EmailJS not configured. Ask the Super Admin to configure Email delivery in API Settings.");
   }
 
   const templateParams = {
@@ -82,7 +82,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
   try {
     const config = await loadEmailConfig();
     if (!config) {
-      throw new Error("Email not configured. Go to Admin → Email Settings and set up EmailJS.");
+      throw new Error("Email not configured. Ask the Super Admin to configure Email delivery in API Settings.");
     }
 
     if (config.provider === "emailjs") {

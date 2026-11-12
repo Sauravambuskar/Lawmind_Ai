@@ -67,7 +67,7 @@ function getGreeting() {
 
 export default function AIAgentPage() {
   const { config, loading: configLoading, getActiveConfig, getAllConfigs, hasActiveKey, modules, setActiveModule } = useAIConfig();
-  const { isAdminOrAbove } = useRole();
+  const { isSuperAdmin } = useRole();
   const { profile } = useAuth();
 
   const [messages, setMessages]     = useState<ChatMsg[]>([]);
@@ -104,7 +104,7 @@ export default function AIAgentPage() {
   const handleSend = useCallback(async (text?: string) => {
     const msg = (text ?? input).trim();
     if (!msg || loading) return;
-    if (!hasActiveKey) { toast.error("Configure an API key in AI Settings first"); return; }
+    if (!hasActiveKey) { toast.error("Ask the Super Admin to configure an API key in API Settings"); return; }
 
     setMessages((p) => [...p, { id: crypto.randomUUID(), role: "user", content: msg, timestamp: new Date() }]);
     setInput("");
@@ -149,7 +149,7 @@ export default function AIAgentPage() {
       toast.error(`AI Error: ${errorMsg}`);
       setMessages((p) => [...p, {
         id: crypto.randomUUID(), role: "assistant",
-        content: `⚠️ **Error:** ${errorMsg}\n\nPlease check your API key in AI Settings.`,
+        content: `⚠️ **Error:** ${errorMsg}\n\nAsk the Super Admin to check API Settings.`,
         timestamp: new Date(),
       }]);
     } finally {
@@ -242,15 +242,15 @@ export default function AIAgentPage() {
   if (!hasActiveKey) return (
     <div className="flex flex-col items-center justify-center h-[70vh] text-center px-4 gap-5">
       <OrbGif dimmed />
-      {isAdminOrAbove ? (
+      {isSuperAdmin ? (
         <>
-          <h2 className="text-xl font-semibold text-foreground">Configure Your AI Agent</h2>
+          <h2 className="text-xl font-semibold text-foreground">Configure the AI Agent</h2>
           <p className="text-sm text-muted-foreground max-w-sm">
             Add an API key from Groq, OpenAI, or Gemini to activate the AI Agent for all users.
           </p>
-          <Link to="/setup/ai-settings"
+          <Link to="/setup/api-settings?section=ai"
             className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-violet-500 transition-colors shadow-lg shadow-violet-500/20">
-            <Settings className="w-4 h-4" /> Open AI Settings
+            <Settings className="w-4 h-4" /> Open API Settings
           </Link>
         </>
       ) : (
@@ -329,12 +329,12 @@ export default function AIAgentPage() {
                       </button>
                     ))}
                   </div>
-                  <div className="px-3 py-2 border-t border-border">
-                    <Link to="/setup/ai-settings" onClick={() => setModulesOpen(false)}
+                  {isSuperAdmin && <div className="px-3 py-2 border-t border-border">
+                    <Link to="/setup/api-settings?section=ai&tab=modules" onClick={() => setModulesOpen(false)}
                       className="text-[10px] text-amber-400 hover:text-amber-300 transition-colors">
                       Manage modules →
                     </Link>
-                  </div>
+                  </div>}
                 </div>
               )}
             </div>

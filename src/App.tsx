@@ -1,12 +1,13 @@
 ﻿import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/AuthContext";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { SuperAdminRoute } from "@/components/SuperAdminRoute";
 import { AppLayout } from "@/components/AppLayout";
 import { PageLoader } from "@/components/PageLoader";
 
@@ -39,9 +40,8 @@ const ProfilePage       = lazy(() => import("./pages/ProfilePage"));
 const AuthPage          = lazy(() => import("./pages/AuthPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const AIAgentPage       = lazy(() => import("./pages/AIAgentPage"));
-const AISettingsPage    = lazy(() => import("./pages/AISettingsPage"));
+const ApiSettingsPage   = lazy(() => import("./pages/ApiSettingsPage"));
 const PermissionsPage  = lazy(() => import("./pages/PermissionsPage"));
-const EmailSettingsPage = lazy(() => import("./pages/EmailSettingsPage"));
 const TasksPage         = lazy(() => import("./pages/TasksPage"));
 const TaskDashboardPage = lazy(() => import("./pages/TaskDashboardPage"));
 const TodayPage         = lazy(() => import("./pages/TodayPage"));
@@ -108,10 +108,11 @@ const App = () => (
                   <Route path="/setup/templates"     element={<CaseTemplatesPage />} />
                   <Route path="/setup/reports"       element={<ReportsPage />} />
                   <Route path="/setup/logs"          element={<AuditLogsPage />} />
-                  <Route path="/setup/ai-settings"   element={<AISettingsPage />} />
-                  <Route path="/setup/ai-modules"    element={<AISettingsPage />} />
+                  <Route path="/setup/api-settings"  element={<SuperAdminRoute><ApiSettingsPage /></SuperAdminRoute>} />
+                  <Route path="/setup/ai-settings"   element={<Navigate to="/setup/api-settings?section=ai&tab=providers" replace />} />
+                  <Route path="/setup/ai-modules"    element={<Navigate to="/setup/api-settings?section=ai&tab=modules" replace />} />
                   <Route path="/setup/permissions"   element={<PermissionsPage />} />
-                  <Route path="/setup/email"         element={<EmailSettingsPage />} />
+                  <Route path="/setup/email"         element={<Navigate to="/setup/api-settings?section=email" replace />} />
                   <Route path="/ai-agent"            element={<AIAgentPage />} />
                   <Route path="/tasks"               element={<TasksPage />} />
                   <Route path="/task-dashboard"      element={<TaskDashboardPage />} />

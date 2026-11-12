@@ -28,8 +28,6 @@ export const APP_SECTIONS = [
   { id: "expense-types", label: "Expense Types", group: "Setup" },
   { id: "templates", label: "Templates", group: "Setup" },
   { id: "logs", label: "Audit Logs", group: "Setup" },
-  { id: "ai-settings", label: "AI Settings", group: "Setup" },
-  { id: "email", label: "Email Settings", group: "Setup" },
   { id: "reports", label: "Reports", group: "Setup" },
   { id: "permissions", label: "Permissions", group: "Setup" },
   { id: "task-assign", label: "Assign / Unassign Tasks", group: "Privileges" },

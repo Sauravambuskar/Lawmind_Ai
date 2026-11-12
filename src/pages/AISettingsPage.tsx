@@ -36,8 +36,13 @@ const ICONS: Record<AIProvider, typeof Zap> = {
 // ── Tabs ───────────────────────────────────────────────────────────────────
 type Tab = "providers" | "groups" | "modules";
 
+interface AISettingsPageProps {
+  embedded?: boolean;
+  initialTab?: Tab;
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
-export default function AISettingsPage() {
+export default function AISettingsPage({ embedded = false, initialTab }: AISettingsPageProps) {
   const {
     config, loading, updateProvider, setActiveProvider, getAllConfigs,
     extraKeys, addKey, removeKey,
@@ -45,27 +50,28 @@ export default function AISettingsPage() {
     modules, setActiveModule, createModule, updateModule, deleteModule,
   } = useAIConfig();
   const { settings: appSettings, setAutofill, isSaving } = useAppSettings();
-  const { isAdminOrAbove } = useRole();
+  const { isSuperAdmin } = useRole();
   const location = useLocation();
   const [tab, setTab] = useState<Tab>(() =>
-    location.pathname === "/setup/ai-modules" ? "modules" : "providers"
+    initialTab ?? (location.pathname === "/setup/ai-modules" ? "modules" : "providers")
   );
 
   // If navigated to /setup/ai-modules, switch to modules tab
   useEffect(() => {
-    if (location.pathname === "/setup/ai-modules") setTab("modules");
-  }, [location.pathname]);
+    if (initialTab) setTab(initialTab);
+    else if (location.pathname === "/setup/ai-modules") setTab("modules");
+  }, [initialTab, location.pathname]);
 
-  if (!isAdminOrAbove) {
+  if (!isSuperAdmin) {
     return (
       <div className="space-y-6">
-        <PageHeader title="AI Configuration"
-          breadcrumbs={[{ label: "Setup", path: "/setup/matters" }, { label: "AI Settings" }]} />
+        {!embedded && <PageHeader title="AI Configuration"
+          breadcrumbs={[{ label: "Setup", path: "/setup/matters" }, { label: "API Settings" }]} />}
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <ShieldAlert className="w-12 h-12 text-red-400/60 mb-4" />
           <h2 className="text-lg font-semibold">Access Restricted</h2>
           <p className="text-sm text-muted-foreground max-w-md mt-1">
-            Only Super Admins and Admins can configure AI settings.
+            Only the Super Admin can configure API settings.
           </p>
         </div>
       </div>
@@ -82,8 +88,8 @@ export default function AISettingsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="AI Configuration"
-        breadcrumbs={[{ label: "Setup", path: "/setup/matters" }, { label: "AI Settings" }]} />
+      {!embedded && <PageHeader title="AI Configuration"
+        breadcrumbs={[{ label: "Setup", path: "/setup/matters" }, { label: "API Settings" }]} />}
 
       {/* Info banner */}
       <div className="flex items-start gap-3 rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
@@ -91,7 +97,7 @@ export default function AISettingsPage() {
         <p className="text-sm text-slate-300 leading-relaxed">
           API keys are stored securely in the database and shared across <strong>all users</strong>.
           Once saved, <strong>all users instantly get access</strong> — no action needed on their side.
-          Only Admins and Super Admins can modify keys.
+          Only the Super Admin can modify keys.
         </p>
       </div>
 

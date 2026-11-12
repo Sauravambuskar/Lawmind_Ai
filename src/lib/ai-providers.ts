@@ -378,7 +378,7 @@ export async function sendAIMessageWithFailover(
   const usable = configs.filter((c) => c.apiKey);
 
   if (usable.length === 0) {
-    throw new Error('No AI provider is configured. Add an API key in AI Settings.');
+    throw new Error('No AI provider is configured. Ask the Super Admin to add a key in API Settings.');
   }
 
   const attempts: FailoverAttempt[] = [];
@@ -451,7 +451,7 @@ export async function sendAIMessageWithFailover(
 
   const hint = soonest
     ? ` Next key frees up in about ${formatRemaining(soonest)}.`
-    : ' Add another API key in AI Settings so requests can fall back.';
+    : ' Ask the Super Admin to add another API key so requests can fall back.';
 
   throw new Error(
     `All ${attempts.length} AI provider${attempts.length === 1 ? '' : 's'} failed.${hint}\n${detail}`,

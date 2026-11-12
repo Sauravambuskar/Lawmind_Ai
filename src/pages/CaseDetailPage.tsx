@@ -684,7 +684,7 @@ function TabTimeEntries({ caseId, userId, caseData, qc }: { caseId: string; user
   ];
 
   const handleGenerate = async () => {
-    if (!hasActiveKey) { toast.error("Configure an AI provider in AI Settings first"); return; }
+    if (!hasActiveKey) { toast.error("Ask the Super Admin to configure an AI provider in API Settings"); return; }
     setGenerating(true);
     setGeneratedDoc("");
 
@@ -745,7 +745,7 @@ Notes: ${caseData.case_notes_1 || ""} ${caseData.case_notes_2 || ""}
       {!hasActiveKey && (
         <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl text-sm">
           <p className="font-semibold text-amber-800 dark:text-amber-300">AI not configured</p>
-          <p className="text-amber-700 dark:text-amber-400 mt-1">Go to <strong>AI Settings</strong> in the sidebar and add a Groq / OpenAI / Gemini API key to use this feature.</p>
+          <p className="text-amber-700 dark:text-amber-400 mt-1">Ask the <strong>Super Admin</strong> to add a Groq, OpenAI or Gemini key in API Settings.</p>
         </div>
       )}
 

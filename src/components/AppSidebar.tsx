@@ -23,8 +23,8 @@ const AIAgentIcon = ({ className, strokeWidth, ...props }: { className?: string;
   />
 );
 
-interface NavChild { label: string; path: string }
-interface NavItem { label: string; icon: any; path: string; children?: NavChild[] }
+interface NavChild { label: string; path: string; superAdminOnly?: boolean }
+interface NavItem { label: string; icon: any; path: string; children?: NavChild[]; superAdminOnly?: boolean }
 interface NavSection { title: string; items: NavItem[] }
 
 const navSections: NavSection[] = [
@@ -73,9 +73,7 @@ const navSections: NavSection[] = [
           { label: "Expense Types", path: "/setup/expense-types" },
           { label: "Templates", path: "/setup/templates" },
           { label: "Audit Logs", path: "/setup/logs" },
-          { label: "AI Settings", path: "/setup/ai-settings" },
-          { label: "AI Modules", path: "/setup/ai-modules" },
-          { label: "Email Settings", path: "/setup/email" },
+          { label: "API Settings", path: "/setup/api-settings", superAdminOnly: true },
         ],
       },
       { label: "Reports", icon: BarChart3, path: "/setup/reports" },
@@ -123,6 +121,7 @@ function NavItems({
 }) {
   const { profile } = useAuth();
   const role = profile?.role ?? 'agent';
+  const isSuperAdmin = role === 'super_admin';
   const isAdminOrAbove = role === 'admin' || role === 'super_admin';
   const { hasAccess } = usePermissions();
   const { canViewDashboard } = useTaskPrivileges();
@@ -146,6 +145,7 @@ function NavItems({
           <SectionLabel title={section.title} collapsed={collapsed} />
           <div className="space-y-0.5 px-2">
             {section.items.filter(item => {
+              if (item.superAdminOnly && !isSuperAdmin) return false;
               if (item.label === 'Staff Management') return isAdminOrAbove;
               if (item.label === 'Permissions') return isAdminOrAbove;
               if (item.path === '/sarda-sir-dashboard') return canViewDashboard;
@@ -171,7 +171,7 @@ function NavItems({
                     </button>
                     {!collapsed && expandedItems.includes(item.label) && (
                       <div className="ml-[30px] mt-0.5 mb-1 pl-3 border-l border-slate-600/40 space-y-0.5">
-                        {item.children.map(child => (
+                        {item.children.filter(child => !child.superAdminOnly || isSuperAdmin).map(child => (
                           <Link key={child.path} to={child.path} onClick={onNavClick}
                             className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12.5px] font-semibold tracking-wide transition-colors whitespace-nowrap drop-shadow-sm ${
                               isActive(child.path)

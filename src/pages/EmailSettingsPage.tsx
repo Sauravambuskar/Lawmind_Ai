@@ -35,7 +35,7 @@ interface EmailLogRow {
   created_at: string;
 }
 
-export default function EmailSettingsPage() {
+export default function EmailSettingsPage({ embedded = false }: { embedded?: boolean }) {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -117,7 +117,7 @@ export default function EmailSettingsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <PageHeader title="Email Settings" breadcrumbs={[{ label: "Dashboard", path: "/" }, { label: "Setup" }, { label: "Email Settings" }]} />
+      {!embedded && <PageHeader title="Email Settings" breadcrumbs={[{ label: "Dashboard", path: "/" }, { label: "Setup" }, { label: "API Settings" }]} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Settings Form */}

@@ -50,7 +50,7 @@ export async function runTinyFishTask(
 ): Promise<TinyFishResponse> {
   const config = await loadTinyFishConfig();
   if (!config) {
-    return { success: false, error: "TinyFish not configured or disabled. Add your API key in AI Settings." };
+    return { success: false, error: "TinyFish is not configured. Ask the Super Admin to update API Settings." };
   }
 
   const payload = {
