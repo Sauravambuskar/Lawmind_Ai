@@ -21,7 +21,8 @@ import { PageLoader } from "@/components/PageLoader";
 import { format } from "date-fns";
 import { useDeferredSearch } from "@/hooks/useDeferredSearch";
 
-const emptyForm = { subject: "", description: "", client_id: "", case_id: "", status: "pending" };
+// Live `advice` columns: title, description, client_id, case_id, status, created_at (no subject / advice_date).
+const emptyForm = { title: "", description: "", client_id: "", case_id: "", status: "pending" };
 
 export default function AdvicePage() {
   const { user } = useAuth();
@@ -35,7 +36,7 @@ export default function AdvicePage() {
   const { data: advice = [], isLoading } = useQuery({
     queryKey: ["advice"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("advice").select("id,subject,description,client_id,case_id,status,advice_date,created_at,updated_at,created_by,clients(name)").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("advice").select("id,title,description,client_id,case_id,status,created_at,updated_at,created_by,clients(name)").order("created_at", { ascending: false });
       if (error) throw error;
       // advice.case_id has no FK to cases, so PostgREST can't embed it.
       const { data: caseRows } = await supabase.from("cases").select("id, title");
@@ -73,9 +74,9 @@ export default function AdvicePage() {
   });
 
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };
-  const openEdit = (a: any) => { setEditId(a.id); setForm({ subject: a.subject, description: a.description || "", client_id: a.client_id || "", case_id: a.case_id || "", status: a.status }); setOpen(true); };
+  const openEdit = (a: any) => { setEditId(a.id); setForm({ title: a.title || "", description: a.description || "", client_id: a.client_id || "", case_id: a.case_id || "", status: a.status }); setOpen(true); };
 
-  const filtered = advice.filter(a => (a.subject || "").toLowerCase().includes(deferredSearch) || (a as any).clients?.name?.toLowerCase().includes(deferredSearch));
+  const filtered = advice.filter(a => (a.title || "").toLowerCase().includes(deferredSearch) || (a as any).clients?.name?.toLowerCase().includes(deferredSearch));
   const { paginatedItems, currentPage, totalPages, totalItems, startIndex, nextPage, prevPage, goToPage } = usePagination(filtered);
 
   const showLoader = useMinLoader(isLoading);
@@ -92,7 +93,7 @@ export default function AdvicePage() {
       <PageHeader title="Legal Advice" breadcrumbs={[{ label: "Dashboard", path: "/" }, { label: "Advice" }]} />
       <div className="bg-card border border-border rounded-xl p-6">
         <div className="flex items-center justify-end gap-3 mb-6 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered.map(a => ({ subject: a.subject, client: (a as any).clients?.name || "", case: (a as any).cases?.title || "", date: a.advice_date, status: a.status, description: a.description || "" })), "advice")}>
+          <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered.map(a => ({ subject: a.title, client: (a as any).clients?.name || "", case: (a as any).cases?.title || "", date: a.created_at, status: a.status, description: a.description || "" })), "advice")}>
             <Download className="w-4 h-4 mr-2" /> Export CSV
           </Button>
           <div className="relative">
@@ -106,7 +107,7 @@ export default function AdvicePage() {
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label>Subject *</Label>
-                  <Input value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} placeholder="Enter advice subject" />
+                  <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Enter advice subject" />
                 </div>
                 <div className="grid gap-2">
                   <Label>Description</Label>
@@ -138,7 +139,7 @@ export default function AdvicePage() {
                   </Select>
                 </div>
               </div>
-              <Button onClick={() => saveMutation.mutate()} disabled={!form.subject || saveMutation.isPending}>
+              <Button onClick={() => saveMutation.mutate()} disabled={!form.title || saveMutation.isPending}>
                 {saveMutation.isPending ? "Saving..." : editId ? "Update Advice" : "Add Advice"}
               </Button>
             </DialogContent>
@@ -165,13 +166,13 @@ export default function AdvicePage() {
                   <td className="py-3 px-4 text-sm">{startIndex + i + 1}</td>
                   <td className="py-3 px-4">
                     <div>
-                      <span className="text-sm font-medium">{a.subject}</span>
+                      <span className="text-sm font-medium">{a.title}</span>
                       {a.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{a.description}</p>}
                     </div>
                   </td>
                   <td className="py-3 px-4 text-sm">{(a as any).clients?.name || "—"}</td>
                   <td className="py-3 px-4 text-sm">{(a as any).cases?.title || "—"}</td>
-                  <td className="py-3 px-4 text-sm">{format(new Date(a.advice_date), "MMM dd, yyyy")}</td>
+                  <td className="py-3 px-4 text-sm">{a.created_at ? format(new Date(a.created_at), "MMM dd, yyyy") : "—"}</td>
                   <td className="py-3 px-4"><Badge variant={statusVariant(a.status)}>{a.status}</Badge></td>
                   <td className="py-3 px-4 text-center">
                     <div className="flex items-center justify-center gap-1">

@@ -340,13 +340,13 @@ export default function ClientDetailPage() {
                 {advice.map(a => (
                   <div key={a.id} className="p-4 rounded-lg border border-border bg-muted/30">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-sm">{a.subject}</h4>
+                      <h4 className="font-medium text-sm">{a.title}</h4>
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColor[a.status] || "bg-muted text-muted-foreground"}`}>
                         {a.status}
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground">{a.description || "No description"}</p>
-                    <p className="text-xs text-muted-foreground mt-2">{format(new Date(a.advice_date), "MMM dd, yyyy")}</p>
+                    <p className="text-xs text-muted-foreground mt-2">{a.created_at ? format(new Date(a.created_at), "MMM dd, yyyy") : "—"}</p>
                   </div>
                 ))}
               </div>

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -19,8 +18,8 @@ import { CSVImport } from "@/components/CSVImport";
 import { PageLoader } from "@/components/PageLoader";
 import { useDeferredSearch } from "@/hooks/useDeferredSearch";
 
-const emptyForm = { name: "", email: "", phone: "", company: "", designation: "", contact_type: "general", notes: "" };
-const contactTypes = ["general", "client", "witness", "expert", "court", "other"];
+// Live `contacts` columns: name, email, phone, organization, notes (no company / designation / contact_type).
+const emptyForm = { name: "", email: "", phone: "", organization: "", notes: "" };
 
 export default function ContactsPage() {
   const { user } = useAuth();
@@ -34,7 +33,7 @@ export default function ContactsPage() {
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ["contacts"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("contacts").select("id,name,email,phone,company,designation,contact_type,notes,created_at,updated_at").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("contacts").select("id,name,email,phone,organization,notes,created_at,updated_at").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -60,9 +59,9 @@ export default function ContactsPage() {
   });
 
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };
-  const openEdit = (c: any) => { setEditId(c.id); setForm({ name: c.name, email: c.email || "", phone: c.phone || "", company: c.company || "", designation: c.designation || "", contact_type: c.contact_type, notes: c.notes || "" }); setOpen(true); };
+  const openEdit = (c: any) => { setEditId(c.id); setForm({ name: c.name, email: c.email || "", phone: c.phone || "", organization: c.organization || "", notes: c.notes || "" }); setOpen(true); };
 
-  const filtered = contacts.filter(c => c.name.toLowerCase().includes(deferredSearch) || (c.email || "").toLowerCase().includes(deferredSearch) || (c.company || "").toLowerCase().includes(deferredSearch));
+  const filtered = contacts.filter(c => c.name.toLowerCase().includes(deferredSearch) || (c.email || "").toLowerCase().includes(deferredSearch) || (c.organization || "").toLowerCase().includes(deferredSearch) || (c.phone || "").includes(deferredSearch));
   const { paginatedItems, currentPage, totalPages, totalItems, startIndex, nextPage, prevPage, goToPage } = usePagination(filtered);
 
   const showLoader = useMinLoader(isLoading);
@@ -73,8 +72,8 @@ export default function ContactsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <PageHeader title="Contact Directory" breadcrumbs={[{ label: "Dashboard", path: "/" }, { label: "Contacts" }]} />
         <div className="flex gap-2 w-full sm:w-auto flex-wrap">
-          <CSVImport table="contacts" fields={["name", "email", "phone", "company", "designation", "contact_type"]} queryKey="contacts" label="Import" />
-          <Button variant="outline" onClick={() => exportToCSV(filtered.map(c => ({ name: c.name, email: c.email || "", phone: c.phone || "", company: c.company || "", designation: c.designation || "", type: c.contact_type })), "contacts")} className="bg-background">
+          <CSVImport table="contacts" fields={["name", "email", "phone", "organization", "notes"]} queryKey="contacts" label="Import" />
+          <Button variant="outline" onClick={() => exportToCSV(filtered.map(c => ({ name: c.name, email: c.email || "", phone: c.phone || "", organization: c.organization || "", notes: c.notes || "" })), "contacts")} className="bg-background">
             <Download className="w-4 h-4 mr-2" /> Export
           </Button>
           <Dialog open={open} onOpenChange={v => { if (!v) closeDialog(); else setOpen(true); }}>
@@ -91,17 +90,7 @@ export default function ContactsPage() {
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Email</Label><Input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className="bg-muted/50" /></div>
                   <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Phone</Label><Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} className="bg-muted/50" /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Company</Label><Input value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} className="bg-muted/50" /></div>
-                  <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Designation</Label><Input value={form.designation} onChange={e => setForm(p => ({ ...p, designation: e.target.value }))} className="bg-muted/50" /></div>
-                </div>
-                <div className="grid gap-2">
-                  <Label className="font-semibold text-muted-foreground">Type</Label>
-                  <Select value={form.contact_type} onValueChange={v => setForm(p => ({ ...p, contact_type: v }))}>
-                    <SelectTrigger className="bg-muted/50"><SelectValue /></SelectTrigger>
-                    <SelectContent>{contactTypes.map(t => <SelectItem key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
+                <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Organisation / Company</Label><Input value={form.organization} onChange={e => setForm(p => ({ ...p, organization: e.target.value }))} className="bg-muted/50" /></div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Notes</Label><Input value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="bg-muted/50" /></div>
               </div>
               <Button onClick={() => saveMutation.mutate()} disabled={!form.name || saveMutation.isPending} className="w-full">
@@ -117,7 +106,7 @@ export default function ContactsPage() {
         <div className="p-4 border-b border-border bg-muted/10 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search contacts by name, email, or company..." className="pl-9 bg-background" value={search} onChange={e => setSearch(e.target.value)} />
+            <Input placeholder="Search by name, email, phone or organisation..." className="pl-9 bg-background" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium px-2">
             Showing <span className="text-foreground">{paginatedItems.length}</span> of <span className="text-foreground">{totalItems}</span> contacts
@@ -131,8 +120,8 @@ export default function ContactsPage() {
               <tr>
                 <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest w-12">#</th>
                 <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Contact Info</th>
-                <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Professional Details</th>
-                <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Type</th>
+                <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Organisation</th>
+                <th className="text-left py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Notes</th>
                 <th className="text-right py-3.5 px-5 font-semibold text-[11px] uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
@@ -169,13 +158,10 @@ export default function ContactsPage() {
                     </div>
                   </td>
                   <td className="py-4 px-5">
-                    <div className="font-medium text-foreground">{c.company || "—"}</div>
-                    {c.designation && <div className="text-xs text-muted-foreground">{c.designation}</div>}
+                    <div className="font-medium text-foreground">{c.organization || "—"}</div>
                   </td>
-                  <td className="py-4 px-5">
-                    <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border bg-muted text-muted-foreground border-border/50">
-                      {c.contact_type}
-                    </span>
+                  <td className="py-4 px-5 text-xs text-muted-foreground max-w-xs">
+                    <span className="line-clamp-2">{c.notes || "—"}</span>
                   </td>
                   <td className="py-4 px-5 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
