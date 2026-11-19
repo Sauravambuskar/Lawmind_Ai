@@ -39,6 +39,7 @@ const AuditLogsPage     = lazy(() => import("./pages/AuditLogsPage"));
 const ProfilePage       = lazy(() => import("./pages/ProfilePage"));
 const AuthPage          = lazy(() => import("./pages/AuthPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const CommunicationsPolicyPage = lazy(() => import("./pages/CommunicationsPolicyPage"));
 const AIAgentPage       = lazy(() => import("./pages/AIAgentPage"));
 const ApiSettingsPage   = lazy(() => import("./pages/ApiSettingsPage"));
 const PermissionsPage  = lazy(() => import("./pages/PermissionsPage"));
@@ -75,6 +76,9 @@ const App = () => (
               <Routes>
                 <Route path="/login" element={<AuthPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/communications-policy" element={<CommunicationsPolicyPage />} />
+                <Route path="/sms-policy" element={<Navigate to="/communications-policy" replace />} />
+                <Route path="/dlt-policy" element={<Navigate to="/communications-policy" replace />} />
                 <Route
                   element={
                      <ProtectedRoute>

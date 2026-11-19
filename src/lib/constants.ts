@@ -3,6 +3,7 @@
 
 export const APP_VERSION = "3.4.1.1";
 export const APP_SECURITY_BADGE = "App is secured with Bank-grade SSL encryption";
+export const LEGAL_BUSINESS_NAME = "CoreLearn Training and IT Solution";
 
 export const CASE_STATUSES = ["pending", "disposed", "not applicable", "open", "closed", "in-progress", "won", "lost"] as const;
 export type CaseStatus = (typeof CASE_STATUSES)[number];
