@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
 import { GuideButton } from "./GuideButton";
+import { ProductAttribution } from "./ProductAttribution";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export function AppLayout() {
@@ -37,6 +38,7 @@ export function AppLayout() {
             <Outlet />
           </div>
         </main>
+        <ProductAttribution className="border-t border-border/60 px-4 py-2 text-right md:px-6 xl:px-8" />
       </div>
       <GuideButton />
     </div>

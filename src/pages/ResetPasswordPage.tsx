@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, ArrowRight, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { ProductAttribution } from "@/components/ProductAttribution";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -102,7 +103,7 @@ export default function ResetPasswordPage() {
       </div>
 
       {/* Right panel - form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
+      <div className="relative flex flex-1 items-center justify-center p-6 pb-14 sm:p-12 sm:pb-16">
         <div className="w-full max-w-md">
           <Card className="border-0 shadow-none bg-transparent">
             <CardHeader className="px-0 pt-0">
@@ -188,6 +189,7 @@ export default function ResetPasswordPage() {
             </CardContent>
           </Card>
         </div>
+        <ProductAttribution className="absolute bottom-3 right-4 text-right sm:bottom-4 sm:right-6" />
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import { Scale, Mail, Lock, User, ArrowRight, Eye, EyeOff, ShieldCheck } from "l
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { APP_VERSION, APP_SECURITY_BADGE } from "@/lib/constants";
+import { ProductAttribution } from "@/components/ProductAttribution";
 type AuthMode = "login" | "signup" | "forgot";
 
 export default function AuthPage() {
@@ -104,7 +105,7 @@ export default function AuthPage() {
       </div>
 
       {/* Right panel - form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
+      <div className="relative flex flex-1 items-center justify-center p-6 pb-14 sm:p-12 sm:pb-16">
         <div className="w-full max-w-md">
           <Card className="border-0 shadow-none bg-transparent">
             <CardHeader className="px-0 pt-0">
@@ -204,6 +205,7 @@ export default function AuthPage() {
             </p>
           </div>
         </div>
+        <ProductAttribution className="absolute bottom-3 right-4 text-right sm:bottom-4 sm:right-6" />
       </div>
     </div>
   );
