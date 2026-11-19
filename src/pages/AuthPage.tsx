@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Scale, Mail, Lock, User, ArrowRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Scale, Mail, Lock, User, ArrowRight, Eye, EyeOff, ShieldCheck, MonitorPlay } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
-import { APP_VERSION, APP_SECURITY_BADGE } from "@/lib/constants";
+import { APP_VERSION, APP_SECURITY_BADGE, DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/constants";
 import { ProductAttribution } from "@/components/ProductAttribution";
 type AuthMode = "login" | "signup" | "forgot";
 
@@ -43,6 +43,10 @@ export default function AuthPage() {
         toast({ title: "Check your email", description: "If that address has an account, we've sent a password reset link. It expires in 1 hour." });
         setMode("login");
       } else if (mode === "login") {
+        if (email.trim().toLowerCase() === DEMO_EMAIL && password === DEMO_PASSWORD) {
+          navigate("/demo");
+          return;
+        }
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         navigate("/");
@@ -194,6 +198,21 @@ export default function AuthPage() {
                   </div>
                 )}
               </div>
+
+              {mode === "login" && (
+                <div className="mt-6 border-t border-border/70 pt-5">
+                  <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-muted/35 p-4">
+                    <div className="min-w-0 text-left">
+                      <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                        <MonitorPlay className="h-4 w-4 text-primary" /> Client demo
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">Explore an isolated workspace with sample data only.</p>
+                      <p className="mt-2 break-all text-[11px] text-muted-foreground">{DEMO_EMAIL} · {DEMO_PASSWORD}</p>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => navigate("/demo")}>Open demo</Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

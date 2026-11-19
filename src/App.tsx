@@ -39,7 +39,10 @@ const AuditLogsPage     = lazy(() => import("./pages/AuditLogsPage"));
 const ProfilePage       = lazy(() => import("./pages/ProfilePage"));
 const AuthPage          = lazy(() => import("./pages/AuthPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
-const CommunicationsPolicyPage = lazy(() => import("./pages/CommunicationsPolicyPage"));
+const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
+const TermsAndConditionsPage = lazy(() => import("./pages/TermsAndConditionsPage"));
+const CopyrightPolicyPage = lazy(() => import("./pages/CopyrightPolicyPage"));
+const DemoWorkspacePage = lazy(() => import("./pages/DemoWorkspacePage"));
 const AIAgentPage       = lazy(() => import("./pages/AIAgentPage"));
 const ApiSettingsPage   = lazy(() => import("./pages/ApiSettingsPage"));
 const PermissionsPage  = lazy(() => import("./pages/PermissionsPage"));
@@ -76,9 +79,13 @@ const App = () => (
               <Routes>
                 <Route path="/login" element={<AuthPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/communications-policy" element={<CommunicationsPolicyPage />} />
-                <Route path="/sms-policy" element={<Navigate to="/communications-policy" replace />} />
-                <Route path="/dlt-policy" element={<Navigate to="/communications-policy" replace />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                <Route path="/terms" element={<TermsAndConditionsPage />} />
+                <Route path="/copyright-policy" element={<CopyrightPolicyPage />} />
+                <Route path="/demo" element={<DemoWorkspacePage />} />
+                <Route path="/communications-policy" element={<Navigate to="/privacy-policy" replace />} />
+                <Route path="/sms-policy" element={<Navigate to="/privacy-policy" replace />} />
+                <Route path="/dlt-policy" element={<Navigate to="/privacy-policy" replace />} />
                 <Route
                   element={
                      <ProtectedRoute>
