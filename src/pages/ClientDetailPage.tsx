@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   User, Phone, Mail, MapPin, Briefcase, Gavel, FileText, Receipt,
-  StickyNote, Scale, Calendar, ArrowLeft, IndianRupee, MessageSquare
+  StickyNote, Scale, Calendar, ArrowLeft, IndianRupee, MessageSquare, Plus
 } from "lucide-react";
 import { format } from "date-fns";
 import { CommunicationLogList } from "@/components/communications/CommunicationLogList";
@@ -212,7 +212,15 @@ export default function ClientDetailPage() {
 
           {/* Cases Tab */}
           <TabsContent value="cases">
-            {cases.length === 0 ? <SectionEmpty message="No cases linked to this client." /> : (
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Cases linked to {client.name}</p>
+              <Button size="sm" onClick={() => navigate(`/cases?client=${id}`)}>
+                <Plus className="w-4 h-4 mr-1.5" />New case
+              </Button>
+            </div>
+            {cases.length === 0 ? (
+              <SectionEmpty message="No cases linked yet. Click “New case” to add one for this client." />
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>

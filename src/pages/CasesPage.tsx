@@ -1,8 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { Plus, Search, Pencil, Download, BriefcaseBusiness, Filter, Trash2, CheckSquare, Eye, RefreshCw } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Plus, Search, Pencil, Download, BriefcaseBusiness, Filter, Trash2, CheckSquare, Eye, RefreshCw, UserPlus, Users } from "lucide-react";
 import { CaseFileImport } from "@/components/CaseFileImport";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -77,6 +77,26 @@ export default function CasesPage() {
   const importedSnapshotRef = useRef<ECourtsSnapshot | null>(null); // snapshot fetched by CNR, stored after case creation
   const [form, setForm] = useState(emptyForm);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Inline "new client" inside the case form, so you never have to leave the form
+  // just to create a client. Mobile is required here because SMS rides on it.
+  const [clientMode, setClientMode] = useState<"existing" | "new">("existing");
+  const [newClient, setNewClient] = useState({ name: "", phone: "", email: "" });
+
+  // Opened from a Client page ("New case for this client") → prefill + open dialog.
+  useEffect(() => {
+    const clientParam = searchParams.get("client");
+    if (!clientParam) return;
+    setEditId(null);
+    prevAdvocateRef.current = "";
+    setForm({ ...emptyForm, client_id: clientParam });
+    setClientMode("existing");
+    setNewClient({ name: "", phone: "", email: "" });
+    setOpen(true);
+    searchParams.delete("client");
+    setSearchParams(searchParams, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const CASE_COLUMNS = "id,case_number,title,status,court_name,court_type,case_stage,stage,case_side,cnr_number,file_number,filing_date,next_hearing_date,last_hearing_date,case_imported_date,case_tags,disposed_date,document_size,fir_number,police_station,case_notes_1,case_notes_2,description,client_id,advocate_id,created_at";
 
@@ -106,9 +126,23 @@ export default function CasesPage() {
       const { client_id, advocate_id, filing_date, template_id, matter_id,
         last_hearing_date, next_hearing_date, case_imported_date, disposed_date,
         ...rest } = form;
-      const payload: Record<string, any> = { 
-        ...rest, 
-        client_id: client_id || null, 
+      // Inline new client: create it first, then link the case to it.
+      let effectiveClientId = client_id;
+      if (!editId && clientMode === "new" && newClient.name.trim()) {
+        const digits = newClient.phone.replace(/\D/g, "").slice(-10);
+        if (!/^\d{10}$/.test(digits)) throw new Error("New client ke liye valid 10-digit mobile number daalo — SMS isi par jaata hai.");
+        const createdClient = await restInsert<{ id: string }>("clients", {
+          name: newClient.name.trim(),
+          phone: digits,
+          email: newClient.email.trim() || null,
+          created_by: user!.id,
+        }, { returning: true });
+        effectiveClientId = createdClient[0]?.id || "";
+        queryClient.invalidateQueries({ queryKey: ["clients"] });
+      }
+      const payload: Record<string, any> = {
+        ...rest,
+        client_id: effectiveClientId || null,
         advocate_id: advocate_id || null, 
         filing_date: filing_date || null,
         last_hearing_date: last_hearing_date || null,
@@ -268,9 +302,11 @@ export default function CasesPage() {
     onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "eCourts refresh failed"),
   });
 
-  const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); setCnrLookup(""); importedSnapshotRef.current = null; };
+  const resetNewClient = () => { setClientMode("existing"); setNewClient({ name: "", phone: "", email: "" }); };
+  const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); setCnrLookup(""); importedSnapshotRef.current = null; resetNewClient(); };
   const openEdit = (c: CaseRow) => {
     setEditId(c.id);
+    resetNewClient();
     prevAdvocateRef.current = c.advocate_id || "";
     setForm({
       case_number: c.case_number,
@@ -400,7 +436,7 @@ export default function CasesPage() {
 
           <Dialog open={open} onOpenChange={v => { if (!v) closeDialog(); else setOpen(true); }}>
             <DialogTrigger asChild>
-              <Button onClick={() => { setEditId(null); prevAdvocateRef.current = ""; setForm(emptyForm); setCnrLookup(""); importedSnapshotRef.current = null; }} className="bg-primary text-primary-foreground shadow-sm hover:shadow-md transition-all">
+              <Button onClick={() => { setEditId(null); prevAdvocateRef.current = ""; setForm(emptyForm); setCnrLookup(""); importedSnapshotRef.current = null; resetNewClient(); }} className="bg-primary text-primary-foreground shadow-sm hover:shadow-md transition-all">
                 <Plus className="w-4 h-4 mr-2" /> New Case
               </Button>
             </DialogTrigger>
@@ -470,11 +506,32 @@ export default function CasesPage() {
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Notes 1</Label><Input value={form.case_notes_1} onChange={e => setForm(p => ({ ...p, case_notes_1: e.target.value }))} placeholder="Additional notes..." className="bg-muted/50" /></div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Notes 2</Label><Input value={form.case_notes_2} onChange={e => setForm(p => ({ ...p, case_notes_2: e.target.value }))} placeholder="Additional notes..." className="bg-muted/50" /></div>
                 <div className="grid gap-2">
-                  <Label className="font-semibold text-muted-foreground">Client</Label>
-                  <Select value={form.client_id} onValueChange={v => setForm(p => ({ ...p, client_id: v }))}>
-                    <SelectTrigger className="bg-muted/50"><SelectValue placeholder="Select client" /></SelectTrigger>
-                    <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                  </Select>
+                  <div className="flex items-center justify-between">
+                    <Label className="font-semibold text-muted-foreground">Client</Label>
+                    {!editId && (
+                      <button type="button" onClick={() => setClientMode(m => (m === "new" ? "existing" : "new"))}
+                        className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                        {clientMode === "new"
+                          ? <><Users className="w-3 h-3" />Choose existing</>
+                          : <><UserPlus className="w-3 h-3" />New client</>}
+                      </button>
+                    )}
+                  </div>
+                  {clientMode === "new" && !editId ? (
+                    <div className="grid gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3">
+                      <Input value={newClient.name} onChange={e => setNewClient(p => ({ ...p, name: e.target.value }))} placeholder="Client full name *" className="bg-background" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input value={newClient.phone} onChange={e => setNewClient(p => ({ ...p, phone: e.target.value }))} placeholder="Mobile 10-digit *" inputMode="numeric" className="bg-background" />
+                        <Input value={newClient.email} onChange={e => setNewClient(p => ({ ...p, email: e.target.value }))} placeholder="Email (optional)" className="bg-background" />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">Yeh client turant ban kar case se link ho jaayega. Mobile zaroori hai — automatic SMS isi number par jaata hai.</p>
+                    </div>
+                  ) : (
+                    <Select value={form.client_id} onValueChange={v => setForm(p => ({ ...p, client_id: v }))}>
+                      <SelectTrigger className="bg-muted/50"><SelectValue placeholder="Select client" /></SelectTrigger>
+                      <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label className="font-semibold text-muted-foreground">Advocate</Label>
