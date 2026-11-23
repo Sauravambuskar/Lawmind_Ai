@@ -82,6 +82,9 @@ export default function CasesPage() {
   // just to create a client. Mobile is required here because SMS rides on it.
   const [clientMode, setClientMode] = useState<"existing" | "new">("existing");
   const [newClient, setNewClient] = useState({ name: "", phone: "", email: "" });
+  // Case source: create a brand-new case (CNR/manual) OR link one already in the app.
+  const [caseMode, setCaseMode] = useState<"new" | "existing">("new");
+  const [linkCaseId, setLinkCaseId] = useState("");
 
   // Opened from a Client page ("New case for this client") → prefill + open dialog.
   useEffect(() => {
@@ -123,6 +126,27 @@ export default function CasesPage() {
   // ── Save (create / update) ──────────────────────────────────────────────
   const saveMutation = useMutation({
     mutationFn: async () => {
+      // ── Link an existing case to a client (no new case created) ──────────
+      if (!editId && caseMode === "existing") {
+        if (!linkCaseId) throw new Error("Pehle ek existing case select karo.");
+        let clientForLink = form.client_id;
+        if (clientMode === "new" && newClient.name.trim()) {
+          const digits = newClient.phone.replace(/\D/g, "").slice(-10);
+          if (!/^\d{10}$/.test(digits)) throw new Error("New client ke liye valid 10-digit mobile number daalo — SMS isi par jaata hai.");
+          const createdClient = await restInsert<{ id: string }>("clients", {
+            name: newClient.name.trim(), phone: digits, email: newClient.email.trim() || null, created_by: user!.id,
+          }, { returning: true });
+          clientForLink = createdClient[0]?.id || "";
+          queryClient.invalidateQueries({ queryKey: ["clients"] });
+        }
+        if (!clientForLink) throw new Error("Case ko link karne ke liye ek client chuno ya naya banao.");
+        const linkPayload: Record<string, any> = { client_id: clientForLink };
+        if (form.advocate_id) linkPayload.advocate_id = form.advocate_id;
+        await restUpdate("cases", `id=eq.${linkCaseId}`, linkPayload);
+        await writeAuditLog({ user_id: user!.id, action: "update", table_name: "cases", record_id: linkCaseId, new_data: linkPayload });
+        return { isCreate: false as const, caseId: linkCaseId };
+      }
+
       const { client_id, advocate_id, filing_date, template_id, matter_id,
         last_hearing_date, next_hearing_date, case_imported_date, disposed_date,
         ...rest } = form;
@@ -174,6 +198,7 @@ export default function CasesPage() {
       return { isCreate: true as const, caseId: newId };
     },
     onSuccess: () => {
+      const wasLink = !editId && caseMode === "existing";
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-cases"] });
       importedSnapshotRef.current = null;
@@ -194,7 +219,7 @@ export default function CasesPage() {
         }
       }
       closeDialog();
-      toast.success(editId ? "Case updated successfully" : "Case created successfully");
+      toast.success(editId ? "Case updated successfully" : wasLink ? "Case client se link ho gaya" : "Case created successfully");
     },
     onError: (e: Error) => {
       logCaughtError(e, "CasesPage.saveMutation", user?.id);
@@ -302,7 +327,7 @@ export default function CasesPage() {
     onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "eCourts refresh failed"),
   });
 
-  const resetNewClient = () => { setClientMode("existing"); setNewClient({ name: "", phone: "", email: "" }); };
+  const resetNewClient = () => { setClientMode("existing"); setNewClient({ name: "", phone: "", email: "" }); setCaseMode("new"); setLinkCaseId(""); };
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); setCnrLookup(""); importedSnapshotRef.current = null; resetNewClient(); };
   const openEdit = (c: CaseRow) => {
     setEditId(c.id);
@@ -444,6 +469,18 @@ export default function CasesPage() {
               <DialogHeader><DialogTitle className="text-xl font-bold">{editId ? "Edit Case Detail" : "Create New Case"}</DialogTitle></DialogHeader>
               <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-1 custom-scrollbar">
                 {!editId && (
+                  <div className="flex rounded-lg border border-border bg-muted/30 p-1">
+                    <button type="button" onClick={() => setCaseMode("new")}
+                      className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${caseMode === "new" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>
+                      Add new case
+                    </button>
+                    <button type="button" onClick={() => setCaseMode("existing")}
+                      className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${caseMode === "existing" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>
+                      Select existing case
+                    </button>
+                  </div>
+                )}
+                {!editId && caseMode === "new" && (
                   <div className="rounded-lg border border-amber-400/40 bg-amber-50/60 dark:bg-amber-950/20 p-3 space-y-2">
                     <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                       <Download className="w-4 h-4 text-amber-600" /> Add from eCourts (by CNR)
@@ -459,6 +496,19 @@ export default function CasesPage() {
                     {ecourtsLookupMutation.isPending && <p className="text-[11px] text-amber-600">Contacting eCourts… a brand-new CNR can take a minute or two.</p>}
                   </div>
                 )}
+                {!editId && caseMode === "existing" && (
+                  <div className="grid gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                    <Label className="font-semibold text-muted-foreground">Select an existing case</Label>
+                    <Select value={linkCaseId} onValueChange={setLinkCaseId}>
+                      <SelectTrigger className="bg-background"><SelectValue placeholder="Choose a case already in the app" /></SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {cases.map(c => <SelectItem key={c.id} value={c.id}>{c.case_number} — {c.title}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground">Yeh case niche chune/banaye gaye client se link ho jaayega. Naya case banana ho to upar "Add new case" chuno.</p>
+                  </div>
+                )}
+                {(editId || caseMode === "new") && (<>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Number *</Label><Input value={form.case_number} onChange={e => setForm(p => ({ ...p, case_number: e.target.value }))} className="bg-muted/50" /></div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Title *</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="bg-muted/50" /></div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Description</Label><Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="bg-muted/50" /></div>
@@ -505,6 +555,7 @@ export default function CasesPage() {
                 </div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Notes 1</Label><Input value={form.case_notes_1} onChange={e => setForm(p => ({ ...p, case_notes_1: e.target.value }))} placeholder="Additional notes..." className="bg-muted/50" /></div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Notes 2</Label><Input value={form.case_notes_2} onChange={e => setForm(p => ({ ...p, case_notes_2: e.target.value }))} placeholder="Additional notes..." className="bg-muted/50" /></div>
+                </>)}
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label className="font-semibold text-muted-foreground">Client</Label>
@@ -541,8 +592,8 @@ export default function CasesPage() {
                   </Select>
                 </div>
               </div>
-              <Button onClick={() => saveMutation.mutate()} disabled={!form.case_number || !form.title || saveMutation.isPending} className="w-full">
-                {saveMutation.isPending ? "Saving..." : editId ? "Update Case" : "Create Case"}
+              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || (!editId && caseMode === "existing" ? !linkCaseId : (!form.case_number || !form.title))} className="w-full">
+                {saveMutation.isPending ? "Saving..." : editId ? "Update Case" : caseMode === "existing" ? "Link case to client" : "Create Case"}
               </Button>
             </DialogContent>
           </Dialog>
