@@ -367,6 +367,117 @@ export async function syncCaseWithECourts(localCase: LocalCase, userId: string):
   return { snapshot, changes };
 }
 
+// ── Add a NEW case from eCourts by CNR ──────────────────────────────────────
+
+export interface CaseImportFields {
+  case_number: string;
+  title: string;
+  description: string;
+  cnr_number: string;
+  status: string;
+  court_name: string;
+  court_type: string;
+  case_stage: string;
+  stage: string;
+  filing_date: string;
+  last_hearing_date: string;
+  next_hearing_date: string;
+  disposed_date: string;
+  fir_number: string;
+  police_station: string;
+}
+
+/** Normalise an eCourts date into the YYYY-MM-DD that <input type="date"> needs. */
+function toDateInput(value: string | null): string {
+  if (!value) return "";
+  const s = String(value).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const dmy = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+  const parsed = Date.parse(s);
+  return Number.isFinite(parsed) ? new Date(parsed).toISOString().slice(0, 10) : "";
+}
+
+function buildCaseTitle(s: ECourtsSnapshot): string {
+  const petitioner = s.petitioners[0];
+  const respondent = s.respondents[0];
+  if (petitioner && respondent) return `${petitioner} vs ${respondent}`;
+  return petitioner || respondent || s.caseNumber || s.cnr;
+}
+
+/** Map an eCourts snapshot onto the "Create Case" form fields. */
+export function snapshotToCaseFields(s: ECourtsSnapshot): CaseImportFields {
+  const description = [
+    s.petitioners.length ? `Petitioner(s): ${s.petitioners.join(", ")}` : "",
+    s.respondents.length ? `Respondent(s): ${s.respondents.join(", ")}` : "",
+    s.judges.length ? `Judge(s): ${s.judges.join(", ")}` : "",
+  ].filter(Boolean).join(" | ");
+
+  return {
+    case_number: s.caseNumber || s.cnr,
+    title: buildCaseTitle(s),
+    description,
+    cnr_number: s.cnr,
+    status: mapCaseStatus(s.caseStatus),
+    court_name: s.courtName || "",
+    court_type: s.caseType || "",
+    case_stage: s.purpose || "",
+    stage: s.disposalType || s.contestedStatus || "",
+    filing_date: toDateInput(s.filingDate),
+    last_hearing_date: toDateInput(s.lastHearingDate),
+    next_hearing_date: toDateInput(s.nextHearingDate),
+    disposed_date: toDateInput(s.decisionDate),
+    fir_number: s.firNumber || "",
+    police_station: s.policeStation || "",
+  };
+}
+
+async function tryDetails(cnr: string): Promise<ECourtsSnapshot | null> {
+  try {
+    const details = await callApi("details", cnr);
+    const snapshot = toSnapshot(details);
+    if (!snapshot.cnr) snapshot.cnr = cnr;
+    return snapshot.cnr === cnr ? snapshot : null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message.toLowerCase() : "";
+    // Real configuration/auth problems should surface, not trigger a slow refresh.
+    if (message.includes("not configured") || message.includes("sign in") || message.includes("session")) {
+      throw error;
+    }
+    return null; // Most likely "not cached yet" — caller will request a fresh pull.
+  }
+}
+
+/**
+ * Look up a case on eCourts by CNR for import. Returns the snapshot if the
+ * provider already has it; otherwise requests a fresh pull from the court and
+ * polls until it is ready (can take a few minutes for a brand-new CNR).
+ */
+export async function fetchCaseSnapshotForImport(cnrInput: string): Promise<ECourtsSnapshot> {
+  const cnr = normalizeCnr(cnrInput);
+  if (!isValidCnr(cnr)) throw new Error("Enter a valid 16-character CNR number, e.g. MHAK01012345672024");
+
+  const cached = await tryDetails(cnr);
+  if (cached) return cached;
+
+  const existing = await getRefreshStatus(cnr);
+  if (String(existing.status || "").toUpperCase() === "PENDING") {
+    saveRefreshMarker(cnr, existing.requestedAt);
+  } else {
+    await callApi("refresh", cnr);
+    saveRefreshMarker(cnr);
+  }
+  await waitForRefresh(cnr);
+
+  const details = await callApi("details", cnr);
+  const snapshot = toSnapshot(details);
+  if (!snapshot.cnr) snapshot.cnr = cnr;
+  if (snapshot.cnr !== cnr) throw new Error("eCourts returned a different CNR than requested");
+  clearRefreshMarker(cnr);
+  return snapshot;
+}
+
 export async function getECourtsSyncLogs(caseId: string): Promise<ECourtsSyncLog[]> {
   return restGet<ECourtsSyncLog>(
     `audit_logs?select=id,created_at,old_data,new_data&table_name=eq.ecourts_sync&record_id=eq.${caseId}&order=created_at.desc&limit=100`,

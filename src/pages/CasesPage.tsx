@@ -23,7 +23,7 @@ import { logCaughtError } from "@/lib/errorLog";
 import { CASE_STATUSES, CASE_STATUS_FILTER, CASE_STATUS_CONFIG, type CaseStatus } from "@/lib/constants";
 import { restGet, restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { triggerSms } from "@/lib/smsService";
-import { isValidCnr, syncCaseWithECourts } from "@/lib/ecourts";
+import { isValidCnr, syncCaseWithECourts, fetchCaseSnapshotForImport, snapshotToCaseFields } from "@/lib/ecourts";
 
 type CaseRow = {
   id: string;
@@ -73,6 +73,7 @@ export default function CasesPage() {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const prevAdvocateRef = useRef<string>(""); // advocate_id before an edit, to detect assignment changes
+  const [cnrLookup, setCnrLookup] = useState(""); // CNR entered in the "Add from eCourts" box
   const [form, setForm] = useState(emptyForm);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -156,6 +157,19 @@ export default function CasesPage() {
       logCaughtError(e, "CasesPage.saveMutation", user?.id);
       toast.error(e.message);
     },
+  });
+
+  // ── Fetch case details from eCourts by CNR and pre-fill the form ─────────
+  const ecourtsLookupMutation = useMutation({
+    mutationFn: async () => {
+      const snapshot = await fetchCaseSnapshotForImport(cnrLookup);
+      return snapshotToCaseFields(snapshot);
+    },
+    onSuccess: (fields) => {
+      setForm(prev => ({ ...prev, ...fields }));
+      toast.success("Case details fetched from eCourts. Review and click Create Case.");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not fetch this CNR from eCourts"),
   });
 
   // ── Delete single (optimistic) ──────────────────────────────────────────
@@ -247,7 +261,7 @@ export default function CasesPage() {
     onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "eCourts refresh failed"),
   });
 
-  const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };
+  const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); setCnrLookup(""); };
   const openEdit = (c: CaseRow) => {
     setEditId(c.id);
     prevAdvocateRef.current = c.advocate_id || "";
@@ -379,13 +393,29 @@ export default function CasesPage() {
 
           <Dialog open={open} onOpenChange={v => { if (!v) closeDialog(); else setOpen(true); }}>
             <DialogTrigger asChild>
-              <Button onClick={() => { setEditId(null); prevAdvocateRef.current = ""; setForm(emptyForm); }} className="bg-primary text-primary-foreground shadow-sm hover:shadow-md transition-all">
+              <Button onClick={() => { setEditId(null); prevAdvocateRef.current = ""; setForm(emptyForm); setCnrLookup(""); }} className="bg-primary text-primary-foreground shadow-sm hover:shadow-md transition-all">
                 <Plus className="w-4 h-4 mr-2" /> New Case
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader><DialogTitle className="text-xl font-bold">{editId ? "Edit Case Detail" : "Create New Case"}</DialogTitle></DialogHeader>
               <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-1 custom-scrollbar">
+                {!editId && (
+                  <div className="rounded-lg border border-amber-400/40 bg-amber-50/60 dark:bg-amber-950/20 p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <Download className="w-4 h-4 text-amber-600" /> Add from eCourts (by CNR)
+                    </div>
+                    <p className="text-xs text-muted-foreground">Paste the 16-character CNR number — court name, status, hearing dates and parties fill in automatically.</p>
+                    <div className="flex gap-2">
+                      <Input value={cnrLookup} onChange={e => setCnrLookup(e.target.value.toUpperCase())} placeholder="e.g. MHAK010123456782024" className="bg-background font-mono" maxLength={16} />
+                      <Button type="button" variant="outline" onClick={() => ecourtsLookupMutation.mutate()} disabled={!isValidCnr(cnrLookup) || ecourtsLookupMutation.isPending} className="shrink-0 gap-1.5">
+                        <RefreshCw className={`w-4 h-4 ${ecourtsLookupMutation.isPending ? "animate-spin" : ""}`} />
+                        {ecourtsLookupMutation.isPending ? "Fetching..." : "Fetch"}
+                      </Button>
+                    </div>
+                    {ecourtsLookupMutation.isPending && <p className="text-[11px] text-amber-600">Contacting eCourts… a brand-new CNR can take a minute or two.</p>}
+                  </div>
+                )}
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Case Number *</Label><Input value={form.case_number} onChange={e => setForm(p => ({ ...p, case_number: e.target.value }))} className="bg-muted/50" /></div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Title *</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="bg-muted/50" /></div>
                 <div className="grid gap-2"><Label className="font-semibold text-muted-foreground">Description</Label><Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="bg-muted/50" /></div>
