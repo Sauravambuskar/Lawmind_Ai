@@ -5,18 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { restGet, restUpdate } from "@/lib/restClient";
 import { useAuth } from "@/hooks/useAuth";
 import type { SmsTemplate } from "@/lib/smsService";
 import { toast } from "sonner";
-import { MessageSquare, Save, Eye, EyeOff, CheckCircle2, XCircle, Zap } from "lucide-react";
+import { MessageSquare, Save, Eye, EyeOff, CheckCircle2, XCircle, Zap, Smartphone } from "lucide-react";
 
 interface SmsStatus {
   sms: boolean;
   smsEnabled: boolean;
   smsAutoSend: boolean;
+  smsDefaultNumber: string | null;
+  smsDefaultMode: "off" | "copy" | "route";
   masked: { fast2smsApiKey: string | null; fast2smsSenderId: string | null };
 }
 
@@ -29,8 +32,11 @@ export default function SmsSettingsPage({ embedded = false }: { embedded?: boole
   const [senderId, setSenderId] = useState("");
   const [enabled, setEnabled] = useState(false);
   const [autoSend, setAutoSend] = useState(false);
+  const [defaultNumber, setDefaultNumber] = useState("");
+  const [defaultMode, setDefaultMode] = useState<"off" | "copy" | "route">("off");
   const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingDefaults, setSavingDefaults] = useState(false);
 
   const statusQuery = useQuery({
     queryKey: ["sms-integration-status"],
@@ -47,6 +53,8 @@ export default function SmsSettingsPage({ embedded = false }: { embedded?: boole
       setSenderId((prev) => prev || statusQuery.data!.masked.fast2smsSenderId || "");
       setEnabled(statusQuery.data.smsEnabled);
       setAutoSend(statusQuery.data.smsAutoSend);
+      setDefaultNumber((prev) => prev || statusQuery.data!.smsDefaultNumber || "");
+      setDefaultMode(statusQuery.data.smsDefaultMode || "off");
     }
   }, [statusQuery.data]);
 
@@ -75,6 +83,25 @@ export default function SmsSettingsPage({ embedded = false }: { embedded?: boole
       toast.error(error instanceof Error ? error.message : "Could not save SMS settings");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveDefaults = async () => {
+    setSavingDefaults(true);
+    try {
+      const response = await fetch("/api/integration-status", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ sms_default_number: defaultNumber.trim(), sms_default_mode: defaultMode }),
+      });
+      const result = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) throw new Error(result.error || "Could not save default number");
+      toast.success("Default SMS number saved");
+      await statusQuery.refetch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save default number");
+    } finally {
+      setSavingDefaults(false);
     }
   };
 
@@ -139,6 +166,39 @@ export default function SmsSettingsPage({ embedded = false }: { embedded?: boole
 
           <div className="flex justify-end border-t border-border pt-4">
             <Button onClick={saveCredentials} disabled={saving}><Save className="mr-2 h-4 w-4" />{saving ? "Saving..." : "Save SMS settings"}</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Smartphone className="w-5 h-5 text-primary" />Default SMS number</CardTitle>
+          <CardDescription>A single controlled number that can receive a copy of every SMS, or have all SMS routed to it (useful while testing, so real clients are not messaged yet).</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="sms-default-number">Default number</Label>
+              <Input id="sms-default-number" value={defaultNumber} onChange={(e) => setDefaultNumber(e.target.value)} placeholder="9876543210" inputMode="numeric" />
+              <p className="text-[11px] text-muted-foreground">10-digit Indian mobile. Leave blank to clear.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sms-default-mode">Mode</Label>
+              <Select value={defaultMode} onValueChange={(v) => setDefaultMode(v as "off" | "copy" | "route")}>
+                <SelectTrigger id="sms-default-mode"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="off">Off — SMS go only to real recipients</SelectItem>
+                  <SelectItem value="copy">Copy — also send every SMS to this number</SelectItem>
+                  <SelectItem value="route">Route — send ALL SMS only to this number</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                {defaultMode === "route" ? "⚠️ Real clients will NOT be messaged — everything goes to the default number." : defaultMode === "copy" ? "Clients still get their SMS; the default number gets a copy too." : "Normal sending."}
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end border-t border-border pt-4">
+            <Button onClick={saveDefaults} disabled={savingDefaults}><Save className="mr-2 h-4 w-4" />{savingDefaults ? "Saving..." : "Save default number"}</Button>
           </div>
         </CardContent>
       </Card>

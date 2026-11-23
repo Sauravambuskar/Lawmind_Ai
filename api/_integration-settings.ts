@@ -12,6 +12,8 @@ export interface RuntimeIntegrationSettings {
   fast2smsSenderId: string;
   fast2smsEnabled: boolean;
   fast2smsAutoSend: boolean;
+  smsDefaultNumber: string;
+  smsDefaultMode: "off" | "copy" | "route";
 }
 
 interface StoredSettingsRow {
@@ -25,6 +27,8 @@ interface StoredSettingsRow {
   fast2sms_sender_id?: string | null;
   fast2sms_enabled?: boolean | null;
   fast2sms_auto_send?: boolean | null;
+  sms_default_number?: string | null;
+  sms_default_mode?: string | null;
 }
 
 const defaults = (): RuntimeIntegrationSettings => ({
@@ -39,6 +43,9 @@ const defaults = (): RuntimeIntegrationSettings => ({
   fast2smsSenderId: process.env.FAST2SMS_SENDER_ID || "",
   fast2smsEnabled: process.env.FAST2SMS_ENABLED === "true",
   fast2smsAutoSend: process.env.FAST2SMS_AUTO_SEND === "true",
+  smsDefaultNumber: process.env.SMS_DEFAULT_NUMBER || "",
+  smsDefaultMode: (process.env.SMS_DEFAULT_MODE === "copy" || process.env.SMS_DEFAULT_MODE === "route")
+    ? process.env.SMS_DEFAULT_MODE : "off",
 });
 
 let cached: { value: RuntimeIntegrationSettings; expiresAt: number } | null = null;
@@ -79,6 +86,8 @@ export async function getIntegrationSettings(): Promise<RuntimeIntegrationSettin
       fast2smsSenderId: row.fast2sms_sender_id || fallback.fast2smsSenderId,
       fast2smsEnabled: typeof row.fast2sms_enabled === "boolean" ? row.fast2sms_enabled : fallback.fast2smsEnabled,
       fast2smsAutoSend: typeof row.fast2sms_auto_send === "boolean" ? row.fast2sms_auto_send : fallback.fast2smsAutoSend,
+      smsDefaultNumber: row.sms_default_number || fallback.smsDefaultNumber,
+      smsDefaultMode: (row.sms_default_mode === "copy" || row.sms_default_mode === "route") ? row.sms_default_mode : "off",
     };
     cached = { value, expiresAt: Date.now() + 30_000 };
     return value;

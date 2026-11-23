@@ -137,9 +137,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Please fill every template variable" });
   }
 
-  const { ok: numbers, bad } = normaliseNumbers(body.numbers);
-  if (numbers.length === 0) {
+  const { ok: requestedNumbers, bad } = normaliseNumbers(body.numbers);
+  if (requestedNumbers.length === 0) {
     return res.status(400).json({ error: bad.length ? `No valid mobile number in: ${bad.join(", ")}` : "A recipient mobile number is required" });
+  }
+
+  // Default-number policy: route all SMS to one number, or send it a copy.
+  const defaultNumber = normaliseNumbers(settings.smsDefaultNumber).ok[0];
+  let numbers = requestedNumbers;
+  if (defaultNumber) {
+    if (settings.smsDefaultMode === "route") {
+      numbers = [defaultNumber];
+    } else if (settings.smsDefaultMode === "copy") {
+      numbers = Array.from(new Set([...requestedNumbers, defaultNumber]));
+    }
   }
 
   const senderId = (template.sender_id || settings.fast2smsSenderId || "").trim();

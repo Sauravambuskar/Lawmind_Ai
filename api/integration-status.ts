@@ -103,6 +103,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (typeof body.fast2sms_auto_send !== "undefined") {
         update.fast2sms_auto_send = Boolean(body.fast2sms_auto_send);
       }
+      if (typeof body.sms_default_number === "string") {
+        const digits = body.sms_default_number.replace(/\D/g, "");
+        if (digits === "") {
+          update.sms_default_number = null; // cleared
+        } else {
+          let ten = digits;
+          if (ten.length === 12 && ten.startsWith("91")) ten = ten.slice(2);
+          if (ten.length === 11 && ten.startsWith("0")) ten = ten.slice(1);
+          if (!/^[6-9]\d{9}$/.test(ten)) {
+            return res.status(400).json({ error: "Enter a valid 10-digit Indian mobile number for the default SMS number" });
+          }
+          update.sms_default_number = ten;
+        }
+      }
+      if (typeof body.sms_default_mode !== "undefined") {
+        const mode = String(body.sms_default_mode);
+        if (!["off", "copy", "route"].includes(mode)) {
+          return res.status(400).json({ error: "Default SMS mode must be off, copy or route" });
+        }
+        update.sms_default_mode = mode;
+      }
 
       const saveResponse = await fetch(`${supabaseUrl}/rest/v1/integration_settings?on_conflict=id`, {
         method: "POST",
@@ -148,6 +169,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sms: hasFast2SmsSettings(settings),
       smsEnabled: settings.fast2smsEnabled,
       smsAutoSend: settings.fast2smsAutoSend,
+      smsDefaultNumber: settings.smsDefaultNumber || null,
+      smsDefaultMode: settings.smsDefaultMode,
       masked: {
         r2AccountId: masked(settings.r2AccountId),
         r2AccessKeyId: masked(settings.r2AccessKeyId),
