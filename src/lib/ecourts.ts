@@ -3,8 +3,8 @@ import { fetchWithTimeout } from "@/lib/http";
 import { restGet, restInsert, restUpdate } from "@/lib/restClient";
 
 const CNR_PATTERN = /^[A-Z]{4}\d{12}$/;
-const FIRST_STATUS_POLL_MS = 15_000;
-const POLL_INTERVAL_MS = 30_000;
+const FIRST_STATUS_POLL_MS = 8_000;
+const POLL_INTERVAL_MS = 12_000;
 const MAX_REFRESH_WAIT_MS = 10 * 60_000;
 const RECENT_COMPLETION_WINDOW_MS = 20 * 60_000;
 const REFRESH_MARKER_PREFIX = "lawmind:ecourts-refresh:";
@@ -476,6 +476,28 @@ export async function fetchCaseSnapshotForImport(cnrInput: string): Promise<ECou
   if (snapshot.cnr !== cnr) throw new Error("eCourts returned a different CNR than requested");
   clearRefreshMarker(cnr);
   return snapshot;
+}
+
+/**
+ * Store a freshly fetched snapshot as the first eCourts sync log for a case.
+ * Called right after a case is created via "Add by CNR", so its full court
+ * history is available immediately without a second (slow, paid) refresh.
+ */
+export async function saveInitialSnapshot(caseId: string, snapshot: ECourtsSnapshot, userId: string): Promise<void> {
+  await restInsert("audit_logs", {
+    user_id: userId,
+    action: "update",
+    table_name: "ecourts_sync",
+    record_id: caseId,
+    old_data: null,
+    new_data: {
+      snapshot,
+      changes: [{ field: "initial_sync", label: "eCourts tracking", oldValue: null, newValue: "Imported on case creation" }],
+      requestId: null,
+      refreshStatus: "COMPLETED",
+      automatic: false,
+    },
+  });
 }
 
 export async function getECourtsSyncLogs(caseId: string): Promise<ECourtsSyncLog[]> {

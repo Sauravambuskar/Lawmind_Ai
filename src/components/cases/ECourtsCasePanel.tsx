@@ -7,8 +7,10 @@ import {
   CheckCircle2,
   Clock3,
   Database,
+  ExternalLink,
   FileText,
   Gavel,
+  Landmark,
   RefreshCw,
   Scale,
 } from "lucide-react";
@@ -87,13 +89,46 @@ function ChangeItem({ change }: { change: ECourtsChange }) {
   );
 }
 
+type TimelineEvent = {
+  dateRaw: string | null;
+  kind: "hearing" | "order";
+  title: string;
+  who: string | null;
+  nextDate: string | null;
+  orderUrl: string | null;
+  orderType: string | null;
+};
+
+function buildTimeline(snapshot: ECourtsSnapshot): TimelineEvent[] {
+  const hearingEvents: TimelineEvent[] = snapshot.historyOfCaseHearings.map((h) => ({
+    dateRaw: h.businessOnDate || h.hearingDate || null,
+    kind: "hearing",
+    title: h.purposeOfListing || "Court hearing",
+    who: h.judge || null,
+    nextDate: h.hearingDate && h.hearingDate !== h.businessOnDate ? h.hearingDate : null,
+    orderUrl: null,
+    orderType: null,
+  }));
+  const orderEvents: TimelineEvent[] = [...snapshot.judgmentOrders, ...snapshot.interimOrders].map((o) => ({
+    dateRaw: o.orderDate || null,
+    kind: "order",
+    title: o.description || o.orderType || "Court order",
+    who: null,
+    nextDate: null,
+    orderUrl: o.orderUrl || null,
+    orderType: o.orderType || null,
+  }));
+  return [...hearingEvents, ...orderEvents].sort((a, b) =>
+    String(b.dateRaw || "").localeCompare(String(a.dateRaw || "")),
+  );
+}
+
+function isHttpUrl(value: string | null): boolean {
+  return /^https?:\/\//i.test(String(value || ""));
+}
+
 function LatestSnapshot({ snapshot }: { snapshot: ECourtsSnapshot }) {
-  const orders = [...snapshot.judgmentOrders, ...snapshot.interimOrders]
-    .sort((a, b) => String(b.orderDate || "").localeCompare(String(a.orderDate || "")))
-    .slice(0, 8);
-  const hearings = [...snapshot.historyOfCaseHearings]
-    .sort((a, b) => String(b.businessOnDate || b.hearingDate || "").localeCompare(String(a.businessOnDate || a.hearingDate || "")))
-    .slice(0, 10);
+  const events = buildTimeline(snapshot);
 
   return (
     <div className="space-y-5">
@@ -111,53 +146,90 @@ function LatestSnapshot({ snapshot }: { snapshot: ECourtsSnapshot }) {
         <SummaryCard label="Decision date" value={safeDate(snapshot.decisionDate)} icon={CheckCircle2} />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <section className="rounded-xl border border-border">
-          <div className="border-b border-border px-4 py-3">
-            <h4 className="text-sm font-bold">Official hearing history</h4>
-            <p className="text-xs text-muted-foreground">Latest court entries received from eCourts</p>
+      {/* Parties */}
+      {(snapshot.petitioners.length > 0 || snapshot.respondents.length > 0) && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-border bg-muted/15 p-4">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Petitioner(s)</p>
+            <p className="text-sm text-foreground">{snapshot.petitioners.join(", ") || "--"}</p>
           </div>
-          <div className="max-h-[420px] divide-y divide-border overflow-y-auto">
-            {hearings.length ? hearings.map((hearing, index) => (
-              <div key={`${hearing.businessOnDate}-${hearing.hearingDate}-${index}`} className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold">{hearing.purposeOfListing || "Court hearing"}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{hearing.judge || "Judge not listed"}</p>
-                  </div>
-                  <span className="shrink-0 text-xs font-medium text-muted-foreground">
-                    {safeDate(hearing.businessOnDate || hearing.hearingDate)}
-                  </span>
-                </div>
-                {hearing.hearingDate && hearing.hearingDate !== hearing.businessOnDate && (
-                  <p className="mt-2 text-xs text-primary">Next date: {safeDate(hearing.hearingDate)}</p>
-                )}
-              </div>
-            )) : <p className="p-6 text-center text-sm text-muted-foreground">No hearing history returned</p>}
+          <div className="rounded-xl border border-border bg-muted/15 p-4">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Respondent(s)</p>
+            <p className="text-sm text-foreground">{snapshot.respondents.join(", ") || "--"}</p>
           </div>
-        </section>
+        </div>
+      )}
 
-        <section className="rounded-xl border border-border">
-          <div className="border-b border-border px-4 py-3">
-            <h4 className="text-sm font-bold">Orders and judgments</h4>
-            <p className="text-xs text-muted-foreground">Latest order references on the case</p>
+      {/* Readable case-history timeline */}
+      <section className="rounded-xl border border-border">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <div>
+            <h4 className="text-sm font-bold">Case History with Orders</h4>
+            <p className="text-xs text-muted-foreground">Every court entry on record, newest first</p>
           </div>
-          <div className="max-h-[420px] divide-y divide-border overflow-y-auto">
-            {orders.length ? orders.map((order, index) => (
-              <div key={`${order.orderUrl}-${index}`} className="flex items-center gap-3 p-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <FileText className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{order.description || order.orderType || "Court order"}</p>
-                  <p className="text-xs text-muted-foreground">{order.orderUrl || "Order file"}</p>
-                </div>
-                <span className="shrink-0 text-xs text-muted-foreground">{safeDate(order.orderDate)}</span>
+          <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
+            {events.length} {events.length === 1 ? "entry" : "entries"}
+          </span>
+        </div>
+
+        <div className="max-h-[640px] overflow-y-auto p-4">
+          {/* Current status banner */}
+          {snapshot.caseStatus && (
+            <div className={`mb-4 flex items-center gap-3 rounded-lg border px-4 py-3 ${statusTone(snapshot.caseStatus)}`}>
+              <Scale className="h-5 w-5 shrink-0" />
+              <div>
+                <p className="text-sm font-bold">{snapshot.caseStatus}</p>
+                <p className="text-xs opacity-80">{display(snapshot.disposalType || snapshot.contestedStatus || snapshot.purpose)}</p>
               </div>
-            )) : <p className="p-6 text-center text-sm text-muted-foreground">No orders returned</p>}
-          </div>
-        </section>
-      </div>
+            </div>
+          )}
+
+          {events.length === 0 && !snapshot.filingDate ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">No court history returned for this case.</p>
+          ) : (
+            <ol className="relative ml-3 space-y-5 border-l-2 border-border/70 pt-1">
+              {events.map((ev, index) => (
+                <li key={`${ev.kind}-${ev.dateRaw}-${index}`} className="relative pl-6">
+                  <span className={`absolute -left-[13px] top-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-background ${ev.kind === "order" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+                    {ev.kind === "order" ? <FileText className="h-3 w-3" /> : <CalendarDays className="h-3 w-3" />}
+                  </span>
+                  <div className="rounded-lg border border-border bg-background p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-primary">{safeDate(ev.dateRaw)}</p>
+                        <p className="mt-0.5 text-sm font-semibold text-foreground">{ev.title}</p>
+                        {ev.who && <p className="mt-0.5 text-xs text-muted-foreground">{ev.who}</p>}
+                        {ev.kind === "order" && ev.orderType && <p className="mt-0.5 text-xs text-muted-foreground">{ev.orderType}</p>}
+                      </div>
+                      {ev.kind === "order" && isHttpUrl(ev.orderUrl) && (
+                        <a href={ev.orderUrl!} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10">
+                          View <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                    {ev.nextDate && <p className="mt-2 text-xs font-medium text-primary">Next date: {safeDate(ev.nextDate)}</p>}
+                  </div>
+                </li>
+              ))}
+
+              {/* Case filed anchor */}
+              {snapshot.filingDate && (
+                <li className="relative pl-6">
+                  <span className="absolute -left-[13px] top-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-emerald-500 text-white">
+                    <Landmark className="h-3 w-3" />
+                  </span>
+                  <div className="rounded-lg border border-emerald-300/50 bg-emerald-50/50 p-3 dark:border-emerald-800/50 dark:bg-emerald-950/20">
+                    <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{safeDate(snapshot.filingDate)}</p>
+                    <p className="mt-0.5 text-sm font-semibold text-foreground">Case Filed</p>
+                    {snapshot.caseNumber && <p className="mt-0.5 text-xs text-muted-foreground">Case No: {snapshot.caseNumber}</p>}
+                  </div>
+                </li>
+              )}
+            </ol>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

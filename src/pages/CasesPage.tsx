@@ -23,7 +23,7 @@ import { logCaughtError } from "@/lib/errorLog";
 import { CASE_STATUSES, CASE_STATUS_FILTER, CASE_STATUS_CONFIG, type CaseStatus } from "@/lib/constants";
 import { restGet, restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
 import { triggerSms } from "@/lib/smsService";
-import { isValidCnr, syncCaseWithECourts, fetchCaseSnapshotForImport, snapshotToCaseFields } from "@/lib/ecourts";
+import { isValidCnr, syncCaseWithECourts, fetchCaseSnapshotForImport, snapshotToCaseFields, saveInitialSnapshot, type ECourtsSnapshot } from "@/lib/ecourts";
 
 type CaseRow = {
   id: string;
@@ -74,6 +74,7 @@ export default function CasesPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const prevAdvocateRef = useRef<string>(""); // advocate_id before an edit, to detect assignment changes
   const [cnrLookup, setCnrLookup] = useState(""); // CNR entered in the "Add from eCourts" box
+  const importedSnapshotRef = useRef<ECourtsSnapshot | null>(null); // snapshot fetched by CNR, stored after case creation
   const [form, setForm] = useState(emptyForm);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -126,14 +127,22 @@ export default function CasesPage() {
       if (editId) {
         await restUpdate("cases", `id=eq.${editId}`, payload);
         await writeAuditLog({ user_id: user!.id, action: "update", table_name: "cases", record_id: editId, new_data: payload });
-      } else {
-        const created = await restInsert<{ id: string }>("cases", { ...payload, created_by: user!.id }, { returning: true });
-        await writeAuditLog({ user_id: user!.id, action: "insert", table_name: "cases", record_id: created[0]?.id, new_data: payload });
+        return { isCreate: false as const, caseId: editId };
       }
+      const created = await restInsert<{ id: string }>("cases", { ...payload, created_by: user!.id }, { returning: true });
+      const newId = created[0]?.id;
+      await writeAuditLog({ user_id: user!.id, action: "insert", table_name: "cases", record_id: newId, new_data: payload });
+      // If this case was fetched from eCourts by CNR, store its court history now
+      // so the eCourts tab shows it immediately (no second slow/paid refresh).
+      if (newId && importedSnapshotRef.current) {
+        await saveInitialSnapshot(newId, importedSnapshotRef.current, user!.id).catch(() => undefined);
+      }
+      return { isCreate: true as const, caseId: newId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-cases"] });
+      importedSnapshotRef.current = null;
       // Automatic "advocate assigned" SMS to the client — only when the advocate
       // actually changed, so unrelated case edits don't re-send (opt-in per template).
       const newAdvocate = form.advocate_id || "";
@@ -161,12 +170,10 @@ export default function CasesPage() {
 
   // ── Fetch case details from eCourts by CNR and pre-fill the form ─────────
   const ecourtsLookupMutation = useMutation({
-    mutationFn: async () => {
-      const snapshot = await fetchCaseSnapshotForImport(cnrLookup);
-      return snapshotToCaseFields(snapshot);
-    },
-    onSuccess: (fields) => {
-      setForm(prev => ({ ...prev, ...fields }));
+    mutationFn: async () => fetchCaseSnapshotForImport(cnrLookup),
+    onSuccess: (snapshot) => {
+      importedSnapshotRef.current = snapshot; // stored into the case's history after Create
+      setForm(prev => ({ ...prev, ...snapshotToCaseFields(snapshot) }));
       toast.success("Case details fetched from eCourts. Review and click Create Case.");
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not fetch this CNR from eCourts"),
@@ -261,7 +268,7 @@ export default function CasesPage() {
     onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "eCourts refresh failed"),
   });
 
-  const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); setCnrLookup(""); };
+  const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); setCnrLookup(""); importedSnapshotRef.current = null; };
   const openEdit = (c: CaseRow) => {
     setEditId(c.id);
     prevAdvocateRef.current = c.advocate_id || "";
@@ -393,7 +400,7 @@ export default function CasesPage() {
 
           <Dialog open={open} onOpenChange={v => { if (!v) closeDialog(); else setOpen(true); }}>
             <DialogTrigger asChild>
-              <Button onClick={() => { setEditId(null); prevAdvocateRef.current = ""; setForm(emptyForm); setCnrLookup(""); }} className="bg-primary text-primary-foreground shadow-sm hover:shadow-md transition-all">
+              <Button onClick={() => { setEditId(null); prevAdvocateRef.current = ""; setForm(emptyForm); setCnrLookup(""); importedSnapshotRef.current = null; }} className="bg-primary text-primary-foreground shadow-sm hover:shadow-md transition-all">
                 <Plus className="w-4 h-4 mr-2" /> New Case
               </Button>
             </DialogTrigger>
