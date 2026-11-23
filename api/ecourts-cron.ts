@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getIntegrationSettings } from "./_integration-settings.js";
+import { sendTemplateSms } from "./_sms.js";
 
 const ECOURTS_BASE_URL = "https://webapi.ecourtsindia.com";
 const CNR_PATTERN = /^[A-Z]{4}\d{12}$/;
@@ -286,6 +287,47 @@ async function latestSnapshot(caseId: string, serviceKey: string): Promise<ECour
   return Array.isArray(result.body) ? result.body[0]?.new_data?.snapshot : undefined;
 }
 
+function formatCourtDate(value: string | null): string {
+  const iso = String(value || "").slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return iso ? `${iso[3]}-${iso[2]}-${iso[1]}` : String(value || "");
+}
+
+/** Numbers that should hear about a case: contacts (notify) + client + advocate. */
+async function caseRecipients(caseId: string, serviceKey: string): Promise<{ numbers: string[]; caseNumber: string | null }> {
+  const caseRes = await supabaseRequest(`cases?select=case_number,client_id,advocate_id&id=eq.${encodeURIComponent(caseId)}&limit=1`, serviceKey);
+  const info = (Array.isArray(caseRes.body) ? caseRes.body[0] : null) || {};
+  const numbers: string[] = [];
+  const contacts = await supabaseRequest(`case_contacts?select=phone&case_id=eq.${encodeURIComponent(caseId)}&notify=eq.true`, serviceKey);
+  for (const c of (Array.isArray(contacts.body) ? contacts.body : [])) if (c?.phone) numbers.push(String(c.phone));
+  if (info.client_id) {
+    const cl = await supabaseRequest(`clients?select=phone&id=eq.${encodeURIComponent(info.client_id)}&limit=1`, serviceKey);
+    const phone = Array.isArray(cl.body) ? cl.body[0]?.phone : null;
+    if (phone) numbers.push(String(phone));
+  }
+  if (info.advocate_id) {
+    const av = await supabaseRequest(`advocates?select=phone&id=eq.${encodeURIComponent(info.advocate_id)}&limit=1`, serviceKey);
+    const phone = Array.isArray(av.body) ? av.body[0]?.phone : null;
+    if (phone) numbers.push(String(phone));
+  }
+  return { numbers: numbers.filter(Boolean), caseNumber: info.case_number || null };
+}
+
+/** On a detected status / next-hearing change, SMS the recipients (opt-in gated). */
+async function sendChangeSms(caseId: string, snapshot: ECourtsSnapshot, changes: ECourtsChange[], serviceKey: string): Promise<void> {
+  const relevant = changes.filter((c) => c.field === "caseStatus" || c.field === "nextHearingDate");
+  if (!relevant.length) return;
+  const { numbers, caseNumber } = await caseRecipients(caseId, serviceKey);
+  const number = caseNumber || snapshot.caseNumber;
+  if (!numbers.length || !number) return;
+
+  if (relevant.some((c) => c.field === "caseStatus")) {
+    await sendTemplateSms({ templateKey: "case_status_update", numbers, variables: [number], triggerSource: "auto:case_status_changed", sentBy: null }).catch(() => undefined);
+  }
+  if (relevant.some((c) => c.field === "nextHearingDate") && snapshot.nextHearingDate) {
+    await sendTemplateSms({ templateKey: "hearing_scheduled", numbers, variables: [number, formatCourtDate(snapshot.nextHearingDate)], triggerSource: "auto:hearing_changed", sentBy: null }).catch(() => undefined);
+  }
+}
+
 async function saveSync(
   row: CaseCandidate,
   snapshot: ECourtsSnapshot,
@@ -313,6 +355,11 @@ async function saveSync(
       new_data: { snapshot, changes, requestId, refreshStatus: "COMPLETED", automatic: true },
     }),
   });
+
+  // Notify recipients when a real court change was detected (skip the first baseline sync).
+  if (!changes.some((c) => c.field === "initial_sync")) {
+    await sendChangeSms(row.id, snapshot, changes, serviceKey).catch(() => undefined);
+  }
   return changes.length;
 }
 

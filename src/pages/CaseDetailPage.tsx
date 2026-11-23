@@ -17,8 +17,9 @@ import { toast } from "sonner";
 import {
   Gavel, ListTodo, Receipt, FileText, DollarSign, Clock, Plus, Trash2,
   CalendarDays, ChevronLeft, AlertCircle, Bell, Scale, StickyNote, Pencil,
-  Sparkles, ExternalLink, BookOpen, AlarmClock, Check, X, Database
+  Sparkles, ExternalLink, BookOpen, AlarmClock, Check, X, Database, Smartphone
 } from "lucide-react";
+import { CaseContactsPanel } from "@/components/cases/CaseContactsPanel";
 import { CASE_STATUS_CONFIG, CASE_STATUSES, type CaseStatus, CURRENCY } from "@/lib/constants";
 import { R2Upload } from "@/components/R2Upload";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
@@ -38,6 +39,7 @@ const TABS = [
   { id: "documents", label: "Case Documents", icon: FileText },
   { id: "notes", label: "Notes", icon: StickyNote },
   { id: "notify", label: "Notify to Clients", icon: Bell },
+  { id: "recipients", label: "SMS Recipients", icon: Smartphone },
   { id: "judgments", label: "Related Judgments", icon: Scale },
   { id: "tasks", label: "Tasks", icon: ListTodo },
   { id: "appointments", label: "Appointments", icon: CalendarDays },
@@ -119,6 +121,7 @@ export default function CaseDetailPage() {
         {activeTab === "documents" && <TabDocuments caseId={id!} userId={user?.id || ""} documents={documents} qc={queryClient} />}
         {activeTab === "notes" && <TabNotes caseId={id!} userId={user?.id || ""} caseData={caseData} qc={queryClient} />}
         {activeTab === "notify" && <TabNotify caseId={id!} userId={user?.id || ""} caseData={caseData} qc={queryClient} />}
+        {activeTab === "recipients" && <CaseContactsPanel caseId={id!} userId={user?.id || ""} caseData={caseData} qc={queryClient} />}
         {activeTab === "judgments" && <TabJudgments caseId={id!} userId={user?.id || ""} qc={queryClient} />}
         {activeTab === "tasks" && <CaseTasksPanel caseId={id!} tasks={tasks} />}
         {activeTab === "appointments" && <TabAppointments caseId={id!} userId={user?.id || ""} hearings={hearings} qc={queryClient} />}
