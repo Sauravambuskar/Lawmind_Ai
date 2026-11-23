@@ -8,7 +8,7 @@ import {
   Calendar, CalendarDays, FileText, Receipt, File, DollarSign,
   ChevronDown, ChevronRight, Scale, Phone, StickyNote,
   Settings2, BarChart3, User, X, BriefcaseBusiness, Bot,
-  ListTodo, Sunrise, FolderOpen, FileSignature, Shield, GaugeCircle,
+  ListTodo, Sunrise, FolderOpen, FileSignature, Shield, GaugeCircle, Smartphone,
 } from "lucide-react";
 import { useTaskPrivileges } from "@/hooks/useTaskPrivileges";
 import { APP_VERSION } from "@/lib/constants";
@@ -56,6 +56,7 @@ const navSections: NavSection[] = [
       { label: "Quick Docs", icon: FileText, path: "/quick-docs" },
       { label: "Expenses", icon: DollarSign, path: "/expenses" },
       { label: "Contacts", icon: Phone, path: "/contacts" },
+      { label: "Send SMS", icon: Smartphone, path: "/sms" },
       { label: "Notes", icon: StickyNote, path: "/notes" },
       { label: "Tasks", icon: ListTodo, path: "/tasks" },
       { label: "Sarda Sir Dashboard", icon: GaugeCircle, path: "/sarda-sir-dashboard" },
@@ -149,6 +150,7 @@ function NavItems({
               if (item.label === 'Staff Management') return isAdminOrAbove;
               if (item.label === 'Permissions') return isAdminOrAbove;
               if (item.path === '/sarda-sir-dashboard') return canViewDashboard;
+              if (item.path === '/sms') return true; // SMS center available to all signed-in staff
               return canAccess(item.path);
             }).map(item => (
               <div key={item.label} className="relative">

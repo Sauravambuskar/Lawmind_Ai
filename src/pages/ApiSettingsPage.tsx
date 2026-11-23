@@ -28,8 +28,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AISettingsPage from "@/pages/AISettingsPage";
 import EmailSettingsPage from "@/pages/EmailSettingsPage";
+import SmsSettingsPage from "@/pages/SmsSettingsPage";
+import { MessageSquare } from "lucide-react";
 
-type ControlSection = "ai" | "automation" | "email" | "infrastructure";
+type ControlSection = "ai" | "automation" | "email" | "sms" | "infrastructure";
 type AIInitialTab = "providers" | "groups" | "modules";
 
 interface IntegrationStatus {
@@ -52,6 +54,7 @@ const sections = [
   { id: "ai" as const, label: "AI platform", detail: "Providers, keys, groups and modules", icon: Bot },
   { id: "automation" as const, label: "Web automation", detail: "TinyFish research agent access", icon: Globe2 },
   { id: "email" as const, label: "Email delivery", detail: "Provider, sender and delivery logs", icon: Mail },
+  { id: "sms" as const, label: "SMS delivery", detail: "Fast2SMS key, sender and DLT templates", icon: MessageSquare },
   { id: "infrastructure" as const, label: "Server integrations", detail: "Database, storage and eCourts health", icon: ServerCog },
 ];
 
@@ -134,6 +137,7 @@ export default function ApiSettingsPage() {
           {section === "ai" && <AISettingsPage embedded initialTab={initialAITab} />}
           {section === "automation" && <TinyFishPanel />}
           {section === "email" && <EmailSettingsPage embedded />}
+          {section === "sms" && <SmsSettingsPage embedded />}
           {section === "infrastructure" && (
             <EditableInfrastructurePanel token={session?.access_token || ""} />
           )}

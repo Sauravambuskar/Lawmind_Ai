@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMinLoader } from "@/hooks/useMinLoader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -21,7 +21,8 @@ import { PageLoader } from "@/components/PageLoader";
 import { writeAuditLog } from "@/lib/auditLog";
 import { logCaughtError } from "@/lib/errorLog";
 import { CASE_STATUSES, CASE_STATUS_FILTER, CASE_STATUS_CONFIG, type CaseStatus } from "@/lib/constants";
-import { restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
+import { restGet, restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
+import { triggerSms } from "@/lib/smsService";
 import { isValidCnr, syncCaseWithECourts } from "@/lib/ecourts";
 
 type CaseRow = {
@@ -71,6 +72,7 @@ export default function CasesPage() {
   const [sortBy, setSortBy] = useState<"created_at" | "next_hearing_date" | "case_number" | "title">("created_at");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const prevAdvocateRef = useRef<string>(""); // advocate_id before an edit, to detect assignment changes
   const [form, setForm] = useState(emptyForm);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -131,6 +133,22 @@ export default function CasesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-cases"] });
+      // Automatic "advocate assigned" SMS to the client — only when the advocate
+      // actually changed, so unrelated case edits don't re-send (opt-in per template).
+      const newAdvocate = form.advocate_id || "";
+      if (newAdvocate && newAdvocate !== prevAdvocateRef.current && form.client_id) {
+        const advocateName = advocates.find((a) => a.id === newAdvocate)?.name;
+        const clientId = form.client_id;
+        if (advocateName) {
+          void (async () => {
+            try {
+              const rows = await restGet<{ phone: string | null }>(`clients?select=phone&id=eq.${clientId}&limit=1`);
+              const phone = rows[0]?.phone;
+              if (phone) await triggerSms("advocate_assigned", "advocate_assigned", phone, [advocateName]);
+            } catch { /* never block case save */ }
+          })();
+        }
+      }
       closeDialog();
       toast.success(editId ? "Case updated successfully" : "Case created successfully");
     },
@@ -232,6 +250,7 @@ export default function CasesPage() {
   const closeDialog = () => { setOpen(false); setEditId(null); setForm(emptyForm); };
   const openEdit = (c: CaseRow) => {
     setEditId(c.id);
+    prevAdvocateRef.current = c.advocate_id || "";
     setForm({
       case_number: c.case_number,
       title: c.title,
@@ -360,7 +379,7 @@ export default function CasesPage() {
 
           <Dialog open={open} onOpenChange={v => { if (!v) closeDialog(); else setOpen(true); }}>
             <DialogTrigger asChild>
-              <Button onClick={() => { setEditId(null); setForm(emptyForm); }} className="bg-primary text-primary-foreground shadow-sm hover:shadow-md transition-all">
+              <Button onClick={() => { setEditId(null); prevAdvocateRef.current = ""; setForm(emptyForm); }} className="bg-primary text-primary-foreground shadow-sm hover:shadow-md transition-all">
                 <Plus className="w-4 h-4 mr-2" /> New Case
               </Button>
             </DialogTrigger>

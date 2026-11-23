@@ -18,6 +18,7 @@ import { exportToCSV } from "@/lib/export";
 import { CSVImport } from "@/components/CSVImport";
 import { PageLoader } from "@/components/PageLoader";
 import { useDeferredSearch } from "@/hooks/useDeferredSearch";
+import { triggerSms } from "@/lib/smsService";
 
 const emptyForm = { name: "", email: "", phone: "", city: "", state: "", country: "" };
 const fields = [
@@ -60,6 +61,8 @@ export default function ClientsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+      // Automatic onboarding SMS (opt-in: only fires if the template's auto-send is on)
+      if (!editId) void triggerSms("client_onboarded", "client_onboarding", form.phone, [form.name]);
       closeDialog();
       toast.success(editId ? "Client profile updated" : "Client profile added");
     },

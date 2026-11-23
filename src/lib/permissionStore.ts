@@ -20,6 +20,7 @@ export const APP_SECTIONS = [
   { id: "quick-docs", label: "Quick Docs", group: "Practice" },
   { id: "expenses", label: "Expenses", group: "Practice" },
   { id: "contacts", label: "Contacts", group: "Practice" },
+  { id: "sms", label: "Send SMS", group: "Practice" },
   { id: "notes", label: "Notes", group: "Practice" },
   { id: "tasks", label: "Tasks", group: "Practice" },
   { id: "ai-agent", label: "AI Agent", group: "Practice" },
@@ -42,8 +43,8 @@ const ALL_SECTIONS = APP_SECTIONS.map(s => s.id) as SectionId[];
 export const DEFAULT_PERMISSIONS: PermissionMap = {
   super_admin: [...ALL_SECTIONS],
   admin: [...ALL_SECTIONS],
-  agent: ["dashboard", "today", "clients", "cases", "hearings", "hearing-calendar", "tasks", "documents", "notes", "contacts", "expenses"] as SectionId[],
-  lawyer: ["dashboard", "today", "clients", "advocates", "cases", "hearings", "hearing-calendar", "evidence", "invoices", "documents", "impdocs", "notice-maker", "quick-docs", "expenses", "contacts", "notes", "tasks", "ai-agent"] as SectionId[],
+  agent: ["dashboard", "today", "clients", "cases", "hearings", "hearing-calendar", "tasks", "documents", "notes", "contacts", "sms", "expenses"] as SectionId[],
+  lawyer: ["dashboard", "today", "clients", "advocates", "cases", "hearings", "hearing-calendar", "evidence", "invoices", "documents", "impdocs", "notice-maker", "quick-docs", "expenses", "contacts", "sms", "notes", "tasks", "ai-agent"] as SectionId[],
 };
 
 // ── Simple module-level store (no external dependency) ──

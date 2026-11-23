@@ -3,6 +3,7 @@ import {
   clearIntegrationSettingsCache,
   getIntegrationSettings,
   hasR2Settings,
+  hasFast2SmsSettings,
   masked,
 } from "./_integration-settings.js";
 import { encryptSecret } from "./_secret-crypto.js";
@@ -43,9 +44,11 @@ const editableFields = [
   "r2_secret_access_key",
   "r2_bucket_name",
   "ecourts_api_key",
+  "fast2sms_api_key",
+  "fast2sms_sender_id",
 ] as const;
 
-const encryptedFields = new Set(["r2_account_id", "r2_access_key_id", "r2_secret_access_key", "ecourts_api_key"]);
+const encryptedFields = new Set(["r2_account_id", "r2_access_key_id", "r2_secret_access_key", "ecourts_api_key", "fast2sms_api_key"]);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   privateHeaders(res);
@@ -91,6 +94,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         update.ecourts_batch_size = batchSize;
       }
+      if (typeof update.fast2sms_sender_id === "string" && !/^[A-Z0-9]{3,6}$/.test(update.fast2sms_sender_id)) {
+        return res.status(400).json({ error: "Sender ID must be 3-6 uppercase letters/digits (your DLT-approved header, e.g. CORADV)" });
+      }
+      if (typeof body.fast2sms_enabled !== "undefined") {
+        update.fast2sms_enabled = Boolean(body.fast2sms_enabled);
+      }
+      if (typeof body.fast2sms_auto_send !== "undefined") {
+        update.fast2sms_auto_send = Boolean(body.fast2sms_auto_send);
+      }
 
       const saveResponse = await fetch(`${supabaseUrl}/rest/v1/integration_settings?on_conflict=id`, {
         method: "POST",
@@ -133,6 +145,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ecourts: Boolean(settings.ecourtsApiKey),
       scheduledSync: Boolean(settings.cronSecret),
       ecourtsBatchSize: settings.ecourtsBatchSize,
+      sms: hasFast2SmsSettings(settings),
+      smsEnabled: settings.fast2smsEnabled,
+      smsAutoSend: settings.fast2smsAutoSend,
       masked: {
         r2AccountId: masked(settings.r2AccountId),
         r2AccessKeyId: masked(settings.r2AccessKeyId),
@@ -140,6 +155,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         r2BucketName: settings.r2BucketName || null,
         ecourtsApiKey: masked(settings.ecourtsApiKey),
         cronSecret: settings.cronSecret ? "Vercel managed" : null,
+        fast2smsApiKey: masked(settings.fast2smsApiKey),
+        fast2smsSenderId: settings.fast2smsSenderId || null,
       },
     });
   } catch {

@@ -24,6 +24,7 @@ import { R2Upload } from "@/components/R2Upload";
 import { DeleteConfirm } from "@/components/DeleteConfirm";
 import { deleteR2File } from "@/lib/r2Upload";
 import { restGet, restGetAll, restGetOne, restInsert, restUpdate, restDelete } from "@/lib/restClient";
+import { triggerSms } from "@/lib/smsService";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { sendAIMessageWithFailover } from "@/lib/ai-providers";
 import { CaseTasksPanel } from "@/components/tasks/CaseTasksPanel";
@@ -81,7 +82,7 @@ export default function CaseDetailPage() {
       <div className="bg-card border border-border shadow-sm rounded-xl p-5">
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <span className="font-mono font-medium bg-muted/80 px-2.5 py-1 rounded-md text-xs border border-border">{caseData.case_number}</span>
-          <StatusChanger caseId={id!} currentStatus={caseData.status} sConf={sConf} queryClient={queryClient} />
+          <StatusChanger caseId={id!} currentStatus={caseData.status} caseNumber={caseData.case_number} clientId={caseData.client_id} sConf={sConf} queryClient={queryClient} />
           {caseData.court_type && <span className="text-xs bg-muted px-2 py-0.5 rounded border border-border">{caseData.court_type}</span>}
           {caseData.case_side && <span className="text-xs bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300">{caseData.case_side}</span>}
         </div>
@@ -139,7 +140,7 @@ function EmptyState({ icon: Icon, text }: { icon: any; text: string }) {
 // ══════════════════════════════════════════════════════════════
 // Status Changer — quick status update dropdown
 // ══════════════════════════════════════════════════════════════
-function StatusChanger({ caseId, currentStatus, sConf, queryClient }: { caseId: string; currentStatus: string; sConf: any; queryClient: any }) {
+function StatusChanger({ caseId, currentStatus, caseNumber, clientId, sConf, queryClient }: { caseId: string; currentStatus: string; caseNumber?: string; clientId?: string | null; sConf: any; queryClient: any }) {
   const [changing, setChanging] = useState(false);
 
   const handleChange = async (newStatus: string) => {
@@ -150,6 +151,16 @@ function StatusChanger({ caseId, currentStatus, sConf, queryClient }: { caseId: 
       queryClient.invalidateQueries({ queryKey: ["case-detail", caseId] });
       queryClient.invalidateQueries({ queryKey: ["cases"] });
       toast.success(`Status changed to ${newStatus}`);
+      // Automatic case-status SMS to the client (opt-in per template)
+      if (clientId && caseNumber) {
+        void (async () => {
+          try {
+            const rows = await restGet<{ phone: string | null }>(`clients?select=phone&id=eq.${clientId}&limit=1`);
+            const phone = rows[0]?.phone;
+            if (phone) await triggerSms("case_status_changed", "case_status_update", phone, [caseNumber]);
+          } catch { /* never block status change */ }
+        })();
+      }
     } catch (e: any) {
       toast.error(e.message || "Failed to change status");
     } finally {

@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
+import { restGet, restGetAll, restInsert, restUpdate, restDelete } from "@/lib/restClient";
+import { triggerSms } from "@/lib/smsService";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { usePagination } from "@/hooks/usePagination";
@@ -106,6 +107,22 @@ export default function HearingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["hearings"] });
+      // Automatic hearing SMS to the client (opt-in: only if the template's auto-send is on)
+      if (!editId && form.case_id && form.hearing_date) {
+        void (async () => {
+          try {
+            const rows = await restGet<{ case_number: string; clients: { phone: string | null } | null }>(
+              `cases?select=case_number,clients(phone)&id=eq.${form.case_id}&limit=1`,
+            );
+            const row = rows[0];
+            const phone = row?.clients?.phone;
+            if (row?.case_number && phone) {
+              const when = format(new Date(form.hearing_date), "dd-MM-yyyy");
+              await triggerSms("hearing_created", "hearing_scheduled", phone, [row.case_number, when]);
+            }
+          } catch { /* never block hearing creation */ }
+        })();
+      }
       closeDialog();
       toast.success(editId ? "Hearing updated successfully" : "Hearing scheduled successfully");
     },

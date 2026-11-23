@@ -45,6 +45,7 @@ const CopyrightPolicyPage = lazy(() => import("./pages/CopyrightPolicyPage"));
 const DemoWorkspacePage = lazy(() => import("./pages/DemoWorkspacePage"));
 const AIAgentPage       = lazy(() => import("./pages/AIAgentPage"));
 const ApiSettingsPage   = lazy(() => import("./pages/ApiSettingsPage"));
+const SmsPage           = lazy(() => import("./pages/SmsPage"));
 const PermissionsPage  = lazy(() => import("./pages/PermissionsPage"));
 const TasksPage         = lazy(() => import("./pages/TasksPage"));
 const TaskDashboardPage = lazy(() => import("./pages/TaskDashboardPage"));
@@ -112,6 +113,7 @@ const App = () => (
                   <Route path="/quick-docs"          element={<QuickDocsPage />} />
                   <Route path="/expenses"            element={<ExpensesPage />} />
                   <Route path="/contacts"            element={<ContactsPage />} />
+                  <Route path="/sms"                 element={<SmsPage />} />
                   <Route path="/notes"               element={<NotesPage />} />
                   <Route path="/setup/matters"       element={<MattersPage />} />
                   <Route path="/setup/tags"          element={<TagsPage />} />

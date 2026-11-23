@@ -8,6 +8,10 @@ export interface RuntimeIntegrationSettings {
   ecourtsApiKey: string;
   cronSecret: string;
   ecourtsBatchSize: number;
+  fast2smsApiKey: string;
+  fast2smsSenderId: string;
+  fast2smsEnabled: boolean;
+  fast2smsAutoSend: boolean;
 }
 
 interface StoredSettingsRow {
@@ -17,6 +21,10 @@ interface StoredSettingsRow {
   r2_bucket_name?: string | null;
   ecourts_api_key?: string | null;
   ecourts_batch_size?: number | null;
+  fast2sms_api_key?: string | null;
+  fast2sms_sender_id?: string | null;
+  fast2sms_enabled?: boolean | null;
+  fast2sms_auto_send?: boolean | null;
 }
 
 const defaults = (): RuntimeIntegrationSettings => ({
@@ -27,6 +35,10 @@ const defaults = (): RuntimeIntegrationSettings => ({
   ecourtsApiKey: process.env.ECOURTS_API_KEY || "",
   cronSecret: process.env.CRON_SECRET || "",
   ecourtsBatchSize: Number(process.env.ECOURTS_CRON_BATCH_SIZE || 10),
+  fast2smsApiKey: process.env.FAST2SMS_API_KEY || "",
+  fast2smsSenderId: process.env.FAST2SMS_SENDER_ID || "",
+  fast2smsEnabled: process.env.FAST2SMS_ENABLED === "true",
+  fast2smsAutoSend: process.env.FAST2SMS_AUTO_SEND === "true",
 });
 
 let cached: { value: RuntimeIntegrationSettings; expiresAt: number } | null = null;
@@ -63,6 +75,10 @@ export async function getIntegrationSettings(): Promise<RuntimeIntegrationSettin
       // this environment-owned prevents a dashboard edit from locking out jobs.
       cronSecret: fallback.cronSecret,
       ecourtsBatchSize: Number(row.ecourts_batch_size || fallback.ecourtsBatchSize || 10),
+      fast2smsApiKey: row.fast2sms_api_key ? decryptSecret(row.fast2sms_api_key) : fallback.fast2smsApiKey,
+      fast2smsSenderId: row.fast2sms_sender_id || fallback.fast2smsSenderId,
+      fast2smsEnabled: typeof row.fast2sms_enabled === "boolean" ? row.fast2sms_enabled : fallback.fast2smsEnabled,
+      fast2smsAutoSend: typeof row.fast2sms_auto_send === "boolean" ? row.fast2sms_auto_send : fallback.fast2smsAutoSend,
     };
     cached = { value, expiresAt: Date.now() + 30_000 };
     return value;
@@ -78,6 +94,10 @@ export function hasR2Settings(settings: RuntimeIntegrationSettings): boolean {
     settings.r2SecretAccessKey &&
     settings.r2BucketName
   );
+}
+
+export function hasFast2SmsSettings(settings: RuntimeIntegrationSettings): boolean {
+  return Boolean(settings.fast2smsApiKey && settings.fast2smsSenderId);
 }
 
 export function masked(value: string): string | null {
