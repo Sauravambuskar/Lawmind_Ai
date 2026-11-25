@@ -136,15 +136,15 @@ function NavItems({
     return hasAccess(role, sectionId, profile?.sections);
   };
 
-  const activeCls = "bg-amber-400/[0.15] text-amber-400 font-bold drop-shadow-md tracking-wide";
-  const regularCls = "text-slate-100 font-semibold hover:bg-white/10 hover:text-white drop-shadow-sm tracking-wide";
+  const activeCls = "bg-amber-400/[0.15] text-amber-400 font-bold drop-shadow-md tracking-wide border border-amber-400/45 shadow-[0_1px_6px_rgba(251,191,36,0.12)]";
+  const regularCls = "text-slate-100 font-semibold border border-white/[0.07] bg-white/[0.02] hover:bg-white/[0.08] hover:text-white hover:border-amber-400/30 drop-shadow-sm tracking-wide";
 
   return (
     <>
       {navSections.map(section => (
         <div key={section.title}>
           <SectionLabel title={section.title} collapsed={collapsed} />
-          <div className="space-y-0.5 px-2">
+          <div className="space-y-1 px-2.5">
             {section.items.filter(item => {
               if (item.superAdminOnly && !isSuperAdmin) return false;
               if (item.label === 'Staff Management') return isAdminOrAbove;
@@ -159,7 +159,7 @@ function NavItems({
                     <button
                       onClick={() => toggleExpand(item.label)}
                       title={collapsed ? item.label : undefined}
-                      className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "justify-between px-3"} py-2 rounded-md text-[13px] transition-colors duration-150 group ${isActive(item.path) ? activeCls : regularCls}`}
+                      className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "justify-between px-3"} py-2 rounded-lg text-[13px] transition-all duration-150 group ${isActive(item.path) ? activeCls : regularCls}`}
                     >
                       <div className="flex items-center gap-2.5">
                         <item.icon className={`w-[16px] h-[16px] shrink-0 ${isActive(item.path) ? "text-amber-400 drop-shadow-md" : "text-slate-300 group-hover:text-white drop-shadow-sm"}`} strokeWidth={isActive(item.path) ? 2.5 : 2} />
@@ -190,10 +190,7 @@ function NavItems({
                 ) : (
                   <Link to={item.path} onClick={onNavClick}
                     title={collapsed ? item.label : undefined}
-                    className={`group flex items-center ${collapsed ? "justify-center px-2" : "px-3 gap-2.5"} py-2 rounded-md text-[13px] transition-colors duration-150 ${isActive(item.path) ? activeCls : regularCls}`}>
-                    {isActive(item.path) && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[22px] bg-amber-400 rounded-r-full shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
-                    )}
+                    className={`group flex items-center ${collapsed ? "justify-center px-2" : "px-3 gap-2.5"} py-2 rounded-lg text-[13px] transition-all duration-150 ${isActive(item.path) ? activeCls : regularCls}`}>
                     <item.icon className={`w-[16px] h-[16px] shrink-0 ${isActive(item.path) ? "text-amber-400 drop-shadow-md" : "text-slate-300 group-hover:text-white drop-shadow-sm"}`} strokeWidth={isActive(item.path) ? 2.5 : 2} />
                     {!collapsed && <span className="whitespace-nowrap">{item.label}</span>}
                   </Link>

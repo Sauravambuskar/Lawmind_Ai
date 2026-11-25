@@ -288,7 +288,7 @@ export default function DocumentsPage() {
                   </td>
                   <td className="py-4 px-5">
                     {d.case_id ? (
-                      <span className="font-mono font-medium text-foreground bg-muted/50 px-2 py-0.5 rounded text-xs border border-border/50">
+                      <span className="font-mono font-bold text-blue-700 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-xs border border-blue-500/25">
                         {d.cases?.case_number || "Unknown Case"}
                       </span>
                     ) : (

@@ -166,12 +166,12 @@ export default function NotesPage() {
                   <td className="py-4 px-5">
                     <div className="flex flex-col gap-1.5">
                       {n.case_id ? (
-                        <span className="font-mono font-medium text-foreground bg-muted/50 px-2 py-0.5 rounded text-xs border border-border/50 w-fit">
+                        <span className="font-mono font-bold text-blue-700 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-xs border border-blue-500/25 w-fit">
                           C: {(n as any).cases?.case_number || "Unknown Case"}
                         </span>
                       ) : null}
                       {n.client_id ? (
-                        <span className="font-medium text-foreground bg-muted/50 px-2 py-0.5 rounded text-xs border border-border/50 w-fit">
+                        <span className="font-bold text-blue-700 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-xs border border-blue-500/25 w-fit">
                           U: {(n as any).clients?.name || "Unknown Client"}
                         </span>
                       ) : null}

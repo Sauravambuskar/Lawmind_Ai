@@ -399,11 +399,11 @@ function HearingCalendar({ currentMonth, setCurrentMonth, hearings, onEdit }: { 
                     <div 
                       key={h.id} 
                       onClick={() => onEdit(h)}
-                      className={`text-[10px] p-1.5 rounded cursor-pointer border hover:shadow-sm transition-all truncate group ${sConf.bg} ${sConf.text} ${sConf.border}`}
+                      className={`text-xs p-2 rounded-md cursor-pointer border hover:shadow-sm transition-all truncate group ${sConf.bg} ${sConf.text} ${sConf.border}`}
                       title={`${h.purpose || "Hearing"} - ${format(new Date(h.hearing_date), "h:mm a")}`}
                     >
-                      <span className="font-bold mr-1">{format(new Date(h.hearing_date), "h:mm")}</span>
-                      <span className="group-hover:underline">{h.purpose || "Hearing"}</span>
+                      <span className="font-extrabold mr-1">{format(new Date(h.hearing_date), "h:mm")}</span>
+                      <span className="font-semibold group-hover:underline">{h.purpose || "Hearing"}</span>
                     </div>
                   );
                 })}
